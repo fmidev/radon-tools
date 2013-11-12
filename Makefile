@@ -31,9 +31,16 @@ CFLAGS_PROFILE = -fPIC -std=c++0x -DUNIX -O2 -g -pg -DNDEBUG $(MAINFLAGS)
 LDFLAGS_DEBUG =
 LDFLAGS_PROFILE =
 
+includedir=/usr/include
+
 INCLUDES = -I include \
            -I$(includedir) \
-	   -I/usr/include/oracle \
+	   -I$(includedir)/oracle \
+
+ifneq ($(INCLUDE), "")
+  INCLUDES := $(INCLUDES) \
+		$(INCLUDE)
+endif
 
 LIBS =  -L$(libdir) \
 	-L/usr/lib64 \
