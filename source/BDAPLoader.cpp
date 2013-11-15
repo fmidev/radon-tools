@@ -281,7 +281,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
     if (row.empty()) 
     {
-      cerr << "Data set definition not found from NEONS table 'as_grid'" << endl;
+      cerr << "Data set definition not found from NEONS table 'as_grid' for geometry '" << itsGeomName << "', base_date " << info.base_date << endl;
       cerr << "The data could be too old" << endl;
       return false;
     }
