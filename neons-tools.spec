@@ -1,6 +1,6 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        13.10.9
+Version:        13.11.15
 Release:        1.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -42,7 +42,7 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %changelog
-* Fri Nov 14 2013 Mikko Partio <mikko.partio@fmi.fi > 13.11.14-1.fmi
+* Fri Nov 15 2013 Mikko Partio <mikko.partio@fmi.fi > 13.11.15-1.fmi
 - Fix for OPER-382
 * Wed Oct  9 2013 Mikko Partio <mikko.partio@fmi.fi > 13.10.9-1.fmi
 - Use wetodb database user
