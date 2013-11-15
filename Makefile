@@ -152,7 +152,8 @@ clean:
 
 install:
 	@mkdir -p $(bindir)
-	$(INSTALL_PROG) $(BINNAME) $(bindir)
+
+	$(INSTALL_PROG) $(MAINPROGS) $(bindir)
 
 depend:
 	gccmakedep -fDependencies -- $(CFLAGS) $(INCLUDES) -- $(ALLSRCS)

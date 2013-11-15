@@ -1,7 +1,7 @@
-%define BINNAME neons-tools
-Name:           %{BINNAME}
+%define PACKAGENAME neons-tools
+Name:           %{PACKAGENAME}
 Version:        13.10.9
-Release:        1.el6.fmi
+Release:        1.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        LGPLv3
@@ -24,13 +24,14 @@ Neons-tools includes programs for loading data to neons DB.
 Table creation tools are also included.
 
 %prep
-%setup -q -n "%{BINNAME}"
+%setup -q -n "%{PACKAGENAME}"
 
 %build
 make %{?_smp_mflags}
 
 %install
-%makeinstall 
+rm -rf $RPM_BUILD_ROOT
+make install bindir=$RPM_BUILD_ROOT/%{_bindir}
 
 %clean
 rm -rf %{buildroot}
@@ -38,10 +39,12 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_neons
-%{_bindir}/create_grid_tabels
+%{_bindir}/create_grid_tables
 
 %changelog
-* Wed Oct  9 2013 Mikko Partio <mikko.partio@fmi.fi > 13.10.9-1
+* Fri Nov 14 2013 Mikko Partio <mikko.partio@fmi.fi > 13.11.14-1.fmi
+- Fix for OPER-382
+* Wed Oct  9 2013 Mikko Partio <mikko.partio@fmi.fi > 13.10.9-1.fmi
 - Use wetodb database user
-* Tue Oct  8 2013 Mikko Aalto <mikko.aalto@fmi.fi> - 13.10.8-1
+* Tue Oct  8 2013 Mikko Aalto <mikko.aalto@fmi.fi> - 13.10.8-1.fmi
 - Initial build
