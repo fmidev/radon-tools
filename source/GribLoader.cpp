@@ -163,7 +163,7 @@ bool GribLoader::Load(const string &theInfile)
 
 
 /*
- * ReadMetaData(grib_handle)
+ * CopyMetaData()
  *
  * Read all necessary metadata from a grib message. Structure of function
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
@@ -365,6 +365,13 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.eps_specifier = boost::lexical_cast<string> (g.locdef) + "_" + boost::lexical_cast<string> (g.ldeftype) + "_" + boost::lexical_cast<string> (g.ldefnumber);
   else
     g.eps_specifier = "0";
+
+  // Force eps_specifier to 0 because for some EC data it gets value other than zero from
+  // the if-chain above and that does not work well with hilake.
+  // When the issue with logic above is fixed, this hotfix can be removed. In the mean while
+  // it might not be safe to load actual EPS data with this program.
+
+  g.eps_specifier = "0";
 
   g.stepType = reader.Message()->TimeRangeIndicator();
   g.timeUnit = reader.Message()->StepUnits();
