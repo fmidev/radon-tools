@@ -191,26 +191,32 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.filetype = "grib";
 
     g.novers = reader.Message()->Table2Version();
-	g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
+    g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
 
     g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
+    if (g.parname.empty())
+    {
+      cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
+      return false;
+   }
   }
   else 
   {
-	  g.filetype = "grib2";
+    g.filetype = "grib2";
 
-	  g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
-	  g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
+    g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
+
+    if (g.parname.empty())
+    {
+      cerr << "Parameter name not found for category " << reader.Message()->ParameterCategory() << ", discipline " << reader.Message()->ParameterDiscipline() << " number " << g.param << endl;
+      return false;
+    }
   }
 
-  if (g.parname.empty()) 
-  {
-    cerr << "Parameter name not found for number " << g.param << endl;
-    return false;
-  }
-  else if (g.levname.empty()) 
+  if (g.levname.empty()) 
   {
     cerr << "Level name not found for level " << g.levtype << endl;
     return false;
