@@ -148,7 +148,7 @@ $(MAINPROGS): % : $(OBJS) %.o
 	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
 
 clean:
-	rm -f $(PROG) $(OBJFILES) *~ source/*~ include/*~
+	rm -f $(PROG) $(OBJFILES) $(MAINOBJFILES) *~ source/*~ include/*~
 
 install:
 	@mkdir -p $(bindir)
