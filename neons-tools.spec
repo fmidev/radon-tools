@@ -1,6 +1,6 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        13.11.15
+Version:        13.11.19
 Release:        1.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -9,7 +9,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb
+BuildRequires:  libfmidb-devel >= 13.11.19
 BuildRequires:  grib_api-devel
 BuildRequires:  boost-devel >= 1.54
 Requires:       jasper-libs
@@ -42,9 +42,11 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %changelog
-* Fri Nov 15 2013 Mikko Partio <mikko.partio@fmi.fi > 13.11.15-1.fmi
+* Tue Nov 19 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.19-1.fmi
+- API breaking changes in fmidb
+* Fri Nov 15 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.15-1.fmi
 - Fix for OPER-382
-* Wed Oct  9 2013 Mikko Partio <mikko.partio@fmi.fi > 13.10.9-1.fmi
+* Wed Oct  9 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.10.9-1.fmi
 - Use wetodb database user
 * Tue Oct  8 2013 Mikko Aalto <mikko.aalto@fmi.fi> - 13.10.8-1.fmi
 - Initial build
