@@ -188,20 +188,20 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   if (g.ednum == 1) 
   {
-	 g.filetype = "grib";
+    g.filetype = "grib";
 
     g.novers = reader.Message()->Table2Version();
+	g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
 
-	  g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers);
-	  g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
+    g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
   }
   else 
   {
-
 	  g.filetype = "grib2";
 
-	  g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
+	  g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
 	  g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
   }
 

@@ -110,6 +110,7 @@ class BDAPLoader
       long ldeftype;
       long ldefnumber;
       long fcst_per;
+      long timeRangeIndicator;
       std::string base_date;
       std::string parname;
       std::string levname;
