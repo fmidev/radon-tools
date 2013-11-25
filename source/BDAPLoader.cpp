@@ -64,8 +64,6 @@ string BDAPLoader::REFFileName(const fc_info &info)
 
   stringstream ss;
 
-  string outFileHost (host);
-
   ss << base
      << "/"
      << info.centre
@@ -106,7 +104,7 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << "_0_"
        << setw(3)
        << setfill('0')
-       << info.step;
+       << info.fcst_per;
    
       if (info.locdef != 0) 
       {
@@ -140,7 +138,7 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << "_0_"
        << setw(3)
        << setfill('0')
-       << info.step;
+       << info.fcst_per;
 
     if (info.locdef != 0) 
     {

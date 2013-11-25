@@ -183,9 +183,6 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   if (Process() != 0)
     g.process = Process();
 
-  // g.stepType = reader.Message()->TimeRangeIndicator();
-  // arome-case. Haetaan nimi, jos stepType erisuuri kuin 0
-
   if (g.ednum == 1) 
   {
     g.filetype = "grib";
@@ -198,9 +195,13 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     if (g.parname.empty())
     {
-      cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
+      if (Verbose())
+      {
+        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
+      }
+
       return false;
-   }
+    }
   }
   else 
   {
@@ -211,14 +212,21 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     if (g.parname.empty())
     {
-      cerr << "Parameter name not found for category " << reader.Message()->ParameterCategory() << ", discipline " << reader.Message()->ParameterDiscipline() << " number " << g.param << endl;
-      return false;
+      if (Verbose())
+      {
+        cerr << "Parameter name not found for category " << reader.Message()->ParameterCategory() << ", discipline " << reader.Message()->ParameterDiscipline() << " number " << g.param << endl;
+      }
+
+    return false;
     }
   }
 
   if (g.levname.empty()) 
   {
-    cerr << "Level name not found for level " << g.levtype << endl;
+    if (Verbose())
+    {
+      cerr << "Level name not found for level " << g.levtype << endl;
+    }
     return false;
   }
 
@@ -378,52 +386,15 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   // it might not be safe to load actual EPS data with this program.
 
   g.eps_specifier = "0";
-
+ 
   g.stepType = reader.Message()->TimeRangeIndicator();
-  g.timeUnit = reader.Message()->StepUnits();
+  g.timeUnit = reader.Message()->UnitOfTimeRange();
+
+  g.startstep = reader.Message()->NormalizedStep(false, false);
+  g.endstep = reader.Message()->NormalizedStep(true, false);
+  g.step = g.endstep;
   
-  switch (g.stepType) 
-  {
-    case 0:
-    case 1:
-    case 10:
-      {   // Harmonie case
-      if (g.centre == 86 && g.process == 3) 
-      {
-        long P1 = reader.Message()->P1();
-        long P2 = reader.Message()->P2();
-        g.step = (P1 << 8 ) | P2;
-      }
-      else 
-      {
-        g.step = reader.Message()->StepRange();
-      }
-      }
-    case 2:
-    case 3:
-    case 4:
-    case 5:
-      g.startstep = reader.Message()->StartStep();
-      g.endstep = reader.Message()->EndStep();
-
-      g.step = g.endstep;
-      break;
-  }
-
-  if (g.timeUnit == 10) 
-  {
-    g.step = g.step * 3;
-  }
-  else if (g.timeUnit == 11) 
-  {
-    g.step = g.step * 6;
-  }
-  else if (g.timeUnit == 12) 
-  {
-    g.step = g.step * 12;
-  }
-
-  g.fcst_per = g.step;
+  g.fcst_per = reader.Message()->NormalizedStep(true, true);
 
   return true;
 }
