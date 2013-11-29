@@ -190,14 +190,31 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.novers = reader.Message()->Table2Version();
     g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
 
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
+    int temp_tri = g.timeRangeIndicator;
+
+    /*
+     * If producer is old harmonie, force timeRangeIndicator to value 0.
+     * This is because in neons the parameter definitions are for timeRangeIndicator 0
+     * and we cannot add harmonie definitions since it shares code table with Hirlam
+     * and bdap_load_file crashes with the new definitions.
+     *
+     * When old harmonie is not in production anymore or when Hirlam is loaded
+     * with grid_to_neons, this code can be removed.
+     */
+ 
+    if (g.novers == 1 && g.process == 3 && g.centre == 86)
+    {
+      temp_tri = 0;
+    }
+    
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, temp_tri);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
     if (g.parname.empty())
     {
       if (Verbose())
       {
-        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
+        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << temp_tri << endl;
       }
 
       return false;
