@@ -52,7 +52,7 @@ bool GribLoader::Load(const string &theInfile)
   {
 
     if (Verbose())
-      cout << "Reading message " << reader.CurrentMessageIndex() << "/" << reader.MessageCount() << endl;
+      cout << "Message " << reader.CurrentMessageIndex() << ": ";
 
     fc_info g;
 
