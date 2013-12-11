@@ -1,6 +1,6 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        13.11.19
+Version:        13.11.29
 Release:        1.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -42,6 +42,9 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %changelog
+* Fri Nov 29 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.29-1.fmi
+- Do not count grib messages 
+- Support for new Harmonie
 * Tue Nov 19 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.19-1.fmi
 - API breaking changes in fmidb
 * Fri Nov 15 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.15-1.fmi
