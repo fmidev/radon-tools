@@ -196,7 +196,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     {
       if (Verbose())
       {
-        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << temp_tri << endl;
+        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
       }
 
       return false;
