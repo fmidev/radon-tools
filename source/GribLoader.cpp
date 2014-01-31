@@ -60,14 +60,13 @@ bool GribLoader::Load(const string &theInfile)
      * Read metadata from grib msg
      */
 
-    if (!CopyMetaData(g, reader))
+    if (!CopyMetaData(g, reader) || pskip.count(g.parname) > 0 || lskip.count(g.levname) > 0)
+    {
+      if (Verbose())
+       cout << "Skipping due to cached information" << endl;
+
       continue;
-
-    if (pskip.count(g.parname) > 0)
-       continue;
-
-    if (lskip.count(g.levname) > 0)
-       continue;
+	}
 
     if (parameters.size() > 0) 
     {
@@ -189,25 +188,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     g.novers = reader.Message()->Table2Version();
     g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
-
-    int temp_tri = g.timeRangeIndicator;
-
-    /*
-     * If producer is old harmonie, force timeRangeIndicator to value 0.
-     * This is because in neons the parameter definitions are for timeRangeIndicator 0
-     * and we cannot add harmonie definitions since it shares code table with Hirlam
-     * and bdap_load_file crashes with the new definitions.
-     *
-     * When old harmonie is not in production anymore or when Hirlam is loaded
-     * with grid_to_neons, this code can be removed.
-     */
- 
-    if (g.novers == 1 && g.process == 3 && g.centre == 86)
-    {
-      temp_tri = 0;
-    }
     
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, temp_tri);
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
     if (g.parname.empty())
@@ -223,6 +205,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   else 
   {
     g.filetype = "grib2";
+	
+    g.timeRangeIndicator = 0;
 
     g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
