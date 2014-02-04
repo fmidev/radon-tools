@@ -101,6 +101,8 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << info.ni
        << "_"
        << info.nj
+       << "_"
+       << info.timeRangeIndicator
        << "_0_"
        << setw(3)
        << setfill('0')
@@ -135,6 +137,8 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << info.ni
        << "_"
        << info.nj
+       << "_"
+       << info.timeRangeIndicator
        << "_0_"
        << setw(3)
        << setfill('0')
