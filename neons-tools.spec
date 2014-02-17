@@ -1,7 +1,13 @@
+%define dist .el6
+
+%if %{defined suse_version}
+%define dist .sles11
+%endif
+
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        13.11.29
-Release:        1.fmi
+Version:        14.1.31
+Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        LGPLv3
@@ -10,10 +16,15 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel >= 13.11.19
-BuildRequires:  grib_api-devel
+BuildRequires:  grib_api-devel >= 1.11.0
 BuildRequires:  boost-devel >= 1.54
+%if %{defined suse_version}
+Requires:	libjasper
+Requires:	libnetcdf4 >= 4.0.1
+%else
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
+%endif
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Provides:	grid_to_neons
@@ -42,6 +53,11 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %changelog
+* Fri Jan 31 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.1.31-1.fmi
+- Remove hard coded Harmonie-fix related to time range indicator and code table 1
+- Improve logging 
+* Thu Jan  2 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.1.2-1.fmi
+- Link with grib_api 1.11.0
 * Fri Nov 29 2013 Mikko Partio <mikko.partio@fmi.fi> - 13.11.29-1.fmi
 - Do not count grib messages 
 - Support for new Harmonie
