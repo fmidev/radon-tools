@@ -38,7 +38,11 @@ Table creation tools are also included.
 %setup -q -n "%{PACKAGENAME}"
 
 %build
+%if %{defined suse_version}
+make %{?_smp_mflags} CC=/usr/bin/g++-4.6 INCLUDE=-I/lustre/apps/partio/auxlibs
+%else
 make %{?_smp_mflags}
+%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
