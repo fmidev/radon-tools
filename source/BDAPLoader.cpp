@@ -82,7 +82,9 @@ string BDAPLoader::REFFileName(const fc_info &info)
      << info.hour
      << setw(2)
      << setfill('0')
-     << info.minute;
+     << info.minute
+     << "/"
+     << info.fcst_per;
 
   if (info.ednum == 1) 
   {
