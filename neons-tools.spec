@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.1.31
+Version:        14.4.7
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -57,6 +57,8 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %changelog
+* Mon Apr  7 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.4.7-1.fmi
+- Add forecast time-based subdirectory to refstorage file path
 * Fri Jan 31 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.1.31-1.fmi
 - Remove hard coded Harmonie-fix related to time range indicator and code table 1
 - Improve logging 
