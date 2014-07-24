@@ -104,6 +104,7 @@ bool NetCDFLoader::Load(const string &theInfile)
   info.level2 = 0;
   info.locdef = 0;
   info.eps_specifier = "0";
+  info.timeRangeIndicator = 0;
 
   stringstream ss;
 
