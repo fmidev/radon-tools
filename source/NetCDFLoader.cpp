@@ -73,6 +73,7 @@ bool NetCDFLoader::Load(const string &theInfile)
   // Set process for debugging purposes. In the future it must be picked
   // either from input file or from command line
 
+
   if (itsProcess == 0) 
   {
     cerr << "process value not found" << endl;
@@ -221,7 +222,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (parameter.empty()) 
       {
         if (Verbose())
-          cout << "Param " << ncname << " not supported" << endl;
+          cout << "Param " << grid_parameter_name << " not supported" << endl;
 
          pskip[ncname] = 1;
          continue;
@@ -259,6 +260,8 @@ bool NetCDFLoader::Load(const string &theInfile)
           info.levtype = 160;
         else if (itsLevel == "HEIGHT")
           info.levtype = 105;
+        else if (itsLevel == "PRESSURE")
+          info.levtype = 100;
         else
           throw std::runtime_error("Invalid level type: " + itsLevel);
       }
@@ -373,7 +376,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
     }
 
   } 
-  else if (mask == "hours since 1900-01-01 00:00:00") 
+   else if (mask == "hours since 1900-01-01 00:00:00") 
   {
 
     /*
@@ -394,6 +397,19 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
     }
 
   } 
+  else if (mask == "hours since 1970-01-01 00:00:00") 
+  {
+
+    try 
+    {
+      e = (3600 * boost::lexical_cast<long> (dateTime));
+    } 
+    catch(boost::bad_lexical_cast&) 
+    {
+      cerr << "Date cast failed" << endl;
+      exit(1);
+    }
+  }
   else 
   {
 
