@@ -196,7 +196,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       {
 
         if (Verbose())
-          cout << "Param " << ncname << " not supported" << endl;
+          cout << "Netcdf Param " << ncname << " not supported" << endl;
 
         pskip[ncname] = 1;
         continue;
