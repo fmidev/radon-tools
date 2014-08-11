@@ -7,24 +7,19 @@
 #include <string>
 #include "BDAPLoader.h"
 #include "NFmiGrib.h"
-#include <grib_api.h>
 
-class GribLoader : public BDAPLoader 
+class GribLoader
 {
 
   public:
     GribLoader();
-    virtual ~GribLoader();
+    ~GribLoader();
 
     bool Load(const std::string &theInfile);
 
   private:
 
-    std::string outFileName;
-    std::string outFileHost;
-
     bool CopyMetaData(fc_info &g, NFmiGrib &reader);
-    //bool MakeWriteREFStorage(grib_handle *h, const fc_info &g);
-   // bool WriteAS(const fc_info &g);
-
+	BDAPLoader itsDatabaseLoader;
+	
 };

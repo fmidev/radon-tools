@@ -1,24 +1,22 @@
 #include "BDAPLoader.h"
 #include "NFmiNeonsDB.h"
+#ifdef NEON2
+#include "NFmiNeon2DB.h"
+#endif
 #include <iostream>
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include "options.h"
 
 using namespace std;
 
+extern Options options;
+
 BDAPLoader::BDAPLoader()
-  : itsUsername("wetodb") // bdm has server-based authentication
+  : itsUsername("wetodb")
   , itsPassword("3loHRgdio")
   , itsDatabase("neons")
-  , itsVerbose(false)
-  , itsProcess(0)
-  , itsParameters("")
-  , itsLevel("")
-  , itsLevelTypes("")
-  , itsUseLevelValue(false)
-  , itsUseInverseLevelValue(false)
-  , itsDryRun(false)
 {
 
   char *dbName;
@@ -27,31 +25,14 @@ BDAPLoader::BDAPLoader()
     itsDatabase = static_cast<string> (dbName);
 
   NFmiNeonsDB::Instance().Connect(itsUsername, itsPassword, itsDatabase);
+#ifdef NEON2
+  NFmiNeon2DB::Instance().Connect(itsUsername, itsPassword, "neon2"); // try/catch ?
+#endif
   Init();
 }
 
 BDAPLoader::~BDAPLoader() 
 {
-}
-
-bool BDAPLoader::Verbose() 
-{
-  return itsVerbose;
-}
-
-void BDAPLoader::Verbose(bool theVerbose) 
-{
-  itsVerbose = theVerbose;
-}
-
-void BDAPLoader::Parameters(std::string theParameters) 
-{
-  itsParameters = theParameters;
-}
-
-string BDAPLoader::Parameters() 
-{
-  return itsParameters;
 }
 
 string BDAPLoader::REFFileName(const fc_info &info) 
@@ -180,12 +161,8 @@ void BDAPLoader::Init()
 bool BDAPLoader::WriteAS(const fc_info &info) 
 {
 
-  if (info.process != itsProcess) 
-  {
-    // Clear cache if model id changes
-
-    Init();
-  }
+  // Clear cache
+  Init();
 
   stringstream query;
 
@@ -206,7 +183,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
           << " AND pas_latitude = " << info.dj
           << " AND pas_longitude = " << info.di;
 
-    if (DryRun())
+    if (options.dry_run)
       cout << query.str() << endl;
 
     NFmiNeonsDB::Instance().Query(query.str());
@@ -220,6 +197,29 @@ bool BDAPLoader::WriteAS(const fc_info &info)
     }
 
     itsGeomName = row[0];
+
+#ifdef NEON2
+	query.str("");
+
+	query << "SELECT name FROM geom WHERE nj = " << info.nj << " AND ni = " << info.ni;
+
+	if (options.dry_run)
+      cout << query.str() << endl;
+
+    NFmiNeon2DB::Instance().Query(query.str());
+
+    row = NFmiNeon2DB::Instance().FetchRow();
+
+	if (row.empty())
+    {
+      cerr << "Geometry not found" << endl;
+    }
+	else if (itsGeomName != row[0])
+	{
+		cerr << "neon2 geom_name does not match with neons!: " << row[0] << " vs " << itsGeomName << endl;
+	}
+
+#endif
 
     query.str("");
 
@@ -241,7 +241,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
           << " AND nu.model_name = na.model_name "
           << " AND m.model_name = na.model_name";
 
-    if (DryRun())
+    if (options.dry_run)
       cout << query.str() << endl;
 
     NFmiNeonsDB::Instance().Query(query.str());
@@ -278,7 +278,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
     NFmiNeonsDB::Instance().Query(query.str());
 
-    if (DryRun())
+    if (options.dry_run)
       cout << query.str() << endl;
 
     row = NFmiNeonsDB::Instance().FetchRow();
@@ -304,12 +304,12 @@ bool BDAPLoader::WriteAS(const fc_info &info)
         << "date_maj_dset = sysdate "
         << "WHERE dset_id = " << itsDsetId;
 
-  if (DryRun())
+  if (options.dry_run)
     cout << query.str() << endl;
 
   try 
   {
-    if (!DryRun())
+    if (!options.dry_run)
       NFmiNeonsDB::Instance().Execute(query.str());
   } 
   catch (int e) 
@@ -331,12 +331,12 @@ bool BDAPLoader::WriteAS(const fc_info &info)
         << "'" << info.filename << "', "
         << "'" << outFileHost << "')";
 
-  if (DryRun())
+  if (options.dry_run)
     cout << query.str() << endl;
 
   try 
   {
-    if (!DryRun())
+    if (!options.dry_run)
       NFmiNeonsDB::Instance().Execute(query.str());
   } 
   catch (int e) 
@@ -362,12 +362,12 @@ bool BDAPLoader::WriteAS(const fc_info &info)
             << " AND file_location = '" << info.filename << "'"
             << " AND file_server = '" << outFileHost << "'";
 
-      if (DryRun())
+      if (options.dry_run)
         cout << query.str() << endl;
 
       try 
       {
-        if (!DryRun())
+        if (!options.dry_run)
           NFmiNeonsDB::Instance().Execute(query.str());
       } 
       catch (int e) 
@@ -386,7 +386,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
     }
   }
 
-  if (DryRun())
+  if (options.dry_run)
     NFmiNeonsDB::Instance().Rollback();
   else
     NFmiNeonsDB::Instance().Commit();
@@ -395,25 +395,163 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
 }
 
-unsigned long BDAPLoader::Process() 
+#ifdef NEON2
+
+bool BDAPLoader::WriteToNeon2(const fc_info &info)
 {
-  return itsProcess;
+
+  // Clear cache
+
+  Init();
+
+  stringstream query;
+
+  string outFileHost (host);
+
+  vector<string> row;
+
+  long geometry_id = 0;
+  string geometry_name = "";
+
+  if (geometry_id == 0)
+  {
+
+	query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND "
+			<< " nj = " << info.nj
+			<< " AND ni = " << info.ni
+			<< " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.grid_type;
+
+	if (options.dry_run)
+      cout << query.str() << endl;
+
+    NFmiNeon2DB::Instance().Query(query.str());
+
+    row = NFmiNeon2DB::Instance().FetchRow();
+
+	if (row.empty())
+    {
+      cerr << "Geometry not found" << endl;
+    }
+
+	geometry_id = boost::lexical_cast<long> (row[0]);
+	geometry_name = row[1];
+	
+    query.str("");
+
+  }
+
+  string tableName = "";
+
+  if (tableName.empty())
+  {
+
+    query << "SELECT "
+          << "table_name "
+          << "FROM as_grid "
+          << "WHERE "
+          << "producer_id = " << info.producer_id
+          << " AND geometry_id = " << geometry_id
+          << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
+
+    NFmiNeon2DB::Instance().Query(query.str());
+
+    if (options.dry_run)
+      cout << query.str() << endl;
+
+    row = NFmiNeon2DB::Instance().FetchRow();
+
+    if (row.empty())
+    {
+      cerr << "Data set definition not found from NEON2 table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
+      cerr << "The data could be too old" << endl;
+      return false;
+    }
+
+    tableName = row[0];
+
+    query.str("");
+
+  }
+
+  query.str("");
+
+  query << "INSERT INTO " << tableName
+        << " (analysis_time, param_id, level_type_id, level_value, forecast_period, file_location, file_server, forecast_type_value) "
+        << "VALUES ("
+        << "'" << info.base_date << "', "
+        << "'" << info.parname << "', "
+        << "'" << info.levname << "', "
+        << info.lvl1_lvl2 << ", "
+        << info.fcst_per << ", "
+        << "'" << info.eps_specifier << "', "
+        << "'" << info.filename << "', "
+        << "'" << outFileHost << "')";
+
+  if (options.dry_run)
+    cout << query.str() << endl;
+
+  try
+  {
+    if (!options.dry_run)
+      NFmiNeon2DB::Instance().Execute(query.str());
+  }
+  catch (int e)
+  {
+    if (e == 1)
+    {
+      // ORA-00001: unique constraint violated
+
+      /*
+       * Primary key: DSET_ID, PARM_NAME, LVL_TYPE, LVL1_LVL2, FCST_PER, FILE_LOCATION, FILE_SERVER
+       */
+
+      query.str("");
+
+      query << "UPDATE " << itsTableName
+            << " SET eps_specifier = '" << info.eps_specifier << "'"
+            << " WHERE "
+            << "dset_id = " << itsDsetId
+            << " AND parm_name = '" << info.parname << "'"
+            << " AND lvl_type = '" << info.levname << "'"
+            << " AND lvl1_lvl2 = " << info.lvl1_lvl2
+            << " AND fcst_per = " << info.fcst_per
+            << " AND file_location = '" << info.filename << "'"
+            << " AND file_server = '" << outFileHost << "'";
+
+      if (options.dry_run)
+        cout << query.str() << endl;
+
+      try
+      {
+        if (!options.dry_run)
+          NFmiNeonsDB::Instance().Execute(query.str());
+      }
+      catch (int e)
+      {
+        // Give up
+        NFmiNeonsDB::Instance().Rollback();
+        return false;
+      }
+    }
+    else
+    {
+      NFmiNeonsDB::Instance().Rollback();
+      cerr << "Load failed with: " << itsTableName << "," << info.parname << "," << info.levname
+			           << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
+      return false;
+    }
+  }
+
+  if (options.dry_run)
+    NFmiNeonsDB::Instance().Rollback();
+  else
+    NFmiNeonsDB::Instance().Commit();
+
+  return true;
+
 }
 
-void BDAPLoader::Process(unsigned long theProcess) 
-{
-  itsProcess = theProcess;
-}
-
-string BDAPLoader::AnalysisTime()
-{
-  return itsAnalysisTime;
-}
-
-void BDAPLoader::AnalysisTime(string theAnalysisTime) 
-{
-  itsAnalysisTime = theAnalysisTime;
-}
+#endif
 
 bool BDAPLoader::ReadREFEnvironment() 
 {
@@ -431,44 +569,4 @@ bool BDAPLoader::ReadREFEnvironment()
   }
 
   return true;
-}
-
-void BDAPLoader::Level(std::string theLevel)
-{
-  itsLevel = theLevel;
-}
-
-string BDAPLoader::Level()
-{
-  return itsLevel;
-}
-
-string BDAPLoader::LevelTypes()
-{
-  return itsLevelTypes;
-}
-
-void BDAPLoader::LevelTypes(std::string theLevelTypes) 
-{
-  itsLevelTypes = theLevelTypes;
-}
-
-void BDAPLoader::UseLevelValue(bool theValue) 
-{
-  itsUseLevelValue = theValue;
-}
-
-void BDAPLoader::UseInverseLevelValue(bool theValue) 
-{
-  itsUseInverseLevelValue = theValue;
-}
-
-void BDAPLoader::DryRun(bool theDryRun) 
-{
-  itsDryRun = theDryRun;
-}
-
-bool BDAPLoader::DryRun()
-{
-  return itsDryRun;
 }

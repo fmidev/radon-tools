@@ -5,12 +5,18 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include "NFmiNeonsDB.h"
+#ifdef NEON2
+#include "NFmiNeon2DB.h"
+#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include "options.h"
+
+extern Options options;
 
 using namespace std;
 
-GribLoader::GribLoader() 
+GribLoader::GribLoader() : itsDatabaseLoader()
 {
 }
 
@@ -27,7 +33,7 @@ bool GribLoader::Load(const string &theInfile)
 
   vector<string> levels;
 
-  string levelString = Level();
+  string levelString = options.level;
 
   if (!levelString.empty()) 
   {
@@ -36,7 +42,7 @@ bool GribLoader::Load(const string &theInfile)
 
   vector<string> parameters;
 
-  string paramString = Parameters();
+  string paramString = options.parameters;
 
   if (!paramString.empty()) 
   {
@@ -51,7 +57,7 @@ bool GribLoader::Load(const string &theInfile)
   while (reader.NextMessage()) 
   {
 
-    if (Verbose())
+    if (options.verbose)
       cout << "Message " << reader.CurrentMessageIndex() << ": ";
 
     fc_info g;
@@ -62,7 +68,7 @@ bool GribLoader::Load(const string &theInfile)
 
     if (!CopyMetaData(g, reader) || pskip.count(g.parname) > 0 || lskip.count(g.levname) > 0)
     {
-      if (Verbose())
+      if (options.verbose)
        cout << "Skipping due to cached information" << endl;
 
       continue;
@@ -73,7 +79,7 @@ bool GribLoader::Load(const string &theInfile)
       if (std::find(parameters.begin(), parameters.end(), g.parname) == parameters.end()) 
       {
 
-        if (Verbose())
+        if (options.verbose)
           cout << "Skipping parameter " << g.parname << endl;
 
         pskip[g.parname] = 1;
@@ -87,7 +93,7 @@ bool GribLoader::Load(const string &theInfile)
       if (std::find(levels.begin(), levels.end(), g.levname) == levels.end()) 
       {
 
-        if (Verbose())
+        if (options.verbose)
           cout << "Skipping level " << g.levname << endl;
 
         lskip[g.levname] = 1;
@@ -96,10 +102,10 @@ bool GribLoader::Load(const string &theInfile)
       }
     }
 
-    if (Verbose())
+    if (options.verbose)
       cout << "Parameter: " << g.parname << " at level " << g.levname << " " << g.lvl1_lvl2 << endl;
 
-    string theFileName = REFFileName(g);
+    string theFileName = itsDatabaseLoader.REFFileName(g);
 
     if (theFileName.empty())
       exit(1);
@@ -115,10 +121,10 @@ bool GribLoader::Load(const string &theInfile)
 
       // Create directory
 
-      if (Verbose())
+      if (options.verbose)
         cout << "Creating directory " << pathname.parent_path().string() << endl;
 
-      if (!DryRun())
+      if (!options.dry_run)
         fs::create_directories(pathname.parent_path());
     }
 
@@ -126,7 +132,7 @@ bool GribLoader::Load(const string &theInfile)
      * Write grib msg to disk with unique filename.
      */
 
-    if (!DryRun()) 
+    if (!options.dry_run)
     {
       if (!reader.WriteMessage(theFileName))
       {
@@ -139,12 +145,14 @@ bool GribLoader::Load(const string &theInfile)
      * Update new file information to database
      */
 
-    if (!WriteAS(g)) 
+    if (!itsDatabaseLoader.WriteAS(g))
     {
       failed++;
       return false;
     }
-
+#ifdef NEON2
+	itsDatabaseLoader.WriteToNeon2(g);
+#endif
     success++;
 
   }
@@ -179,8 +187,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.process = reader.Message()->Process();
 
-  if (Process() != 0)
-    g.process = Process();
+  if (options.process != 0)
+    g.process = options.process;
 
   if (g.ednum == 1) 
   {
@@ -192,9 +200,32 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
+#ifdef NEON2
+
+	map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib1(g.centre, g.process);
+
+	g.producer_id = boost::lexical_cast<long> (r["id"]);
+	
+	map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib1(g.producer_id, g.levtype);
+
+	if (l.empty())
+	{
+		cerr << "Level not found from neon2\n";
+	}
+
+	map<string,string> p = NFmiNeon2DB::Instance().ParameterFromGrib1(g.producer_id, g.novers, g.param, g.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), reader.Message()->LevelValue());
+
+	if (p.empty())
+	{
+		cerr << "Parameter not found from neon2\n";
+	}
+
+
+#endif
+
     if (g.parname.empty())
     {
-      if (Verbose())
+      if (options.verbose)
       {
         cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
       }
@@ -213,7 +244,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     if (g.parname.empty())
     {
-      if (Verbose())
+      if (options.verbose)
       {
         cerr << "Parameter name not found for category " << reader.Message()->ParameterCategory() << ", discipline " << reader.Message()->ParameterDiscipline() << " number " << g.param << endl;
       }
@@ -224,7 +255,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   if (g.levname.empty()) 
   {
-    if (Verbose())
+    if (options.verbose)
     {
       cerr << "Level name not found for level " << g.levtype << endl;
     }
@@ -259,6 +290,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.lon += 360000;  // Area is whole globe, ECMWF special case
   } 
 
+  g.grid_type = reader.Message()->GridType();
+  
   switch (reader.Message()->NormalizedGridType()) 
   {
     case 0: // ll

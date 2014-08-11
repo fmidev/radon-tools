@@ -7,7 +7,7 @@
 #include <string>
 #include "BDAPLoader.h"
 
-class NetCDFLoader : public BDAPLoader 
+class NetCDFLoader
 {
 
   public:
@@ -18,5 +18,6 @@ class NetCDFLoader : public BDAPLoader
 
   private:
     long Epoch(const std::string &dateTime, const std::string &mask);
+	BDAPLoader itsDatabaseLoader;
 
 };

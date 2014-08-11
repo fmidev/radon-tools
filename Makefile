@@ -1,182 +1,46 @@
-PROG = neons-tools
+PROG = himan
 
-MAINFLAGS = -Wall -W -Wno-unused-parameter -Werror
+SCONS_FLAGS=-j 4
 
-EXTRAFLAGS = -Wpointer-arith \
-	-Wcast-qual \
-	-Wcast-align \
-	-Wwrite-strings \
-	-Wconversion \
-	-Winline \
-	-Wnon-virtual-dtor \
-	-Wno-pmf-conversions \
-	-Wsign-promo \
-	-Wchar-subscripts \
-	-Wold-style-cast
+# How to install
 
-DIFFICULTFLAGS = -pedantic -Weffc++ -Wredundant-decls -Wshadow -Woverloaded-virtual -Wunreachable-code -Wctor-dtor-privacy
-
-CC = /usr/bin/g++
-
-# Default compiler flags
-
-CFLAGS = -fPIC -std=c++0x -DUNIX -O2 -DNDEBUG $(MAINFLAGS) 
-LDFLAGS = -s
-
-# Special modes
-
-CFLAGS_DEBUG = -fPIC -std=c++0x -DUNIX -O0 -g -DDEBUG $(MAINFLAGS) $(EXTRAFLAGS)
-CFLAGS_PROFILE = -fPIC -std=c++0x -DUNIX -O2 -g -pg -DNDEBUG $(MAINFLAGS)
-
-LDFLAGS_DEBUG =
-LDFLAGS_PROFILE =
-
-includedir=/usr/include
-
-INCLUDES = -I include \
-           -I$(includedir) \
-	   -I$(includedir)/oracle \
-
-ifneq ($(INCLUDE), "")
-  INCLUDES := $(INCLUDES) \
-		$(INCLUDE)
-endif
-
-LIBS =  -L$(libdir) \
-	-L/usr/lib64 \
-	-L/usr/lib64/oracle \
-        -lfmigrib \
-	-lfmidb \
-	-lfminc \
-        -lclntsh \
-        -lodbc \
-        -lboost_program_options-mt \
-        -lboost_filesystem-mt \
-        -lboost_system-mt \
-        -lgrib_api \
-	-lnetcdf_c++
-
-
-# Common library compiling template
-
-# Installation directories
-
-processor := $(shell uname -p)
-
-ifeq ($(origin PREFIX), undefined)
-  PREFIX = /usr
-else
-  PREFIX = $(PREFIX)
-endif
-
-ifeq ($(processor), x86_64)
-  libdir = $(PREFIX)/lib64
-else
-  libdir = $(PREFIX)/lib
-endif
-
-objdir = obj
-libdir = lib
-
-includedir = $(PREFIX)/include
-
-#ifeq ($(origin BINDIR), undefined)
-#  bindir = $(PREFIX)/bin
-#else
-#  bindir = $(BINDIR)
-#endif
+INSTALL_PROG = install -m 755
 
 # rpm variables
 
 CWP = $(shell pwd)
 BIN = $(shell basename $(CWP))
 
-# Special modes
-
-ifneq (,$(findstring debug,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_DEBUG)
-  LDFLAGS = $(LDFLAGS_DEBUG)
-endif
-
-ifneq (,$(findstring profile,$(MAKECMDGOALS)))
-  CFLAGS = $(CFLAGS_PROFILE)
-  LDFLAGS = $(LDFLAGS_PROFILE)
-endif
-
-# Compilation directories
-
-vpath %.cpp source main
-vpath %.h include
-vpath %.o $(objdir)
-
-# How to install
-
-INSTALL_PROG = install -m 775
-INSTALL_DATA = install -m 664
-
-# The files to be compiled
-
-HDRS = $(patsubst include/%,%,$(wildcard *.h include/*.h))
-
-MAINSRCS     = $(patsubst main/%,%,$(wildcard main/*.cpp))
-MAINPROGS    = $(MAINSRCS:%.cpp=%)
-MAINOBJS     = $(MAINSRCS:%.cpp=%.o)
-MAINOBJFILES = $(MAINOBJS:%.o=obj/%.o)
-
-SRCS = $(patsubst source/%,%,$(wildcard source/*.cpp))
-OBJS = $(SRCS:%.cpp=%.o)
-OBJFILES = $(OBJS:%.o=obj/%.o)
-
-INCLUDES := -Iinclude $(INCLUDES)
-
-# For make depend:
-
-ALLSRCS = $(wildcard main/*.cpp source/*.cpp)
-
-.PHONY: test rpm
-
 rpmsourcedir = /tmp/$(shell whoami)/rpmbuild
+
+INSTALL_TARGET = /usr/bin
 
 # The rules
 
-all: objdir $(MAINPROGS)
-debug: objdir $(MAINPROGS)
-release: objdir $(MAINPROGS)
-profile: objdir $(MAINPROGS)
-
-$(MAINPROGS): % : $(OBJS) %.o
-	$(CC) $(LDFLAGS) -o $@ obj/$@.o $(OBJFILES) $(LIBS)
+all release: 
+	scons $(SCONS_FLAGS)
+debug: 
+	scons $(SCONS_FLAGS) --debug-build
 
 clean:
-	rm -f $(PROG) $(OBJFILES) $(MAINOBJFILES) *~ source/*~ include/*~
-
-install:
-	@mkdir -p $(bindir)
-
-	$(INSTALL_PROG) $(MAINPROGS) $(bindir)
-
-depend:
-	gccmakedep -fDependencies -- $(CFLAGS) $(INCLUDES) -- $(ALLSRCS)
-
-objdir:
-	@mkdir -p $(objdir)
-	@mkdir -p $(libdir)
+	scons -c ; scons --debug-build -c ; rm -f *~ source/*~ include/*~
 
 rpm:    clean
 	mkdir -p $(rpmsourcedir) ; \
-        if [ -e $(PROG).spec ]; then \
-          tar -C .. --exclude .svn -cf $(rpmsourcedir)/$(PROG).tar $(PROG) ; \
-          gzip -f $(rpmsourcedir)/$(PROG).tar ; \
-          rpmbuild -ta $(rpmsourcedir)/$(PROG).tar.gz ; \
-          rm -f $(rpmsourcedir)/$(PROG).tar.gz ; \
+        if [ -a $(PROG)-bin.spec ]; \
+        then \
+          tar -C ../ --exclude .svn \
+                   -cf $(rpmsourcedir)/$(PROG)-bin.tar $(PROG)-bin ; \
+          gzip -f $(rpmsourcedir)/$(PROG)-bin.tar ; \
+          rpmbuild -ta $(rpmsourcedir)/$(PROG)-bin.tar.gz ; \
+          rm -f $(rpmsourcedir)/$(LIB).tar.gz ; \
         else \
           echo $(rpmerr); \
         fi;
 
+install:
+	mkdir -p $(DESTDIR)/$(INSTALL_TARGET)
+	$(INSTALL_PROG) build/release/himan $(DESTDIR)/$(INSTALL_TARGET)
 
-.SUFFIXES: $(SUFFIXES) .cpp
-
-.cpp.o:
-	$(CC) $(CFLAGS) $(INCLUDES) -c -o $(objdir)/$@ $<
-
--include Dependencies
+test:	debug
+	cd regression && sh test_all.sh

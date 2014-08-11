@@ -11,6 +11,10 @@
 #include "NFmiNeonsDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include "options.h"
+#include "fc_info.h"
+
+extern Options options;
 
 using namespace std;
 
@@ -33,9 +37,9 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   reader.Read(theInfile);
 
-  if (!AnalysisTime().empty()) 
+  if (!options.analysistime.empty())
   {
-    reader.AnalysisTime(AnalysisTime());
+    reader.AnalysisTime(options.analysistime);
   }
 
   if (!reader.IsConvention()) 
@@ -44,13 +48,13 @@ bool NetCDFLoader::Load(const string &theInfile)
     return false;
   }
 
-  if (reader.AnalysisTime().empty() && AnalysisTime().empty()) 
+  if (reader.AnalysisTime().empty() && options.analysistime.empty())
   {
     cerr << "Unable to determine analysistime for input file '" << theInfile << "'" << endl;
     return false;
   }
 
-  if (Verbose()) 
+  if (options.verbose)
   {
     cout << "Read " << reader.SizeZ() << " levels," << endl
          << "     " << reader.SizeX() << " x coordinates," << endl
@@ -74,30 +78,32 @@ bool NetCDFLoader::Load(const string &theInfile)
   // either from input file or from command line
 
 
-  if (itsProcess == 0) 
+  if (options.process == 0)
   {
     cerr << "process value not found" << endl;
     return false;
   }
 
-  info.process = itsProcess;
+  info.process = options.process;
 
-  if (itsAnalysisTime.size() < 10) 
+  if (options.analysistime.size() < 10)
   {
-    cerr << "Invalid format for analysistime: " << itsAnalysisTime << endl;
+    cerr << "Invalid format for analysistime: " << options.analysistime << endl;
     cerr << "Use YYYYMMDDHH24[MI]" << endl;
     return false;
   }
 
-  info.year = boost::lexical_cast<int> (itsAnalysisTime.substr(0, 4));
-  info.month = boost::lexical_cast<int> (itsAnalysisTime.substr(4, 2));
-  info.day = boost::lexical_cast<int> (itsAnalysisTime.substr(6, 2));
-  info.hour = boost::lexical_cast<int> (itsAnalysisTime.substr(8, 2));
+  info.year = boost::lexical_cast<int> (options.analysistime.substr(0, 4));
+  info.month = boost::lexical_cast<int> (options.analysistime.substr(4, 2));
+  info.day = boost::lexical_cast<int> (options.analysistime.substr(6, 2));
+  info.hour = boost::lexical_cast<int> (options.analysistime.substr(8, 2));
   info.minute = 0;
 
-  if (itsAnalysisTime.length() > 10)
-    info.minute = boost::lexical_cast<int> (itsAnalysisTime.substr(10, 2));
-
+  if (options.analysistime.length() > 10)
+  {
+    info.minute = boost::lexical_cast<int> (options.analysistime.substr(10, 2));
+  }
+  
   // Pretend this is grib1
 
   info.ednum = 1;
@@ -143,13 +149,13 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   //float ftime = reader.ValueT(0);
 
-  long atimeEpoch = Epoch(AnalysisTime(), "%Y%m%d%H%M");
+  long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
   map<string, short> pskip;
 
   vector<string> levels;
 
-  string levelString = Level();
+  string levelString = options.level;
 
   if (!levelString.empty()) 
   {
@@ -158,7 +164,7 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   vector<string> parameters;
 
-  string paramString = Parameters();
+  string paramString = options.parameters;
 
   if (!paramString.empty()) 
   {
@@ -172,8 +178,8 @@ bool NetCDFLoader::Load(const string &theInfile)
 
     float fctime = (fctimeEpoch - atimeEpoch)/3600;
 
-    if (Verbose())
-      cout << "Time " << reader.Time() << " (" << AnalysisTime() << " +" << fctime << " hours)" << endl;
+    if (options.verbose)
+      cout << "Time " << reader.Time() << " (" << options.analysistime << " +" << fctime << " hours)" << endl;
 
     info.fcst_per = static_cast<int> (fctime);
     info.step = static_cast<int> (fctime);
@@ -190,12 +196,12 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (pskip.count(ncname) > 0)
         continue;
 
-      string grid_parameter_name = NFmiNeonsDB::Instance().GetGribParameterNameFromNetCDF(itsProcess, ncname);
+      string grid_parameter_name = NFmiNeonsDB::Instance().GetGribParameterNameFromNetCDF(info.process, ncname);
 
       if (grid_parameter_name.empty()) 
       {
 
-        if (Verbose())
+        if (options.verbose)
           cout << "Netcdf Param " << ncname << " not supported" << endl;
 
         pskip[ncname] = 1;
@@ -210,7 +216,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         if (std::find(parameters.begin(), parameters.end(), grid_parameter_name) == parameters.end()) 
         {
 
-          if (Verbose())
+          if (options.verbose)
             cout << "Skipping parameter " << grid_parameter_name << endl;
 
           pskip[ncname] = 1;
@@ -218,11 +224,11 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-      map<string, string> parameter = NFmiNeonsDB::Instance().GetParameterDefinition(itsProcess, grid_parameter_name);
+      map<string, string> parameter = NFmiNeonsDB::Instance().GetParameterDefinition(info.process, grid_parameter_name);
 
       if (parameter.empty()) 
       {
-        if (Verbose())
+        if (options.verbose)
           cout << "Param " << grid_parameter_name << " not supported" << endl;
 
          pskip[ncname] = 1;
@@ -235,7 +241,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       info.param = univ_id;
       info.parname = grid_parameter_name;
 
-      if (Verbose())
+      if (options.verbose)
         cout << "Parameter " << ncname << " (" << univ_id << " " << name << ")" << endl;
 
       float level = kFloatMissing;
@@ -244,7 +250,7 @@ bool NetCDFLoader::Load(const string &theInfile)
 
       // Check level type
 
-      if (itsLevel.empty()) 
+      if (options.level.empty())
       {
     	// Default
 
@@ -254,24 +260,24 @@ bool NetCDFLoader::Load(const string &theInfile)
       } 
       else 
       {
-        info.levname = itsLevel;
-        if (itsLevel == "MEANSEA")
+        info.levname = options.level;
+        if (info.levname == "MEANSEA")
           info.levtype = 102;
-        else if (itsLevel == "DEPTH")
+        else if (info.levname == "DEPTH")
           info.levtype = 160;
-        else if (itsLevel == "HEIGHT")
+        else if (info.levname == "HEIGHT")
           info.levtype = 105;
-        else if (itsLevel == "PRESSURE")
+        else if (info.levname == "PRESSURE")
           info.levtype = 100;
         else
-          throw std::runtime_error("Invalid level type: " + itsLevel);
+          throw std::runtime_error("Invalid level type: " + info.levname);
       }
 
       if (levels.size() > 0) 
       {
         if (std::find(levels.begin(), levels.end(), info.levname) == levels.end()) {
 
-          if (Verbose())
+          if (options.verbose)
             cout << "Skipping level " << info.levname << endl;
 
           continue;
@@ -288,32 +294,41 @@ bool NetCDFLoader::Load(const string &theInfile)
         info.level1 = static_cast<int> (level);
         info.lvl1_lvl2 = info.level1 + 1000 * info.level2;
 
-        string theFileName = REFFileName(info);
+        string theFileName = itsDatabaseLoader.REFFileName(info);
 
         if (theFileName.empty())
           return false;
 
         info.filename = theFileName;
 
-        if (!DryRun())
+        if (!options.dry_run)
           if (!reader.WriteSlice(theFileName))
             return false;
 
-        if (!DryRun())
-          if (!WriteAS(info))
+        if (!options.dry_run)
+		{
+          if (!itsDatabaseLoader.WriteAS(info))
+	  {
             return false;
+	  }
+#ifdef NEON2
+	  itsDatabaseLoader.WriteToNeon2(info);
+#endif	
+	}
 
-        if (Verbose())
+        if (options.verbose)
+	{
           cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
+	}
       }
       else 
       {
         for (reader.ResetLevel(); reader.NextLevel(); ) 
         {
 
-          if (itsUseLevelValue)
+          if (options.use_level_value)
             level = reader.Level();
-          else if (itsUseInverseLevelValue)
+          else if (options.use_inverse_level_value)
             level = reader.Level() * -1;
           else
             level = reader.LevelIndex(); // ordering number
@@ -321,23 +336,32 @@ bool NetCDFLoader::Load(const string &theInfile)
           info.level1 = static_cast<int> (level);
           info.lvl1_lvl2 = info.level1 + 1000 * info.level2;
 
-          string theFileName = REFFileName(info);
+          string theFileName = itsDatabaseLoader.REFFileName(info);
 
           if (theFileName.empty())
             return false;
 
           info.filename = theFileName;
 
-          if (!DryRun())
+          if (!options.dry_run)
             if (!reader.WriteSlice(theFileName))
               return false;
 
-          if (!DryRun())
-            if (!WriteAS(info))
+          if (!options.dry_run)
+	  {
+            if (!itsDatabaseLoader.WriteAS(info))
+		{
               return false;
-
-          if (Verbose())
+		}
+#ifdef NEON2
+		itsDatabaseLoader.WriteToNeon2(info);
+#endif
+	  }
+		  
+          if (options.verbose)
+		  {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
+		  }
 
         }
       }

@@ -6,7 +6,9 @@
 
 #include "NetCDFLoader.h"
 #include "GribLoader.h"
+#include "options.h"
 
+Options options;
 
 struct Options
 {
@@ -87,7 +89,7 @@ bool parse_options(int argc, char * argv[], Options & options)
   if(opt.count("version")) 
   {
 
-    std::cout << "bdap_load_file_ng compiled at "
+    std::cout << "grid_to_neons compiled at "
               << __DATE__
               << ' '
               << __TIME__
@@ -119,8 +121,6 @@ bool parse_options(int argc, char * argv[], Options & options)
 
 int main(int argc, char ** argv)
 {
-  Options options;
-
   if (!parse_options(argc, argv, options))
     return 1;
 
@@ -129,40 +129,17 @@ int main(int argc, char ** argv)
   if (uid != 1459) // weto
   {
     std::cerr << "This program must be run as user weto." << std::endl;
-    return 1;
+   // return 1;
   }
-
 
   std::string extension = boost::filesystem::path(options.infile).extension().string();
 
   if (extension == ".nc" || options.netcdf)
   {
-
     if(options.verbose)
       std::cout << "Treating file '" << options.infile << "' as NetCDF" << std::endl;
 
     NetCDFLoader ncl;
-
-    ncl.Verbose(options.verbose);
-
-    if (options.process)
-      ncl.Process(options.process);
-
-    if (!options.analysistime.empty())
-      ncl.AnalysisTime(options.analysistime);
-
-    if (!options.parameters.empty())
-      ncl.Parameters(options.parameters);
-
-    if (!options.level.empty())
-      ncl.Level(options.level);
-
-    if (!options.leveltypes.empty())
-      ncl.Level(options.leveltypes);
-
-    ncl.UseLevelValue(options.use_level_value);
-    ncl.UseInverseLevelValue(options.use_inverse_level_value);
-    ncl.DryRun(options.dry_run);
 
     if (!ncl.Load(options.infile)) 
     {
@@ -179,18 +156,6 @@ int main(int argc, char ** argv)
       std::cout << "Treating file '" << options.infile << "' as GRIB" << std::endl;
 
     GribLoader g;
-
-    g.Verbose(options.verbose);
-    g.DryRun(options.dry_run);
-
-    if (!options.parameters.empty())
-      g.Parameters(options.parameters);
-
-    if (!options.leveltypes.empty())
-      g.Level(options.leveltypes);
-
-    if (options.process)
-      g.Process(options.process);
 
     if (!g.Load(options.infile)) 
     {
