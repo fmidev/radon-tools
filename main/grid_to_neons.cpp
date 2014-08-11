@@ -15,6 +15,7 @@ struct Options
   bool verbose;                 // -v
   bool netcdf;                  // -n
   bool grib;                    // -g
+  unsigned int center;		// -c
   unsigned int process;         // -p
   std::string analysistime;     // -a
   std::string infile;
@@ -30,6 +31,7 @@ Options::Options()
   : verbose(false)
   , netcdf(false)
   , grib(false)
+  , center(86)
   , process(0)
   , analysistime("")
   , infile("")
@@ -56,6 +58,7 @@ bool parse_options(int argc, char * argv[], Options & options)
     ("grib,g",po::bool_switch(&options.grib),"force grib mode on")
     ("version,V","display version number")
     ("infile,i",po::value(&options.infile),"input file")
+    ("center,c",po::value(&options.center),"force center id")
     ("process,p",po::value(&options.process),"force process id")
     ("analysistime,a",po::value(&options.analysistime),"force analysis time")
     ("parameters,P",po::value(&options.parameters),"accept these parameters, comma separated list")
