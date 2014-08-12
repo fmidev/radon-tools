@@ -17,6 +17,9 @@ class BDAPLoader
     BDAPLoader();
     ~BDAPLoader();
 
+    BDAPLoader(const BDAPLoader& other) = delete;
+    BDAPLoader& operator=(const BDAPLoader& other) = delete;
+
     std::string REFFileName(const fc_info &info);
 
     bool WriteAS(const fc_info &info);

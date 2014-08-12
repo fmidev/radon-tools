@@ -370,7 +370,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
         if (!options.dry_run)
           NFmiNeonsDB::Instance().Execute(query.str());
       } 
-      catch (int e) 
+      catch (int ee) 
       {
         // Give up
         NFmiNeonsDB::Instance().Rollback();

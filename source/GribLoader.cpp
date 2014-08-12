@@ -290,7 +290,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.lon += 360000;  // Area is whole globe, ECMWF special case
   } 
 
-  g.grid_type = reader.Message()->GridType();
+  g.gridtype = reader.Message()->GridType();
   
   switch (reader.Message()->NormalizedGridType()) 
   {

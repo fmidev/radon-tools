@@ -111,7 +111,7 @@ cflags_extra.append('-Wold-style-cast')
 
 cflags_difficult = []
 cflags_difficult.append('-pedantic')
-cflags_difficult.append('-Weffc++')
+# cflags_difficult.append('-Weffc++')
 cflags_difficult.append('-Wredundant-decls')
 cflags_difficult.append('-Wshadow')
 cflags_difficult.append('-Woverloaded-virtual')

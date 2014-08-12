@@ -10,6 +10,7 @@ GribCreate::GribCreate()
   : itsUsername("neons_client") // bdm has server-based authentication
   , itsPassword("kikka8si")
   , itsDatabase("neons")
+  , itsDryRun(false)
 {
   char *dbName;
 
