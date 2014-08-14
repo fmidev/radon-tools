@@ -47,13 +47,8 @@ struct fc_info
 	, eps_specifier("")
 	, filetype("")
 	, filename("")
-	, hostname("")
-	, producer_id(0)
-	, param_id(0)
-	, level_id(0)
-	, level_value(kFloatMissing)
 	, forecast_type_id(0)
-	, projection_id(0)
+	, forecast_type_value(kFloatMissing)
 	{ 
 	};
 
@@ -98,14 +93,9 @@ struct fc_info
 	std::string eps_specifier;
 	std::string filetype;
 	std::string filename;
-	std::string hostname;
 	// neon2-only variables
-	long producer_id; // from table fmi_producer
-	long param_id; // from table param_{grib1|grib2|netcdf}
-	long level_id; // from table level_{grib1|grib2}
-	double level_value;
 	long forecast_type_id; // from table forecast_type
-	long projection_id; // from table projections
+	double forecast_type_value;
 };
 
 #endif

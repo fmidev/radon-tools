@@ -1,3 +1,7 @@
+#
+# Create tables to neon2 database based on the metadata in the database
+#
+
 import sys
 import datetime
 import optparse
@@ -73,31 +77,50 @@ def Validate(options, date):
 
 	tables = GetTables(options)
 
+	# return value 0 --> OK
+	# return value 1 --> NOT OK
+
 	if len(tables) == 0:
 		print "No records found for producer %d, geometry %d" % (options.producer, options.geometry)
-		return
+		return 1
 
 	for element in tables:
 		producer = element[0]
 		table_name = element[1]
 		geometry = element[4]
+		schema = element[5]
 
 		print "Producer: %s geometry: %d" % (producer, geometry)
 
 		# Check main table
 
-		query = "SELECT count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename = %s"
+		query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
 		if options.show_sql:
-			print "%s %s" % (query, (table_name,))
+			print "%s %s" % (query, (schema, table_name))
 
-		cur.execute(query, (table_name,))
+		cur.execute(query, (schema, table_name))
 			
 		row = cur.fetchone()
 
 		if int(row[0]) != 1:
 			print "Parent table %s does not exist" % (table_name,)
-			continue
+			return 1
+
+		# Check main table view
+
+		query = "SELECT count(*) FROM pg_views WHERE schemaname = %s AND viewname = %s"
+
+		if options.show_sql:
+			print "%s %s" % (query, (schema, table_name + "_v"))
+
+		cur.execute(query, (schema, table_name + "_v"))
+
+		row = cur.fetchone()
+
+		if int(row[0]) != 1:
+			print "Parent table view %s_v does not exist" % (table_name,)
+#			return 1
 
 		# Check that number of childs matches as_grid information
 
@@ -112,7 +135,7 @@ def Validate(options, date):
 
 		childs = int(row[0])
 
-		query = "SELECT count(*) FROM pg_inherits i WHERE i.inhparent = 'public.%s'::regclass" % (table_name)
+		query = "SELECT count(*) FROM pg_inherits i WHERE i.inhparent = '%s.%s'::regclass" % (schema,table_name)
 
 		if options.show_sql:
 			print "%s" % (query,)
@@ -123,7 +146,7 @@ def Validate(options, date):
 	
 		if int(row[0]) != childs:
 			print "Number of child tables for parent %s in as_grid (%d) does not match with database (%d)" % (table_name, childs, int(row[0]))
-			continue
+			return 1
 
 		# Check that parent has partitioning trigger
 
@@ -138,7 +161,7 @@ def Validate(options, date):
 
 		if int(row[0]) != 1:
 			print "Table %s does not have partitioning trigger defined" % (table_name)
-			continue
+			return 1
 
 		print "Parent table %s is valid" % (table_name)
 
@@ -161,14 +184,14 @@ def Validate(options, date):
 
 			if row == None:
 				print "Partition %s for table %s is not in as_grid" % (partition_name, table_name)
-				continue
+				return 1
 
 			record_count = row[1]
 
-			query = "SELECT count(*) FROM pg_tables WHERE schemaname = 'public' AND tablename = %s"
+			query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
 			if options.show_sql:
-				print "%s %s" % (query, (partition_name,))
+				print "%s %s" % (query, (schema, partition_name))
 
 			cur.execute(query, (partition_name,))
 			
@@ -176,7 +199,7 @@ def Validate(options, date):
 
 			if int(row[0]) != 1:
 				print "Partition %s is in as_grid but does not exist" % (table_name,)
-				continue
+				return 1
 
 			query = "SELECT count(*) FROM " + table_name + " WHERE geometry_id = %s"
 
@@ -189,10 +212,11 @@ def Validate(options, date):
 
 			if int(row[0]) != record_count:
 				print "as_grid reports that record_count for table %s partition %s is %d, but database says it's %d" % (table_name, partition_name, record_count, int(row[0]))
-				continue
+				return 1
 
 			print "Partition %s for geometry %d (table %s) is valid" % (partition_name, geometry, table_name)
-			
+
+	return 0
 
 def PartitionExists(options, producer, geometry, partition):
 	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
@@ -223,7 +247,7 @@ def GetTables(options):
 	producer = options.producer
 	geometry = options.geometry
 
-	query = "SELECT producer_id, table_name, retention_period, analysis_times, geometry_id FROM table_meta"
+	query = "SELECT producer_id, table_name, retention_period, analysis_times, geometry_id, schema FROM table_meta"
 
 	args = ()
 
@@ -267,12 +291,15 @@ def ListPartitions(options, table_name):
 
 	return partitions
 
-def CreateTriggers(options, table_name):
+def CreateTriggers(options, schema, table_name):
 
 	query = """
 CREATE OR REPLACE FUNCTION %s_partitioning_f()
 RETURNS TRIGGER AS $$
+DECLARE
+	analysistime varchar(10);
 BEGIN
+	analysistime := to_char(NEW.analysis_time, 'yyyymmddhh24');
 """ % (table_name)
 
 	first = True
@@ -285,16 +312,19 @@ BEGIN
 		if first:
 			first = False
 			ifelsif = "IF"
+
 		query += """
-	%s date_trunc('hour', NEW.analysis_time) = '%s' THEN
+	%s analysistime = '%s' THEN
 		INSERT INTO %s VALUES (NEW.*);""" % (ifelsif, analysis_time, partition_name)
 
 	query += """
 	ELSE
 		RAISE EXCEPTION 'Partition not found for analysis_time';
 	END IF;
+
+	RETURN NULL;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER STABLE"""
+$$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 	
 	if options.show_sql:
 		print query
@@ -302,7 +332,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE"""
 	if not options.dry_run:
 		cur.execute(query)
 
-	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s" % (table_name, table_name)
+	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s.%s" % (table_name, schema, table_name)
 
 	if options.show_sql:
 		print query
@@ -310,7 +340,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER STABLE"""
 	if not options.dry_run:
 		cur.execute(query)
 
-	query = "CREATE TRIGGER %s_partitioning_trg BEFORE INSERT ON %s EXECUTE PROCEDURE %s_partitioning_f()" % (table_name, table_name, table_name)
+	query = "CREATE TRIGGER %s_partitioning_trg BEFORE INSERT ON %s.%s FOR EACH ROW EXECUTE PROCEDURE %s_partitioning_f()" % (table_name, schema, table_name, table_name)
 	
 	if options.show_sql:
 		print query
@@ -326,6 +356,7 @@ def CreateTables(options, element, date):
 	table_name = element[1]
 	geometry_id = element[4]
 	retention_period = element[2]
+	schema = element[5]
 
 	print "Producer: %d geometry: %d" % (producer_id, geometry_id) 
 
@@ -351,9 +382,9 @@ def CreateTables(options, element, date):
 			continue
 
 		if not TableExists(options, table_name):
-			print "Parent table %s does not exists, creating" % table_name
+			print "Parent table %s.%s does not exists, creating" % (schema, table_name)
 
-			query = "CREATE TABLE %s (LIKE grid_data_template INCLUDING ALL)" % (table_name)
+			query = "CREATE TABLE %s.%s (LIKE grid_data_template INCLUDING ALL)" % (schema, table_name)
 
 			if options.show_sql:
 				print query
@@ -361,23 +392,75 @@ def CreateTables(options, element, date):
 			if not options.dry_run:
 				cur.execute(query)
 
-		# Check that if as_grid did not have information on this partition, does the 
+			# Add constraint for producer_id
+
+			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_producer_id_chk CHECK (producer_id = %d)" % (schema, table_name, table_name, producer_id)
+
+			if options.show_sql:
+				print query
+
+			if not options.dry_run:
+				cur.execute(query)
+
+			# Create a view on top of table
+
+			query = """
+CREATE OR REPLACE VIEW public.%s_v AS
+SELECT
+	a.producer_id,
+	p.name AS producer_name,
+	a.analysis_time,
+	a.geometry_id,
+	g.name AS geometry_name,
+	a.param_id,
+	p.name AS param_name,
+	a.level_id,
+	l.name AS level_name,
+	a.level_value,
+	a.forecast_period,
+	a.forecast_period + a.analysis_time AS forecast_time,
+	a.file_location,
+	a.file_server,
+	a.forecast_type_value
+FROM
+	%s.%s a,
+	fmi_producer f,
+	level l,
+	param p,
+	geom g
+WHERE
+	a.producer_id = f.id
+	AND
+	a.level_id = l.id
+	AND
+	a.param_id = p.id
+	AND
+	a.geometry_id = g.id
+""" % (table_name, schema, table_name)
+
+			if options.show_sql:
+				print query
+
+			if not options.dry_run:
+				cur.execute(query)
+
+		# Check that if as_grid did not have information on this partition, does the
 		# table still exist. If so, then we just need to add a row to as_grid.
 
-		query = "SELECT count(*) FROM pg_tables WHERE schemaname='public' AND tablename = %s"
+		query = "SELECT count(*) FROM pg_tables WHERE schemaname=%s AND tablename = %s"
 
 		if options.show_sql:
 			print query
 
 		if not options.dry_run:
-			cur.execute(query, (partition_name,))
+			cur.execute(query, (schema, partition_name))
 
 		row = cur.fetchone()
 
 		if int(row[0]) == 0:
 			partitionAdded = True
 
-			query = "CREATE TABLE %s (CHECK (date_trunc('hour', analysis_time) = to_timestamp('%s', 'yyyymmddhh24'))) INHERITS (%s)" % (partition_name, analysis_time, table_name)
+			query = "CREATE TABLE %s.%s (CHECK (date_trunc('hour', analysis_time) = to_timestamp('%s', 'yyyymmddhh24'))) INHERITS (%s.%s)" % (schema, partition_name, analysis_time, schema, table_name)
 
 			if options.show_sql:
 				print query
@@ -385,19 +468,19 @@ def CreateTables(options, element, date):
 			if not options.dry_run:
 				cur.execute(query)
 
-		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s)"
+		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s)"
 
 		if options.show_sql:
-			print "%s (%s %s %s %s %s %s)" % (query, producer_id, analysis_time, geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), table_name, partition_name)
+			print "%s (%s)" % (query, (producer_id, analysis_time, geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), schema, table_name, partition_name))
 
 		if not options.dry_run:
-			cur.execute(query, (producer_id, analysis_time, geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), table_name, partition_name))
+			cur.execute(query, (producer_id, analysis_time, geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), schema, table_name, partition_name))
 
 
 	# Update trigger 
 
 	if partitionAdded:
-		CreateTriggers(options, table_name)	
+		CreateTriggers(options, schema, table_name)
 	
 	conn.commit()
 
@@ -423,14 +506,14 @@ if __name__ == '__main__':
 		date = options.date
 
 	if options.validate:
-		Validate(options, date)
-		sys.exit(0)
+		sys.exit(Validate(options, date))
 
 	tables = GetTables(options)
 
 	for element in tables:
 		if options.recreate_triggers:
-			CreateTriggers(options, element[1])	
+			print "Recreating triggers for table %s" % (element[1])
+			CreateTriggers(options, element[5], element[1])
 			conn.commit()
 		else:
 			CreateTables(options, element, date)

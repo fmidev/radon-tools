@@ -72,7 +72,7 @@ bool GribLoader::Load(const string &theInfile)
        cout << "Skipping due to cached information" << endl;
 
       continue;
-	}
+    }
 
     if (parameters.size() > 0) 
     {
@@ -151,7 +151,7 @@ bool GribLoader::Load(const string &theInfile)
       return false;
     }
 #ifdef NEON2
-	itsDatabaseLoader.WriteToNeon2(g);
+    itsDatabaseLoader.WriteToNeon2(g);
 #endif
     success++;
 
@@ -200,29 +200,6 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
-#ifdef NEON2
-
-	map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib1(g.centre, g.process);
-
-	g.producer_id = boost::lexical_cast<long> (r["id"]);
-	
-	map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib1(g.producer_id, g.levtype);
-
-	if (l.empty())
-	{
-		cerr << "Level not found from neon2\n";
-	}
-
-	map<string,string> p = NFmiNeon2DB::Instance().ParameterFromGrib1(g.producer_id, g.novers, g.param, g.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), reader.Message()->LevelValue());
-
-	if (p.empty())
-	{
-		cerr << "Parameter not found from neon2\n";
-	}
-
-
-#endif
-
     if (g.parname.empty())
     {
       if (options.verbose)
@@ -236,7 +213,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   else 
   {
     g.filetype = "grib2";
-	
+
     g.timeRangeIndicator = 0;
 
     g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
@@ -344,6 +321,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.lvl1_lvl2 = g.level1 + 1000 * g.level2;
 
+#if 0
+
   g.locdef = 0; 
   // if exists, otherwise zero
   if (reader.Message()->KeyExists("localDefinitionNumber"))
@@ -413,7 +392,116 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.eps_specifier = boost::lexical_cast<string> (g.locdef) + "_" + boost::lexical_cast<string> (g.ldeftype) + "_" + boost::lexical_cast<string> (g.ldefnumber);
   else
     g.eps_specifier = "0";
+#endif
+  
+  // Rewritten EPS logic
 
+  if (g.ednum == 1)
+  {
+    long definitionNumber = 0;
+
+    if (reader.Message()->KeyExists("localDefinitionNumber"))
+    {
+      definitionNumber = reader.Message()->LocalDefinitionNumber();
+    }
+
+    // EC uses local definition number in Grib1
+    // http://old.ecmwf.int/publications/manuals/d/gribapi/fm92/grib1/show/local/
+  
+    switch (definitionNumber)
+    {
+      case 0:
+        // no local definition --> deterministic
+        g.forecast_type_id = 1;
+        g.forecast_type_value = kFloatMissing;
+        break;
+
+      case 1:
+        // MARS labeling or ensemble forecast data
+      {
+        long definitionType = reader.Message()->DataType();
+        long perturbationNumber = reader.Message()->PerturbationNumber();
+
+        switch (definitionType)
+        {
+          case 10:
+            // cf -- control forecast
+            g.forecast_type_id = 4;
+            g.forecast_type_value = kFloatMissing;
+            break;
+          case 11:
+            // pf -- perturbed forecast
+            g.forecast_type_id = 3;
+            g.forecast_type_value = perturbationNumber;
+            break;
+          default:
+            cerr << "Unknown localDefinitionType: " << definitionType << endl;
+            break;
+        }
+		break;
+      }
+      default:
+        cerr << "Unknown localDefinitionNumber: " << definitionNumber << endl;
+        break;
+    }
+  }
+  else
+  {
+      // grib2
+
+      long typeOfGeneratingProcess = reader.Message()->TypeOfGeneratingProcess();
+
+      switch (typeOfGeneratingProcess)
+      {
+        case 0:
+          // Analysis
+          g.forecast_type_id = 2;
+          g.forecast_type_value = kFloatMissing;
+          break;
+
+        case 2:
+          // deterministic
+          g.forecast_type_id = 1;
+          g.forecast_type_value = kFloatMissing;
+          break;
+
+        case 4:
+          // eps
+        {
+
+          long typeOfEnsemble = reader.Message()->TypeOfEnsembleForecast();
+          long perturbationNumber = reader.Message()->PerturbationNumber();
+
+          switch (typeOfEnsemble)
+          {
+            case 0:
+            case 1:
+              // control forecast
+              g.forecast_type_id = 4;
+              g.forecast_type_value = kFloatMissing;
+              break;
+
+            case 2:
+            case 3:
+            case 192:
+              // perturbed forecast
+              g.forecast_type_id = 3;
+              g.forecast_type_value = perturbationNumber;
+              break;
+
+            default:
+              cerr << "Unknown type of ensemble: " << typeOfEnsemble << endl;
+              break;
+	      }
+          break;
+        }
+
+	    default:
+		  cerr << "Unknown type of generating process: " << typeOfGeneratingProcess << endl;
+		  break;
+	  }
+  }
+    
   // Force eps_specifier to 0 because for some EC data it gets value other than zero from
   // the if-chain above and that does not work well with hilake.
   // When the issue with logic above is fixed, this hotfix can be removed. In the mean while

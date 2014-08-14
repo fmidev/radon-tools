@@ -156,6 +156,20 @@ void BDAPLoader::Init()
   itsTableName = "";
   itsRecCntDsetIni = "";
 
+  char* host;
+  
+  if ((host = getenv("HOSTNAME")) == NULL)
+  {
+    // env variable hostname not set
+    host = new char[100];
+    gethostname(host, 100);
+    itsHostname = string(host);
+    delete [] host;
+  }
+  else
+  {
+    itsHostname = string(host);
+  }
 }
 
 bool BDAPLoader::WriteAS(const fc_info &info) 
@@ -165,8 +179,6 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   Init();
 
   stringstream query;
-
-  string outFileHost (host);
 
   string dset_name = "AF";
 
@@ -199,25 +211,25 @@ bool BDAPLoader::WriteAS(const fc_info &info)
     itsGeomName = row[0];
 
 #ifdef NEON2
-	query.str("");
+    query.str("");
 
-	query << "SELECT name FROM geom WHERE nj = " << info.nj << " AND ni = " << info.ni;
+    query << "SELECT name FROM geom WHERE nj = " << info.nj << " AND ni = " << info.ni;
 
-	if (options.dry_run)
+    if (options.dry_run)
       cout << query.str() << endl;
 
     NFmiNeon2DB::Instance().Query(query.str());
 
     row = NFmiNeon2DB::Instance().FetchRow();
 
-	if (row.empty())
+    if (row.empty())
     {
       cerr << "Geometry not found" << endl;
     }
-	else if (itsGeomName != row[0])
-	{
-		cerr << "neon2 geom_name does not match with neons!: " << row[0] << " vs " << itsGeomName << endl;
-	}
+    else if (itsGeomName != row[0])
+    {
+        cerr << "neon2 geom_name does not match with neons!: " << row[0] << " vs " << itsGeomName << endl;
+    }
 
 #endif
 
@@ -329,7 +341,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
         << info.fcst_per << ", "
         << "'" << info.eps_specifier << "', "
         << "'" << info.filename << "', "
-        << "'" << outFileHost << "')";
+        << "'" << itsHostname << "')";
 
   if (options.dry_run)
     cout << query.str() << endl;
@@ -360,7 +372,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
             << " AND lvl1_lvl2 = " << info.lvl1_lvl2
             << " AND fcst_per = " << info.fcst_per
             << " AND file_location = '" << info.filename << "'"
-            << " AND file_server = '" << outFileHost << "'";
+            << " AND file_server = '" << itsHostname << "'";
 
       if (options.dry_run)
         cout << query.str() << endl;
@@ -381,7 +393,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
     {
       NFmiNeonsDB::Instance().Rollback();
       cerr << "Load failed with: " << itsTableName << "," << info.parname << "," << info.levname
-			           << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
+                       << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
       return false;
     }
   }
@@ -405,39 +417,65 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   Init();
 
   stringstream query;
-
-  string outFileHost (host);
-
   vector<string> row;
+
+  map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib1(info.centre, info.process);
 
   long geometry_id = 0;
   string geometry_name = "";
 
+  long producer_id = boost::lexical_cast<long> (r["id"]);
+
   if (geometry_id == 0)
   {
 
-	query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND "
-			<< " nj = " << info.nj
-			<< " AND ni = " << info.ni
-			<< " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.grid_type;
+    query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND "
+            << " nj = " << info.nj
+            << " AND ni = " << info.ni
+            << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
 
-	if (options.dry_run)
+    if (options.dry_run)
       cout << query.str() << endl;
 
     NFmiNeon2DB::Instance().Query(query.str());
 
     row = NFmiNeon2DB::Instance().FetchRow();
 
-	if (row.empty())
+    if (row.empty())
     {
       cerr << "Geometry not found" << endl;
     }
 
-	geometry_id = boost::lexical_cast<long> (row[0]);
-	geometry_name = row[1];
-	
+    geometry_id = boost::lexical_cast<long> (row[0]);
+    geometry_name = row[1];
+
     query.str("");
 
+  }
+
+  map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib1(producer_id, info.levtype);
+
+  if (l.empty())
+  {
+    cerr << "Level not found from neon2\n";
+	return false;
+  }
+
+  long level_id = boost::lexical_cast<long> (l["id"]);
+
+  long param_id = 0;
+
+  if (param_id == 0)
+  {
+    map<string,string> p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+
+    if (p.empty())
+    {
+        cerr << "Parameter not found from neon2\n";
+		return false;
+    }
+
+	param_id = boost::lexical_cast<long> (p["id"]);
   }
 
   string tableName = "";
@@ -449,7 +487,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
           << "table_name "
           << "FROM as_grid "
           << "WHERE "
-          << "producer_id = " << info.producer_id
+          << "producer_id = " << producer_id
           << " AND geometry_id = " << geometry_id
           << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
 
@@ -476,16 +514,19 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   query.str("");
 
   query << "INSERT INTO " << tableName
-        << " (analysis_time, param_id, level_type_id, level_value, forecast_period, file_location, file_server, forecast_type_value) "
+        << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, file_location, file_server, forecast_type_value) "
         << "VALUES ("
-        << "'" << info.base_date << "', "
-        << "'" << info.parname << "', "
-        << "'" << info.levname << "', "
+        << producer_id << ", "
+        << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), "
+        << geometry_id << ", "
+        << param_id << ", "
+        << level_id << ", "
         << info.lvl1_lvl2 << ", "
         << info.fcst_per << ", "
-        << "'" << info.eps_specifier << "', "
+        << info.forecast_type_id << ", "
         << "'" << info.filename << "', "
-        << "'" << outFileHost << "')";
+        << "'" << itsHostname << "', "
+        << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value)) << ")";
 
   if (options.dry_run)
     cout << query.str() << endl;
@@ -516,7 +557,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
             << " AND lvl1_lvl2 = " << info.lvl1_lvl2
             << " AND fcst_per = " << info.fcst_per
             << " AND file_location = '" << info.filename << "'"
-            << " AND file_server = '" << outFileHost << "'";
+            << " AND file_server = '" << itsHostname << "'";
 
       if (options.dry_run)
         cout << query.str() << endl;
@@ -526,7 +567,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
         if (!options.dry_run)
           NFmiNeonsDB::Instance().Execute(query.str());
       }
-      catch (int e)
+      catch (int ee)
       {
         // Give up
         NFmiNeonsDB::Instance().Rollback();
@@ -537,7 +578,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     {
       NFmiNeonsDB::Instance().Rollback();
       cerr << "Load failed with: " << itsTableName << "," << info.parname << "," << info.levname
-			           << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
+                       << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
       return false;
     }
   }
@@ -553,18 +594,12 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
 #endif
 
-bool BDAPLoader::ReadREFEnvironment() 
+bool BDAPLoader::ReadREFEnvironment()
 {
 
-  if ((base = getenv("NEONS_REF_BASE")) == NULL) 
+  if ((base = getenv("NEONS_REF_BASE")) == NULL)
   {
     cerr << "Environment variable 'NEONS_REF_BASE' not set" << endl;
-    return false;
-  }
-
-  if ((host = getenv("HOSTNAME")) == NULL)
-   {
-    cerr << "Environment variable 'HOSTNAME' not set" << endl;
     return false;
   }
 

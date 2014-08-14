@@ -45,7 +45,7 @@ private:
     void Init();
 
     char *base;
-    char *host;
+    std::string itsHostname;
 
 
 };
