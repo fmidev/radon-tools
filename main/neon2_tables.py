@@ -491,7 +491,7 @@ def CreateTables(options, element, date):
 	
 	query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
-if options.show_sql:
+	if options.show_sql:
 		print "%s (%s)" % (query, (schema, table_name))
 
 	cur.execute(query, (schema, table_name))
