@@ -134,7 +134,7 @@ def Validate(options, date):
 
 		# Check that number of childs matches as_grid information
 
-		query = "SELECT count(*) FROM as_grid WHERE table_name = %s"
+		query = "SELECT count(distinct partition_name) FROM as_grid WHERE table_name = %s"
 
 		if options.show_sql:
 			print "%s %s" % (query, (table_name,))
@@ -203,7 +203,7 @@ def Validate(options, date):
 			if options.show_sql:
 				print "%s %s" % (query, (schema, partition))
 
-			cur.execute(query, (partition,))
+			cur.execute(query, (schema, partition))
 			
 			row = cur.fetchone()
 
