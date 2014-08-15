@@ -1,11 +1,6 @@
 #ifndef __BDAPLOADER__
 #define __BDAPLOADER__
 
-/*
- * class BDAPLoader
- *
- */
-
 #include <string>
 #include "fc_info.h"
 
@@ -23,9 +18,7 @@ class BDAPLoader
     std::string REFFileName(const fc_info &info);
 
     bool WriteAS(const fc_info &info);
-#ifdef NEON2
     bool WriteToNeon2(const fc_info &info);
-#endif
 
 private:
 
@@ -46,6 +39,8 @@ private:
 
     char *base;
     std::string itsHostname;
+
+	bool itsUseNeon2;
 
 
 };

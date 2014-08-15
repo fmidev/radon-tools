@@ -1,8 +1,6 @@
 #include "BDAPLoader.h"
 #include "NFmiNeonsDB.h"
-#ifdef NEON2
 #include "NFmiNeon2DB.h"
-#endif
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -17,6 +15,7 @@ BDAPLoader::BDAPLoader()
   : itsUsername("wetodb")
   , itsPassword("3loHRgdio")
   , itsDatabase("neons")
+  , itsUseNeon2(false)
 {
 
   char *dbName;
@@ -25,9 +24,15 @@ BDAPLoader::BDAPLoader()
     itsDatabase = static_cast<string> (dbName);
 
   NFmiNeonsDB::Instance().Connect(itsUsername, itsPassword, itsDatabase);
-#ifdef NEON2
-  NFmiNeon2DB::Instance().Connect(itsUsername, itsPassword, "neon2"); // try/catch ?
-#endif
+  try
+  {
+    NFmiNeon2DB::Instance().Connect(itsUsername, itsPassword, "neon2");
+	itsUseNeon2 = true;
+  }
+  catch (int e) {
+	  // nada
+  }
+
   Init();
 }
 
@@ -321,8 +326,8 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
   try 
   {
-    if (!options.dry_run)
-      NFmiNeonsDB::Instance().Execute(query.str());
+    //if (!options.dry_run)
+      //NFmiNeonsDB::Instance().Execute(query.str());
   } 
   catch (int e) 
   {
@@ -348,8 +353,8 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
   try 
   {
-    if (!options.dry_run)
-      NFmiNeonsDB::Instance().Execute(query.str());
+   // if (!options.dry_run)
+      //NFmiNeonsDB::Instance().Execute(query.str());
   } 
   catch (int e) 
   {
@@ -406,8 +411,6 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   return true;
 
 }
-
-#ifdef NEON2
 
 bool BDAPLoader::WriteToNeon2(const fc_info &info)
 {
@@ -478,13 +481,13 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 	param_id = boost::lexical_cast<long> (p["id"]);
   }
 
-  string tableName = "";
+  string tableName = "", schema = "";
 
   if (tableName.empty())
   {
 
     query << "SELECT "
-          << "table_name "
+          << "schema, table_name "
           << "FROM as_grid "
           << "WHERE "
           << "producer_id = " << producer_id
@@ -505,7 +508,8 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
       return false;
     }
 
-    tableName = row[0];
+	schema = row[0];
+    tableName = row[1];
 
     query.str("");
 
@@ -513,7 +517,21 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   query.str("");
 
-  query << "INSERT INTO " << tableName
+  string interval = "";
+
+  switch (info.timeUnit)
+  {
+  case 0:
+  case 13:
+  case 14:
+	  interval = "* interval '1 minute'";
+	  break;
+  default:
+	  interval = "* interval '1 hour'";
+	  break;
+  }
+  
+  query << "INSERT INTO " << schema << "." << tableName
         << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, file_location, file_server, forecast_type_value) "
         << "VALUES ("
         << producer_id << ", "
@@ -522,7 +540,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
         << param_id << ", "
         << level_id << ", "
         << info.lvl1_lvl2 << ", "
-        << info.fcst_per << ", "
+        << info.fcst_per << interval << ", "
         << info.forecast_type_id << ", "
         << "'" << info.filename << "', "
         << "'" << itsHostname << "', "
@@ -533,31 +551,35 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   try
   {
-    if (!options.dry_run)
+    if (!options.dry_run && itsUseNeon2)
       NFmiNeon2DB::Instance().Execute(query.str());
   }
   catch (int e)
   {
-    if (e == 1)
+    // http://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
+	  
+    if (e == 23505)
     {
-      // ORA-00001: unique constraint violated
-
-      /*
-       * Primary key: DSET_ID, PARM_NAME, LVL_TYPE, LVL1_LVL2, FCST_PER, FILE_LOCATION, FILE_SERVER
-       */
+      // 23505 	unique_violation
 
       query.str("");
 
-      query << "UPDATE " << itsTableName
-            << " SET eps_specifier = '" << info.eps_specifier << "'"
-            << " WHERE "
-            << "dset_id = " << itsDsetId
-            << " AND parm_name = '" << info.parname << "'"
-            << " AND lvl_type = '" << info.levname << "'"
-            << " AND lvl1_lvl2 = " << info.lvl1_lvl2
-            << " AND fcst_per = " << info.fcst_per
-            << " AND file_location = '" << info.filename << "'"
-            << " AND file_server = '" << itsHostname << "'";
+	  // PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)
+
+      query << "UPDATE " << schema << "." << tableName
+            << " SET file_location = '" << info.filename << "', "
+			<< " file_server = '" << itsHostname << "', "
+			<< " forecast_type_value = " << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value))
+		    << " WHERE "
+            << " producer_id = " << producer_id
+			<< " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
+		    << " AND geometry_id = " << geometry_id
+            << " AND param_id = " << param_id
+            << " AND level_id = " << level_id
+            << " AND level_value = " << info.lvl1_lvl2
+            << " AND forecast_period = " << info.fcst_per
+            << " AND forecast_type_id = " << info.forecast_type_id
+		;
 
       if (options.dry_run)
         cout << query.str() << endl;
@@ -565,34 +587,31 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
       try
       {
         if (!options.dry_run)
-          NFmiNeonsDB::Instance().Execute(query.str());
+          NFmiNeon2DB::Instance().Execute(query.str());
       }
       catch (int ee)
       {
         // Give up
-        NFmiNeonsDB::Instance().Rollback();
+        NFmiNeon2DB::Instance().Rollback();
         return false;
       }
     }
     else
     {
-      NFmiNeonsDB::Instance().Rollback();
-      cerr << "Load failed with: " << itsTableName << "," << info.parname << "," << info.levname
-                       << info.lvl1_lvl2 << "," << info.fcst_per << "," << info.filename << endl;
+      NFmiNeon2DB::Instance().Rollback();
+      cerr << "Load failed with: " << info.filename << endl;
       return false;
     }
   }
 
   if (options.dry_run)
-    NFmiNeonsDB::Instance().Rollback();
+    NFmiNeon2DB::Instance().Rollback();
   else
-    NFmiNeonsDB::Instance().Commit();
+    NFmiNeon2DB::Instance().Commit();
 
   return true;
 
 }
-
-#endif
 
 bool BDAPLoader::ReadREFEnvironment()
 {

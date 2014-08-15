@@ -5,9 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include "NFmiNeonsDB.h"
-#ifdef NEON2
 #include "NFmiNeon2DB.h"
-#endif
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
@@ -150,9 +148,9 @@ bool GribLoader::Load(const string &theInfile)
       failed++;
       return false;
     }
-#ifdef NEON2
+
     itsDatabaseLoader.WriteToNeon2(g);
-#endif
+
     success++;
 
   }
