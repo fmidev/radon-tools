@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 #
 # Create or drop tables to neon2 database based on the metadata in the database
 #
@@ -396,7 +397,7 @@ def DropTables(options, element):
 
 		# strip microseconds off
 
-		if diff > datetime.timedelta(seconds=int(0)):
+		if diff < datetime.timedelta(seconds=int(0)):
 			print "Deleting analysis time %s with age %s (partition %s)" % (analysis_time, str(diff).split('.')[0], partition)
 
 			# First unlink all files
