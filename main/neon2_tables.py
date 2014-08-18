@@ -554,7 +554,7 @@ BEGIN
 		first = True
 
 		for partition_name in partitions:
-			analysis_time = partition[-10:]
+			analysis_time = partition_name[-10:]
 
 			ifelsif = "ELSIF"
 
@@ -707,9 +707,9 @@ def DropTables(options, element):
 
 def CreateTables(options, element, date):
 
-	producerinfo = GetProducer(options.producer_id)
+	producerinfo = GetProducer(element.producer_id)
 
-	print "Producer: %d" % (options.producer_id)
+	print "Producer: %d" % (element.producer_id)
 
 	if producerinfo.class_id == 1:
 		print "Geometry: %d" % (element.geometry_id) 
@@ -778,7 +778,7 @@ def CreateTables(options, element, date):
 		
 		if producerinfo.class_id == 1:
 			query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s)"
-			args = (element.producer_id, analysis_time, geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name)
+			args = (element.producer_id, analysis_time, element.geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name)
 
 		if producerinfo.class_id == 3:
 			query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s)"
