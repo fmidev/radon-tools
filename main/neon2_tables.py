@@ -815,7 +815,7 @@ if __name__ == '__main__':
 	username = 'wetodb'
 	password = '3loHRgdio'
 	hostname = 'dbdev.fmi.fi'
-	port = 5433
+	port = 5432
 
 	print "Connecting to database neon2 at host %s port %d" % (hostname, port)
 

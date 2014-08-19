@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        14.8.19
-Release:        3%{?dist}.fmi
+Release:        4%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        LGPLv3
@@ -28,6 +28,7 @@ Requires:       netcdf >= 4.1.1
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	python-psycopg2
+Requires:	python-bunch
 Provides:	grid_to_neons
 Provides:	create_grid_tables
 Provides:	neon2_tables.py
@@ -60,6 +61,8 @@ rm -rf %{buildroot}
 %{_bindir}/neon2_tables.py
 
 %changelog
+* Tue Aug 19 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.19-4.fmi
+- Bugfixes in grid_to_neons
 * Tue Aug 19 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.19-3.fmi
 - More Changes in FmiDB
 * Tue Aug 19 2014 Andreas Tack <andreas.tack@fmi.fi> - 14.8.19-2.fmi
