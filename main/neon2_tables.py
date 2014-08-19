@@ -600,6 +600,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 
 def DropTables(options, element):
 
+	producerinfo = GetProducer(element.producer_id)
+
+	as_table = 'as_grid'
+
+	if producerinfo.class_id == 3:
+		as_table = 'as_previ'
+
 	print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id)
 
 	query = "SELECT analysis_time, partition_name, delete_time FROM as_grid WHERE producer_id = %s AND geometry_id = %s"
@@ -616,10 +623,11 @@ def DropTables(options, element):
 	current_time = timezone('UTC').localize(current_time_naive)
 
 	tablesDropped = False
+	count = 0
 
 	for row in rows:
 		analysis_time = row[0]
-		partition = row[1]
+		partition_name = row[1]
 		delete_time = row[2]
 
 		diff = delete_time - current_time
@@ -628,57 +636,58 @@ def DropTables(options, element):
 
 		if diff < datetime.timedelta(seconds=int(0)):
 			print "Deleting analysis time %s with age %s (partition %s)" % (analysis_time, str(diff).split('.')[0], partition_name)
+			count = count+1
 
-			# First unlink all files
-
-			query = "SELECT file_location FROM %s WHERE geometry_id = %s" % (element.partition_name, element.geometry_id)
-
-			if options.show_sql:
-				print query
-
-			rows = cur.execute(query)
-
-			if rows != None:
-				for row in cur.fetchone():
-					file = row[0]
-
-					if not os.path.isfile(file):
-						print "File %s does not exist" % (file)
-						continue
-
-					os.remove(file)
-
-			query = "DELETE FROM " + table_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
-
-			if options.show_sql:
-				print "%s, %s" % (query, (producer_id, geometry_id, analysis_time))
-
-			if not options.dry_run:
-				cur.execute(query, (producer_id, geometry_id, analysis_time))
-
-			# Check if the table is empty
-
-			query = "SELECT count(*) FROM " + schema_name + "." + table_name + " WHERE analysis_time = %s"
-
-			if options.show_sql:
-				print "%s, %s" % (query, (analysis_time,))
-
-			cur.execute(query, (analysis_time,))
-
-			row = cur.fetchone()
-
-			if int(row[0]) == 0:
-				tablesDropped = True
-
-				query = "DELETE FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s AND table_name = %s"
+			# First delete contents
+			
+			if as_table == 'as_grid':
+				query = "SELECT file_location FROM %s " % (partition_name,)
+				query += " WHERE geometry_id = %s AND analysis_time = %s"
 
 				if options.show_sql:
-					print "%s, %s" % (query, (producer_id, geometry_id, analysis_time, table_name))
+					print "%s %s" % (query, (element.geometry_id, analysis_time))
 
-				if not options.dry_run:
-					cur.execute(query, (producer_id, geometry_id, analysis_time, table_name))
-			else:
-				print "Partition %s still has some data (%d rows)" % (partition, int(row[0]))
+				rows = cur.execute(query, (element.geometry_id, analysis_time,))
+
+				if rows != None:
+					for row in cur.fetchone():
+						file = row[0]
+
+						if not os.path.isfile(file):
+							print "File %s does not exist" % (file)
+							continue
+
+						os.remove(file)
+
+			query = "DELETE FROM " + table_name + " WHERE producer_id = %s AND analysis_time = %s"
+
+			args = (element.producer_id, analysis_time)
+
+			if producerinfo.class_id == 1:
+				query += " AND geometry_id = %s"
+				args = args + (element.geometry_id)
+
+			if options.show_sql:
+				print "%s, %s" % (query, args)
+
+			if not options.dry_run:
+				cur.execute(query, args)
+
+			query = "DELETE FROM " + as_table + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s AND table_name = %s"
+			args = (element.producer_id, analysis_time, element.table_name)
+				
+			if producerinfo.class_id == 1:
+				query += " AND geometry_id = %s"
+				args = args + (element.geometry_id,)
+
+			if options.show_sql:
+				print "%s, %s" % (query, args)
+
+			if not options.dry_run:
+				cur.execute(query, args)
+
+			# If table partition is empty and it is not referenced in as_{grid|previ} anymore,
+			# we can drop it
 
 			query = "SELECT count(*) FROM as_grid WHERE partition_name = %s"
 
@@ -696,7 +705,7 @@ def DropTables(options, element):
 					cur.execute(query)
 
 		else:
-			print "Partition %s lifetime left %s" % (partition, str(diff).split('.')[0])
+			print "Partition %s lifetime left %s" % (partition_name, str(diff).split('.')[0])
 
 	if tablesDropped:
 		CreateTriggers(options, schema_name, table_name)
