@@ -194,7 +194,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       {
 
         if (options.verbose)
-          cout << "Netcdf Param " << ncname << " not supported" << endl;
+          cout << "NetCDF param " << ncname << " not supported" << endl;
 
         pskip[ncname] = 1;
         continue;
@@ -259,7 +259,7 @@ bool NetCDFLoader::Load(const string &theInfile)
           info.levtype = 160;
         else if (info.levname == "HEIGHT")
           info.levtype = 105;
-        else if (info.levname == "PRESSURE")
+        else if (info.levname == "PRESSURE" || info.levname == "pressure")
           info.levtype = 100;
         else
           throw std::runtime_error("Invalid level type: " + info.levname);
@@ -294,24 +294,26 @@ bool NetCDFLoader::Load(const string &theInfile)
         info.filename = theFileName;
 
         if (!options.dry_run)
-          if (!reader.WriteSlice(theFileName))
-            return false;
-
-        if (!options.dry_run)
 		{
-          if (!itsDatabaseLoader.WriteAS(info))
-	  {
+          if (!reader.WriteSlice(theFileName))
+		  {
             return false;
-	  }
+          }
+		}
+
+        if (!itsDatabaseLoader.WriteAS(info))
+	    {
+          return false;
+	    }
+
 #ifdef NEON2
-	  itsDatabaseLoader.WriteToNeon2(info);
+        itsDatabaseLoader.WriteToNeon2(info);
 #endif	
-	}
 
         if (options.verbose)
-	{
+        {
           cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
-	}
+	    }
       }
       else 
       {
@@ -336,25 +338,25 @@ bool NetCDFLoader::Load(const string &theInfile)
           info.filename = theFileName;
 
           if (!options.dry_run)
-            if (!reader.WriteSlice(theFileName))
-              return false;
-
-          if (!options.dry_run)
-	  {
-            if (!itsDatabaseLoader.WriteAS(info))
-		{
-              return false;
-		}
-#ifdef NEON2
-		itsDatabaseLoader.WriteToNeon2(info);
-#endif
-	  }
-		  
-          if (options.verbose)
 		  {
-            cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
+            if (!reader.WriteSlice(theFileName))
+			{
+              return false;
+			}
 		  }
 
+          if (!itsDatabaseLoader.WriteAS(info))
+		  {
+            return false;
+		  }
+#ifdef NEON2
+		  itsDatabaseLoader.WriteToNeon2(info);
+#endif
+          if (options.verbose)
+  		  {
+            cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
+	      }
+		  
         }
       }
     } while (reader.NextParam());
