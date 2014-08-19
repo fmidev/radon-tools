@@ -30,7 +30,7 @@ BDAPLoader::BDAPLoader()
 	itsUseNeon2 = true;
   }
   catch (int e) {
-	  // nada
+    // nada
   }
 
   Init();
@@ -355,9 +355,9 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
   try 
   {
-   // if (!options.dry_run)
-      //NFmiNeonsDB::Instance().Execute(query.str());
-  } 
+    if (!options.dry_run)
+      NFmiNeonsDB::Instance().Execute(query.str());
+  }
   catch (int e) 
   {
     if (e == 1) 
