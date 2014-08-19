@@ -68,15 +68,7 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   fc_info info;
 
-  // Set centre (hard-coded to 86)
-  // In the future we might have some way of picking this either from the file
-  // or from command line
-
-  info.centre = 86;
-
-  // Set process for debugging purposes. In the future it must be picked
-  // either from input file or from command line
-
+  info.centre = options.center;
 
   if (options.process == 0)
   {
