@@ -424,12 +424,14 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     return false;
   }
 
+  cout << "Writing to neon2" << endl;
+
   Init();
 
   stringstream query;
   vector<string> row;
 
-  map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib1(info.centre, info.process);
+  map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib(info.centre, info.process);
 
   long geometry_id = 0;
   string geometry_name = "";
@@ -439,7 +441,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   if (geometry_id == 0)
   {
 
-    query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND "
+    query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND"
             << " nj = " << info.nj
             << " AND ni = " << info.ni
             << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
@@ -463,11 +465,11 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   }
 
-  map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib1(producer_id, info.levtype);
+  map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib(producer_id, info.levtype, info.ednum);
 
   if (l.empty())
   {
-    cerr << "Level not found from neon2\n";
+    cerr << "Level " << info.levtype << " not found from neon2 for producer " << producer_id << "\n";
 	return false;
   }
 
@@ -477,8 +479,17 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   if (param_id == 0)
   {
-    map<string,string> p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+    map<string,string> p;
 
+	if (info.ednum == 1)
+	{
+	  p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+	}
+	else
+	{
+	  p = NFmiNeon2DB::Instance().ParameterFromGrib2(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+	}
+	
     if (p.empty())
     {
         cerr << "Parameter not found from neon2\n";
@@ -494,7 +505,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   {
 
     query << "SELECT "
-          << "schema, table_name "
+          << "schema_name, table_name "
           << "FROM as_grid "
           << "WHERE "
           << "producer_id = " << producer_id
