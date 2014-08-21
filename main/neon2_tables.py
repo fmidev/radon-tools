@@ -120,10 +120,10 @@ def Validate(options, date):
 
 		producerinfo = GetProducer(element.producer_id)
 		
-		print "Producer: %d" % (element.producer_id)
-
 		if producerinfo.class_id == 1:
-			print "Geometry: %d" % (element.geometry_id)
+			print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id)
+		elif producerinfo.class_id == 3:
+			print "Producer: %d" % (element.producer_id)
 
 		# Check main table
 
@@ -632,9 +632,8 @@ def DropTables(options, element):
 
 		diff = delete_time - current_time
 
-		# strip microseconds off
-
 		if diff < datetime.timedelta(seconds=int(0)):
+			# strip microseconds off from timedelta
 			print "Deleting analysis time %s with age %s (partition %s)" % (analysis_time, str(diff).split('.')[0], partition_name)
 			count = count+1
 
@@ -659,13 +658,13 @@ def DropTables(options, element):
 
 						os.remove(file)
 
-			query = "DELETE FROM " + table_name + " WHERE producer_id = %s AND analysis_time = %s"
+			query = "DELETE FROM " + element.table_name + " WHERE producer_id = %s AND analysis_time = %s"
 
 			args = (element.producer_id, analysis_time)
 
 			if producerinfo.class_id == 1:
 				query += " AND geometry_id = %s"
-				args = args + (element.geometry_id)
+				args = args + (element.geometry_id,)
 
 			if options.show_sql:
 				print "%s, %s" % (query, args)
@@ -673,7 +672,7 @@ def DropTables(options, element):
 			if not options.dry_run:
 				cur.execute(query, args)
 
-			query = "DELETE FROM " + as_table + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s AND table_name = %s"
+			query = "DELETE FROM " + as_table + " WHERE producer_id = %s AND analysis_time = %s AND table_name = %s"
 			args = (element.producer_id, analysis_time, element.table_name)
 				
 			if producerinfo.class_id == 1:
@@ -691,12 +690,12 @@ def DropTables(options, element):
 
 			query = "SELECT count(*) FROM as_grid WHERE partition_name = %s"
 
-			cur.execute(query, (partition,))
+			cur.execute(query, (partition_name,))
 
 			row = cur.fetchone()
 
 			if int(row[0]) == 0:
-				query = "DROP TABLE %s.%s" % (schema_name, partition)
+				query = "DROP TABLE %s.%s" % (element.schema_name, partition_name)
 
 				if options.show_sql:
 					print query
@@ -708,7 +707,7 @@ def DropTables(options, element):
 			print "Partition %s lifetime left %s" % (partition_name, str(diff).split('.')[0])
 
 	if tablesDropped:
-		CreateTriggers(options, schema_name, table_name)
+		CreateTriggers(options, element.schema_name, element.table_name)
 
 	if not options.dry_run:
 		conn.commit()
