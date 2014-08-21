@@ -490,6 +490,8 @@ WHERE
 		a.param_id = p.id
 		AND
 		a.geometry_id = g.id
+		AND 
+		a.forecast_type_id = t.id
 """ % (element.table_name, element.schema_name, element.table_name)
 	elif class_id == 3:
 		query = """
@@ -506,8 +508,8 @@ SELECT
 		a.forecast_period,
 		a.forecast_period + a.analysis_time AS forecast_time,
 		a.value,
---		a.forecast_type_id,
---		t.name AS forecast_type_name,
+		a.forecast_type_id,
+		t.name AS forecast_type_name,
 		a.last_updater,
 		a.last_updated
 FROM
@@ -516,10 +518,8 @@ FROM
 		level l,
 		param p,
 		previ_meta m
---		forecast_type t
+		forecast_type t
 WHERE
---		a.forecast_type_id = t.id
---		AND
 		a.previ_meta_id = m.id
 		AND
 		m.producer_id = f.id
@@ -527,6 +527,8 @@ WHERE
 		m.level_id = l.id
 		AND
 		m.param_id = p.id
+		AND 
+		a.forecast_type_id = t.id
 		""" % (element.table_name, element.schema_name, element.table_name)
 
 	if options.show_sql:
@@ -535,7 +537,7 @@ WHERE
 	if not options.dry_run:
 		cur.execute(query)
 
-def CreateTriggers(options, schema_name, table_name):
+def CreatePartitioningTrigger(options, schema_name, table_name):
 
 	query = """
 CREATE OR REPLACE FUNCTION %s_partitioning_f()
@@ -707,7 +709,7 @@ def DropTables(options, element):
 			print "Partition %s lifetime left %s" % (partition_name, str(diff).split('.')[0])
 
 	if tablesDropped:
-		CreateTriggers(options, element.schema_name, element.table_name)
+		CreatePartitioningTrigger(options, element.schema_name, element.table_name)
 
 	if not options.dry_run:
 		conn.commit()
@@ -782,6 +784,19 @@ def CreateTables(options, element, date):
 			if not options.dry_run:
 				cur.execute(query)
 
+			as_table = 'as_grid'
+
+			if producerinfo.class_id == 3:
+				as_table = 'as_previ'
+
+			query = "CREATE TRIGGER %s_update_as_table_trg BEFORE INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
+
+			if options.show_sql:
+				print query
+
+			if not options.dry_run:
+				cur.execute(query)
+
 		args = ()
 		
 		if producerinfo.class_id == 1:
@@ -802,7 +817,7 @@ def CreateTables(options, element, date):
 	# Update trigger 
 
 	if partitionAdded:
-		CreateTriggers(options, element.schema_name, element.table_name)
+		CreatePartitioningTrigger(options, element.schema_name, element.table_name)
 
 	if not options.dry_run:
 		conn.commit()
@@ -838,7 +853,7 @@ if __name__ == '__main__':
 	for element in definitions:
 		if options.recreate_triggers:
 			print "Recreating triggers for table %s" % (element.table_name)
-			CreateTriggers(options, element.schema_name, element.tablename)
+			CreatePartitioningTrigger(options, element.schema_name, element.tablename)
 			conn.commit()
 		elif options.drop:
 			DropTables(options, element)
