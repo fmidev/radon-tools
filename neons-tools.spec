@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.8.19
-Release:        4%{?dist}.fmi
+Version:        14.8.22
+Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        LGPLv3
@@ -61,6 +61,11 @@ rm -rf %{buildroot}
 %{_bindir}/neon2_tables.py
 
 %changelog
+* Fri Aug 22 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.22-1.fmi
+- Changes to neon2 loading
+* Thu Aug 21 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.21-1.fmi
+- New release to link with new version of fminc
+- Changes in neon2_tables.py
 * Tue Aug 19 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.19-4.fmi
 - Bugfixes in grid_to_neons
 * Tue Aug 19 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.19-3.fmi

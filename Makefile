@@ -1,4 +1,4 @@
-PROG = himan
+PROG = neons-tools
 
 SCONS_FLAGS=-j 4
 
@@ -27,20 +27,22 @@ clean:
 
 rpm:    clean
 	mkdir -p $(rpmsourcedir) ; \
-        if [ -a $(PROG)-bin.spec ]; \
+        if [ -a $(PROG).spec ]; \
         then \
           tar -C ../ --exclude .svn \
-                   -cf $(rpmsourcedir)/$(PROG)-bin.tar $(PROG)-bin ; \
-          gzip -f $(rpmsourcedir)/$(PROG)-bin.tar ; \
-          rpmbuild -ta $(rpmsourcedir)/$(PROG)-bin.tar.gz ; \
+                   -cf $(rpmsourcedir)/$(PROG).tar $(PROG) ; \
+          gzip -f $(rpmsourcedir)/$(PROG).tar ; \
+          rpmbuild -ta $(rpmsourcedir)/$(PROG).tar.gz ; \
           rm -f $(rpmsourcedir)/$(LIB).tar.gz ; \
         else \
           echo $(rpmerr); \
         fi;
 
 install:
-	mkdir -p $(DESTDIR)/$(INSTALL_TARGET)
-	$(INSTALL_PROG) build/release/himan $(DESTDIR)/$(INSTALL_TARGET)
+	mkdir -p $(bindir)
+	$(INSTALL_PROG) build/release/grid_to_neons $(bindir)
+	$(INSTALL_PROG) build/release/create_grid_tables $(bindir)
+	$(INSTALL_PROG) main/neon2_tables.py $(bindir)
 
 test:	debug
 	cd regression && sh test_all.sh

@@ -33,9 +33,6 @@ if os.environ.get('CXX') != None:
 
 includes = []
 
-includes.append('/home/partio/workspace/fmidb/include')
-includes.append('/home/partio/workspace/fminc/include')
-includes.append('/home/partio/workspace/fmigrib/include')
 includes.append('include')
 
 if os.environ.get('ORACLE_HOME') is None:
@@ -115,7 +112,7 @@ cflags_difficult.append('-pedantic')
 cflags_difficult.append('-Wredundant-decls')
 cflags_difficult.append('-Wshadow')
 cflags_difficult.append('-Woverloaded-virtual')
-cflags_difficult.append('-Wunreachable-code')
+#cflags_difficult.append('-Wunreachable-code') will cause errors from boost headers
 cflags_difficult.append('-Wctor-dtor-privacy')
 
 # Default flags (common for release/debug)
@@ -128,7 +125,7 @@ env.Append(CCFLAGS = cflags_normal)
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-rdynamic','-Wl,--warn-unresolved-symbols','-Wl,--as-needed' ,'-pthread'])
+env.Append(LINKFLAGS = ['-Wl,--warn-unresolved-symbols','-Wl,--as-needed'])
 
 # '-Wl,-rpath,.'
 
