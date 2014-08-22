@@ -27,7 +27,7 @@ BDAPLoader::BDAPLoader()
   try
   {
     NFmiNeon2DB::Instance().Connect(itsUsername, itsPassword, "neon2");
-	itsUseNeon2 = true;
+    itsUseNeon2 = true;
   }
   catch (int e) {
     // nada
@@ -470,7 +470,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   if (l.empty())
   {
     cerr << "Level " << info.levtype << " not found from neon2 for producer " << producer_id << "\n";
-	return false;
+    return false;
   }
 
   long level_id = boost::lexical_cast<long> (l["id"]);
@@ -481,22 +481,32 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   {
     map<string,string> p;
 
-	if (info.ednum == 1)
-	{
-	  p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
-	}
-	else
-	{
-	  p = NFmiNeon2DB::Instance().ParameterFromGrib2(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
-	}
-	
+    if (info.ednum == 1)
+    {
+      p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+    }
+    else
+    {
+      p = NFmiNeon2DB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+    }
+
     if (p.empty())
     {
         cerr << "Parameter not found from neon2\n";
-		return false;
+
+        if (info.ednum == 1)
+        {
+            cout << "Table version: " << info.novers << " param " << info.param << " tri " << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
+        }
+        else
+        {
+            cout << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
+        }
+
+        return false;
     }
 
-	param_id = boost::lexical_cast<long> (p["id"]);
+    param_id = boost::lexical_cast<long> (p["id"]);
   }
 
   string tableName = "", schema = "";
@@ -526,7 +536,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
       return false;
     }
 
-	schema = row[0];
+    schema = row[0];
     tableName = row[1];
 
     query.str("");
@@ -542,11 +552,11 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   case 0:
   case 13:
   case 14:
-	  interval = "* interval '1 minute'";
-	  break;
+      interval = " * interval '1 minute'";
+      break;
   default:
-	  interval = "* interval '1 hour'";
-	  break;
+      interval = " * interval '1 hour'";
+      break;
   }
   
   query << "INSERT INTO " << schema << "." << tableName
@@ -575,29 +585,29 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   catch (int e)
   {
     // http://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
-	  
+
     if (e == 23505)
     {
-      // 23505 	unique_violation
+      // 23505     unique_violation
 
       query.str("");
 
-	  // PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)
+      // PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)
 
       query << "UPDATE " << schema << "." << tableName
             << " SET file_location = '" << info.filename << "', "
-			<< " file_server = '" << itsHostname << "', "
-			<< " forecast_type_value = " << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value))
-		    << " WHERE "
+            << " file_server = '" << itsHostname << "', "
+            << " forecast_type_value = " << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value))
+            << " WHERE "
             << " producer_id = " << producer_id
-			<< " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
-		    << " AND geometry_id = " << geometry_id
+            << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
+            << " AND geometry_id = " << geometry_id
             << " AND param_id = " << param_id
             << " AND level_id = " << level_id
             << " AND level_value = " << info.lvl1_lvl2
             << " AND forecast_period = " << info.fcst_per
             << " AND forecast_type_id = " << info.forecast_type_id
-		;
+        ;
 
       if (options.dry_run)
         cout << query.str() << endl;

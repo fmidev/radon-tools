@@ -217,6 +217,9 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
 
+    g.category = reader.Message()->ParameterCategory();
+    g.discipline = reader.Message()->ParameterDiscipline();
+
     if (g.parname.empty())
     {
       if (options.verbose)
