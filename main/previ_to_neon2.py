@@ -86,7 +86,7 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 
 	parser.add_option("--level_value",
 					action="store",
-					type="float",
+					type="string",
 					help="Level value")
 
 	parser.add_option("--level_id",
@@ -258,20 +258,24 @@ SELECT
 FROM 
 	previ_meta m""" 
 
-	global metaIds
-  
+	if options.show_sql:
+		print query
+
 	cur.execute(query)
 
 	rows = cur.fetchall()
+
+	ret = {}
 
 	for row in rows:
 		# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
 		key = "%s_%s_%s_%s_%s_%s_%s" % (row[1], row[2], row[3], row[4], row[5], row[6], row[7])
 
-		metaIds[key] = row[0]
+		ret[key] = row[0]
 
-	print 'Read ' + str(len(metaIds)) + ' meta ids' #  for producer %s' % (producer_id)
+	print 'Read ' + str(len(ret)) + ' meta ids' #  for producer %s' % (producer_id)
 
+	return ret
 
 def InsertMetaId(cols):
 	query = """
@@ -379,7 +383,11 @@ def ReadFile(options, file):
 			if cols["latitude"] == None or cols["latitude"] == None:
 				print "Unable to get station info with missing coordinates: %s %s" % (cols["latitude"], cols["longitude"])
 			try:	
-				GetStationInfo(cols["latitude"],cols["longitude"]);
+				stationInfo = GetStationInfo(cols["latitude"],cols["longitude"]);
+				cols["station_id"] = stationInfo.id
+				cols["latitude"] = None
+				cols["longitude"] = None
+
 			except ValueError,e:
 				print e
 				continue
@@ -389,8 +397,9 @@ def ReadFile(options, file):
 		if cols["producer_id"] == None or \
 			cols["param_id"] == None or \
 			cols["analysis_time"] == None or \
-			cols["level_id"] == None:
-			print "Mandatory columns (producer_id,param_id,analysis_time,level_id) cannot be NULL"
+			cols["level_id"] == None or \
+			cols["level_value"] == None:
+			print "Mandatory columns (producer_id,param_id,analysis_time,level_id,level_value) cannot be NULL"
 			print cols
 			continue
 
@@ -426,10 +435,8 @@ def ReadFile(options, file):
 
 			inserts += 1;
 
-			print "inserted"
-
 		except Exception,e:
-	#		query = "UPDATE verifng." + destination + " SET value = :v WHERE forecast_id = :fcId AND fs_id = :fsId"
+			#query = "UPDATE verifng." + destination + " SET value = :v WHERE forecast_id = :fcId AND fs_id = :fsId"
 	  
 #			cur.execute(query, {'fcId' : fcId, 'fsId' : fsId, 'v' : value,})
 	#		updates += 1;
@@ -470,7 +477,7 @@ if __name__ == '__main__':
 	#GetForecastIds(producer)
 	#GetForecastInstanceIds(stationInfo[0])
 
-	GetMetaIds()
+	metaIds = GetMetaIds()
 
 	for file in files:
 		print "Reading file '%s'" % (file)
