@@ -517,7 +517,7 @@ FROM
 		fmi_producer f,
 		level l,
 		param p,
-		previ_meta m
+		previ_meta m,
 		forecast_type t
 WHERE
 		a.previ_meta_id = m.id
@@ -719,10 +719,10 @@ def CreateTables(options, element, date):
 
 	producerinfo = GetProducer(element.producer_id)
 
-	print "Producer: %d" % (element.producer_id)
-
 	if producerinfo.class_id == 1:
-		print "Geometry: %d" % (element.geometry_id) 
+		print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id) 
+	else:
+	        print "Producer: %d" % (element.producer_id)
 
 	# Check that main table exists, both physically and in as_grid
 	
