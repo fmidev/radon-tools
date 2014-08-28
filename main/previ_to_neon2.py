@@ -5,7 +5,9 @@ import csv
 import psycopg2
 #import ppygis
 import collections
+import bunch
 
+from bunch import Bunch
 from optparse import OptionParser
 
 conn = None
@@ -112,6 +114,16 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 					  type="string",
 					  help="Analysis time, YYYY-MM-DDTHH24:MI:SS")
 
+	parser.add_option("--resolve-coordinates-to-station",
+					  action="store_true",
+					  default=False,
+					  help="Try to resolve given latlon values to station id. If station id is not found from database, row will be discarded.")
+
+	parser.add_option("--show_sql",
+					  action="store_true",
+					  default=False,
+					  help="Show SQL that's executed")
+
 	(options, arguments) = parser.parse_args()
   
 	# Check requirements
@@ -155,23 +167,81 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 	
 	return (options,arguments)
 
-# GetStationInfo()
-#
-# Get station information (especially target_id) from database
+def GetTableInfo(options, producer_id, analysis_time):
 
-def GetStationInfo(station,stationtype):
+	query = """
+SELECT
+	schema_name,
+	table_name,
+	partition_name
+FROM
+	as_previ
+WHERE
+	producer_id = %s
+	AND
+	analysis_time = %s"""
 
-	query = "SELECT target_id,station_id,name,network_id FROM verifng.locations WHERE network_id = :nId AND station_id = :stId"
+	if options.show_sql:
+		print "%s %s" % (query, (producer_id,analysis_time))
 
-	cur.execute(query, { 'nId' : stationtype, 'stId' : station })
+	cur.execute(query, (producer_id,analysis_time))
 
-	rows = cur.fetchone()
+	row = cur.fetchone()
+
+	if row == None or len(row) == 0:
+		error = "Table not found for producer_id = %s, analysis_time = %s!" % (producer_id,analysis_time)
+		raise ValueError(error)
+
+	tableInfo = Bunch()
+
+	tableInfo.schema_name = row[0]
+	tableInfo.table_name = row[1]
+	tableInfo.partition_name = row[2]
+
+	return tableInfo
+
+def GetStationInfo(latitude, longitude):
+
+	query = """
+SELECT 
+	s.id, 
+	s.name, 
+	m.network_id, 
+	m.local_station_id 
+FROM 
+	station s 
+LEFT OUTER JOIN 
+	station_network_mapping m 
+ON (s.id = m.station_id) 
+WHERE 
+	abs(st_y(location) - %s) < 0.001 
+	AND 
+	abs(st_x(location) - %s) < 0.001"""
+
+	cur.execute(query, (latitude,longitude))
+
+	rows = cur.fetchall()
 
 	if rows == None or len(rows) == 0:
-		print "Station with Id %d, type %d not found!" % (station,stationtype)
-		sys.exit(1)
+		error = "Station with latitude = %s, longitude = %s not found!" % (latitude,longitude)
+		raise ValueError(error)
   
-	return rows
+  	station = Bunch()
+  	
+  	station.id = rows[0][0]
+  	station.name = rows[0][1]
+  	station.wmon = None
+  	station.icao = None
+
+  	for row in rows:
+  		network_id = row[2]
+
+  		if network_id == 1: 
+  	 		station.wmon = row[3]
+  	 	elif network_id == 2:
+  	 		station.icao = row[3]
+
+	return station
 
 def GetMetaIds():
 
@@ -195,8 +265,8 @@ FROM
 	rows = cur.fetchall()
 
 	for row in rows:
-		# producer_id-param_id-level_id-level_value-station_id-longitude-latitude
-		key = "%s_%s_%s_%s_%s" % (row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+		# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
+		key = "%s_%s_%s_%s_%s_%s_%s" % (row[1], row[2], row[3], row[4], row[5], row[6], row[7])
 
 		metaIds[key] = row[0]
 
@@ -305,20 +375,15 @@ def ReadFile(options, file):
 			print "Error, either station_id or coordinates or both must be specified"
 			continue
 
-		# generate key that uniquely identifies a previ_meta id
-		key = '_'.join(cols)
-		#[str(cols["producer_id"]),
-		#				str(cols["analysis_time"]),
-		#				str(cols["param_id"]),
-		#				str(cols["level_id"]),
-		#				str(cols["level_value"]),
-		#				str(cols["forecast_period"]),
-		#				str(cols["station_id"]),
-		#				str(cols["longitude"]),
-		#				str(cols["latitude"]),
-		#				str(cols["forecast_type_id"]),
-		#				str(cols["forecast_type_value"])])
-		print key
+		if options.resolve_coordinates_to_station:
+			if cols["latitude"] == None or cols["latitude"] == None:
+				print "Unable to get station info with missing coordinates: %s %s" % (cols["latitude"], cols["longitude"])
+			try:	
+				GetStationInfo(cols["latitude"],cols["longitude"]);
+			except ValueError,e:
+				print e
+				continue
+
 		# primary key columns must be non-null
 
 		if cols["producer_id"] == None or \
@@ -329,26 +394,47 @@ def ReadFile(options, file):
 			print cols
 			continue
 
+		tableInfo = None
+
+		try:
+			tableInfo = GetTableInfo(options, options.producer_id, cols["analysis_time"])
+		except ValueError,e:
+			print e
+			continue
+
+		# generate key that uniquely identifies a previ_meta id
+		# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
+
+		key = "%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], cols["longitude"], cols["latitude"])
+
 		print key
+
+		meta_id = None
 
 		try:
 			meta_id = metaIds[key]		
 		except:
-			InsertMetaId(cols)
+			meta_id = InsertMetaId(cols)
 
 		try:
-			query = "INSERT INTO ASD (forecast_id,fs_id,value) VALUES (:fcId,:fsId,:v)"
+			query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
 
-			cur.execute(query, {'fcId' : fcId, 'fsId' : fsId, 'v' : value})
+			if options.show_sql:
+				print "%s %s" % (query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+			
+			cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
 
 			inserts += 1;
 
-		except:
+			print "inserted"
+
+		except Exception,e:
 	#		query = "UPDATE verifng." + destination + " SET value = :v WHERE forecast_id = :fcId AND fs_id = :fsId"
 	  
 #			cur.execute(query, {'fcId' : fcId, 'fsId' : fsId, 'v' : value,})
 	#		updates += 1;
 
+			print e
 			if totalrows % 100 == 0:
 				print str(datetime.datetime.now()) + " cumulative inserts: " + str(inserts) + ", updates: " + str(updates)
 				conn.commit()
