@@ -1,3 +1,4 @@
+import re
 import sys
 import datetime
 import optparse
@@ -49,72 +50,74 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 	parser = OptionParser(usage="usage: %prog [options] filename",
 						  version="%prog 1.0", description=desc)
 			  
+	parsinggroup = optparse.OptionGroup(parser, "Options for controlling data parsing")
+
 	parser.add_option("-v", "--verbose",
 					  action="store_true",
 					  default=False,
 					  help="Set verbose mode on")
 
-	parser.add_option("-r", "--producer_id",
+	parsinggroup.add_option("-r", "--producer_id",
 					  action="store",
 					  type="int",
 					  help="Producer id",)
 	
-	parser.add_option("-P", "--forecast_period",
+	parsinggroup.add_option("-P", "--forecast_period",
 					  action="store",
-					  type="int",
-					  help="Forecast period (offset from analysis time)",)
+					  type="string",
+					  help="Forecast period, full timestamp (YYYYMMDDHH24MISS) or offset from analysis time in hours",)
 	
-	parser.add_option("-p", "--param_id",
+	parsinggroup.add_option("-p", "--param_id",
 					  action="store",
 					  type="int",
 					  help="Parameter id",)
 	
-	parser.add_option("--station_id",
+	parsinggroup.add_option("--station_id",
 					action="store",
 					type="int",
 					help="Station id")
 
-	parser.add_option("--latitude",
+	parsinggroup.add_option("--latitude",
 					action="store",
 					type="float",
 					help="Latitude (WGS-84, DD.DDDDD)")
 
-	parser.add_option("--longitude",
+	parsinggroup.add_option("--longitude",
 					action="store",
 					type="float",
 					help="Longitude (WGS-84, DD.DDDDD")
 
-	parser.add_option("--level_value",
+	parsinggroup.add_option("--level_value",
 					action="store",
 					type="string",
 					help="Level value")
 
-	parser.add_option("--level_id",
+	parsinggroup.add_option("--level_id",
 					action="store",
 					type="int",
 					help="Level id")
 
-	parser.add_option("-f", "--format",
+	parsinggroup.add_option("-f", "--format",
 					  action="store",
 					  type="string",
 					  help="Format (ordering) of CSV columns")
 
-	parser.add_option("--forecast_type_id",
+	parsinggroup.add_option("--forecast_type_id",
 					  action="store",
 					  type="int",
 					  help="Forecast type id (from table forecast_type)")
 
-	parser.add_option("--forecast_type_value",
+	parsinggroup.add_option("--forecast_type_value",
 					  action="store",
 					  type="float",
 					  help="Forecast type value (optional)")
 
-	parser.add_option("-a", "--analysis_time",
+	parsinggroup.add_option("-a", "--analysis_time",
 					  action="store",
 					  type="string",
-					  help="Analysis time, YYYY-MM-DDTHH24:MI:SS")
+					  help="Analysis time, YYYYMMDDHH24MISS")
 
-	parser.add_option("--resolve-coordinates-to-station",
+	parsinggroup.add_option("--resolve-coordinates-to-station",
 					  action="store_true",
 					  default=False,
 					  help="Try to resolve given latlon values to station id. If station id is not found from database, row will be discarded.")
@@ -124,6 +127,12 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 					  default=False,
 					  help="Show SQL that's executed")
 
+	parser.add_option("--dry-run",
+					  action="store_true",
+					  default=False,
+					  help="Do not make any changes to database, sets --show-sql",)
+
+	parser.add_option_group(parsinggroup)
 	(options, arguments) = parser.parse_args()
   
 	# Check requirements
@@ -160,11 +169,20 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 		# check that no unknown columns were given with -f
 
 
+	if options.analysis_time != None:
+		try:
+			options.analysis_time = datetime.datetime.strptime(options.analysis_time, '%Y%m%d%H%M%S')
+		except ValueError,e:
+			print e
+			sys.exit(1)
+
 	if len(arguments) == 0:
 		print "No input files given"
 		sys.exit(2)
 			
-	
+	if options.dry_run:
+		options.show_sql = True
+
 	return (options,arguments)
 
 def GetTableInfo(options, producer_id, analysis_time):
@@ -319,7 +337,7 @@ def ReadFile(options, file):
 	staticols = {}
 
 	if options.analysis_time != None:
-		staticols["analysis_time"] = datetime.datetime.strptime(options.analysis_time, '%Y-%m-%dT%H:%M:%S').strftime("%Y-%m-%d %H:%M:%S")
+		staticols["analysis_time"] = options.analysis_time.strftime("%Y-%m-%d %H:%M:%S")
 
 	if options.producer_id != None:
 		staticols["producer_id"] = options.producer_id
@@ -371,6 +389,12 @@ def ReadFile(options, file):
 
 			i += 1
 
+		# check analysis_time format
+
+		if options.analysis_time is None and not re.match('^\d{14}$', cols["analysis_time"]):
+			print "Invalid analysis time format: %s" % (cols["analysis_time"])
+			continue
+
 		if (cols["latitude"] != None and cols["longitude"] == None) or (cols["latitude"] == None and cols["longitude"] != None):
 			print "Error, both latitude and longitude must be specified, or neither"
 			continue
@@ -418,6 +442,25 @@ def ReadFile(options, file):
 
 		print key
 
+		# Forecast period can be full timestamp or offset. In database we only store offset.
+
+		if len(cols["forecast_period"]) == 14:
+
+			atime = None
+
+			if options.analysis_time is not None:
+				atime = options.analysis_time
+			else:
+				atime = datetime.datetime.strptime(cols["analysis_time"], '%Y%m%d%H%M%S')
+			
+			try:
+				per = datetime.datetime.strptime(cols["forecast_period"], '%Y%m%d%H%M%S')
+				cols["forecast_period"] = per-atime
+
+			except ValueError,e:
+				print e
+				continue
+
 		meta_id = None
 
 		try:
@@ -425,23 +468,33 @@ def ReadFile(options, file):
 		except:
 			meta_id = InsertMetaId(cols)
 
+		cur.execute("SAVEPOINT x")
+
 		try:
 			query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
 
 			if options.show_sql:
 				print "%s %s" % (query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
 			
-			cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+			if not options.dry_run:
+				cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
 
+			cur.execute("RELEASE SAVEPOINT x")
 			inserts += 1;
 
 		except Exception,e:
-			#query = "UPDATE verifng." + destination + " SET value = :v WHERE forecast_id = :fcId AND fs_id = :fsId"
+			query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s"
 	  
-#			cur.execute(query, {'fcId' : fcId, 'fsId' : fsId, 'v' : value,})
-	#		updates += 1;
+	  		cur.execute("ROLLBACK TO SAVEPOINT x")
 
-			print e
+	  		if options.show_sql:
+				print "%s %s" % (query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"]))
+
+			if not options.dry_run:
+				cur.execute(query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"]))
+			
+			updates += 1;
+
 			if totalrows % 100 == 0:
 				print str(datetime.datetime.now()) + " cumulative inserts: " + str(inserts) + ", updates: " + str(updates)
 				conn.commit()
@@ -470,12 +523,6 @@ if __name__ == '__main__':
 	conn.autocommit = 0
 
 	cur = conn.cursor()
-
-# 	GetProducer(producer)
-	# stationInfo = GetStationInfo(arguments.station,arguments.stationtype)
-
-	#GetForecastIds(producer)
-	#GetForecastInstanceIds(stationInfo[0])
 
 	metaIds = GetMetaIds()
 
