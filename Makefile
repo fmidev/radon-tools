@@ -43,6 +43,7 @@ install:
 	$(INSTALL_PROG) build/release/grid_to_neons $(bindir)
 	$(INSTALL_PROG) build/release/create_grid_tables $(bindir)
 	$(INSTALL_PROG) main/neon2_tables.py $(bindir)
+	$(INSTALL_PROG) main/previ_to_neon2.py $(bindir)
 
 test:	debug
 	cd regression && sh test_all.sh

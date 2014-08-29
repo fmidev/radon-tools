@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.8.22
+Version:        14.8.29
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -59,8 +59,11 @@ rm -rf %{buildroot}
 %{_bindir}/grid_to_neons
 %{_bindir}/create_grid_tables
 %{_bindir}/neon2_tables.py
+%{_bindir}/previ_to_neon2.py
 
 %changelog
+* Fri Aug 29 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.29-1.fmi
+- Addin previ_to_neon2.py
 * Fri Aug 22 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.22-1.fmi
 - Changes to neon2 loading
 * Thu Aug 21 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.21-1.fmi
