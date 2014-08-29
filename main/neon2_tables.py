@@ -658,7 +658,8 @@ def DropTables(options, element):
 							print "File %s does not exist" % (file)
 							continue
 
-						os.remove(file)
+						print "Not removing file since I'm in testing still"
+						#os.remove(file)
 
 			query = "DELETE FROM " + element.table_name + " WHERE producer_id = %s AND analysis_time = %s"
 
@@ -784,11 +785,22 @@ def CreateTables(options, element, date):
 			if not options.dry_run:
 				cur.execute(query)
 
-			as_table = 'as_grid'
+			as_table = None
 
-			if producerinfo.class_id == 3:
+			if producerinfo.class_id == 1:
+				as_table = 'as_grid'
+				query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)" % (element.schema_name, partition_name, partition_name)
+
+			elif producerinfo.class_id == 3:
 				as_table = 'as_previ'
+				query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (previ_meta_id, analysis_time, forecast_period, forecast_type_id)" % (element.schema_name, partition_name, partition_name)
 
+			if options.show_sql:
+				print query
+
+			if not options.dry_run:
+				cur.execute(query)
+						
 			query = "CREATE TRIGGER %s_update_as_table_trg BEFORE INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
 
 			if options.show_sql:
@@ -796,6 +808,15 @@ def CreateTables(options, element, date):
 
 			if not options.dry_run:
 				cur.execute(query)
+
+			query = "CREATE TRIGGER %s_store_last_updated_trg BEFORE UPDATE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE store_last_updated_f()" % (partition_name, element.schema_name, partition_name)
+
+			if options.show_sql:
+				print query
+
+			if not options.dry_run:
+				cur.execute(query)
+
 
 		args = ()
 		
