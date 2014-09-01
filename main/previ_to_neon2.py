@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 import re
 import sys
 import datetime
@@ -7,6 +9,7 @@ import psycopg2
 #import ppygis
 import collections
 import bunch
+import StringIO
 
 from bunch import Bunch
 from optparse import OptionParser
@@ -440,24 +443,27 @@ WHERE
 	else:
 		print "Not using prepared statements for insert and update"
 
+	start_time = datetime.datetime.now()
+	max_commit_chunk = 15000
+	
+	commit_chunk = 200 
+
+	buff = [] # data to be uploaded with COPY
+	colbuff = [] # data to be uploaded with INSERT if COPY fails
+
 	for line in reader:
 
 		if len(line) == 0 or line[0][0].strip() == '#':
 			continue
 
 		totalrows += 1
-
-		# ordered dict has keys always in same order when serialized
-		# --> our key is guaranteed to be always the same (in same order)
-
-		cols = collections.OrderedDict(staticols)
+		cols = staticols.copy()
 
 		i = 0
 
 		for col in options.format.split(','):
 			if not col in cols or cols[col] is None:
 				cols[col] = None if line[i].strip() == "" else line[i].strip()
-
 			i += 1
 
 		# check analysis_time format
@@ -498,17 +504,6 @@ WHERE
 				print e
 				continue
 
-		# primary key columns must be non-null
-
-		if cols["producer_id"] == None or \
-			cols["param_id"] == None or \
-			cols["analysis_time"] == None or \
-			cols["level_id"] == None or \
-			cols["level_value"] == None:
-			print "Mandatory columns (producer_id,param_id,analysis_time,level_id,level_value) cannot be NULL"
-			print cols
-			continue
-
 		key = MetaKey(options, cols)
 
 		# Forecast period can be full timestamp or offset. In database we only store offset.
@@ -541,39 +536,79 @@ WHERE
 		if options.verbose:
 			for key,value in cols.items():
 				print "%s --> %s" % (key,value)
+		
+
+		cols["meta_id"] = meta_id
+		row = "%s\t%s\t%s\t%s\t%s\t%s" % (meta_id,cols["analysis_time"],cols["forecast_period"],cols["forecast_type_id"],cols["forecast_type_value"],cols["value"])
+		buff.append(row) 
+		colbuff.append(cols) 
+
+		copySucceeded = True
+
+		if totalrows % commit_chunk == 0:
+
+			try:
+
+				cur.execute("SAVEPOINT insert")
+
+				f = StringIO.StringIO("\n".join(buff))
+				cur.copy_from(f, 
+					tableInfo.schema_name + "." + tableInfo.partition_name, 
+					columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'forecast_type_id', 'forecast_type_value','value'])
+				
+				inserts = inserts + len(buff)
+
+			except Exception,e:
+				#print e
+				copySucceeded = False
+
+#				sys.exit(1)
+
+				cur.execute("ROLLBACK TO SAVEPOINT insert")
+				
+				for cols in colbuff:
+					try:
+						if not options.dry_run:
+							cur.execute("SAVEPOINT insert")
+							if usePreparedStatements:
+								insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+							else:
+								query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
+								cur.execute(query, (cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+							inserts += 1;
+
+					except Exception,e:
+						if not options.dry_run:
+							cur.execute("ROLLBACK TO SAVEPOINT insert")
+
+						if usePreparedStatements:
+		  					updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
+		  				else:
+		  					query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s AND forecast_type_value = %s"
+			  				cur.execute(query, (cols["value"], cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
 			
-		cur.execute("SAVEPOINT x")
+						updates += 1;
+				
+				cur.execute("RELEASE SAVEPOINT insert")
+		
+			stop_time = datetime.datetime.now()
 
-		try:
-			
-			if not options.dry_run:
-				if usePreparedStatements:
-					insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
-				else:
-					query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
-					cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+			method = "copy"
 
-				cur.execute("RELEASE SAVEPOINT x")
+			if copySucceeded == False:
+				method = "insert"
+			print "%s using method '%s': cumulative inserts: %d, updates: %d, lines per second: %d" % (datetime.datetime.now(), method, inserts, updates, commit_chunk/(stop_time-start_time).total_seconds())
+			buff = []
+			colbuff = []
 
-			inserts += 1;
+			if copySucceeded:
+				commit_chunk = max_commit_chunk
 
-		except Exception,e:
-
-			if not options.dry_run:
-				cur.execute("ROLLBACK TO SAVEPOINT x")
-
-				if usePreparedStatements:
-		  			updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
-		  		else:
-		  			query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s AND forecast_type_value = %s"
-		  			cur.execute(query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
-			
-			updates += 1;
-
-		if totalrows % 100 == 0:
-			print str(datetime.datetime.now()) + " cumulative inserts: " + str(inserts) + ", updates: " + str(updates)
+			elif not copySucceeded:
+				commit_chunk = 200
 			conn.commit()
 	
+			start_time = stop_time
 	conn.commit()
 	conn.close()
 
