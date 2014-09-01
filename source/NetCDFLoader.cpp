@@ -96,9 +96,9 @@ bool NetCDFLoader::Load(const string &theInfile)
     info.minute = boost::lexical_cast<int> (options.analysistime.substr(10, 2));
   }
   
-  // Pretend this is grib1
+  // ednum == 3 --> netcdf
 
-  info.ednum = 1;
+  info.ednum = 3;
   info.level2 = 0;
   info.locdef = 0;
   info.eps_specifier = "0";
@@ -182,6 +182,8 @@ bool NetCDFLoader::Load(const string &theInfile)
     {
 
       string ncname = reader.Param().Name();
+
+      info.ncname = ncname;
 
       // If this parameter is known not to be supported, skip it
 

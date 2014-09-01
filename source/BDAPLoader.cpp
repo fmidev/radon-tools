@@ -142,6 +142,27 @@ string BDAPLoader::REFFileName(const fc_info &info)
          << "_"
          << info.ldefnumber;
     }
+	else if (info.ednum == 3)
+	{
+      ss << "/"
+       << setw(0)
+       << info.parname
+       << "_"
+       << info.levname
+       << "_"
+       << info.level1
+       << "_"
+       << info.level2
+       << "_"
+       << info.grtyp
+       << "_"
+       << info.ni
+       << "_"
+       << info.nj
+       << setw(3)
+       << setfill('0')
+       << info.fcst_per;
+	}
 
     ss << "." << info.filetype;
   }
@@ -459,27 +480,36 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     if (info.ednum == 1)
     {
       p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+	  
+	  if (p.empty())
+	  {
+        cerr << "Parameter not found from neon2\n";
+        cerr << "Table version: " << info.novers << " param " << info.param << " tri " << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
+		return false;
+	  }
     }
-    else
+    else if (info.ednum == 2)
     {
       p = NFmiNeon2DB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
-    }
 
-    if (p.empty())
-    {
+	  if (p.empty())
+	  {
         cerr << "Parameter not found from neon2\n";
-
-        if (info.ednum == 1)
-        {
-            cout << "Table version: " << info.novers << " param " << info.param << " tri " << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-        }
-        else
-        {
-            cout << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-        }
-
-        return false;
+        cerr << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
+		return false;
+	  }
     }
+	else if (info.ednum == 3)
+	{
+      p = NFmiNeon2DB::Instance().ParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+
+	  if (p.empty())
+	  {
+        cerr << "Parameter not found from neon2\n";
+        cerr << "NetCDF name: " << info.ncname << endl;
+		return false;
+	  }
+	}
 
     param_id = boost::lexical_cast<long> (p["id"]);
   }

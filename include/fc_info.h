@@ -47,12 +47,14 @@ struct fc_info
 	, eps_specifier("")
 	, filetype("")
 	, filename("")
+	, ncname("")
 	, forecast_type_id(0)
 	, forecast_type_value(kFloatMissing)
 	{ 
 	};
 
 	long grib_size;
+	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
 	long centre;
 	long discipline;
@@ -93,6 +95,7 @@ struct fc_info
 	std::string eps_specifier;
 	std::string filetype;
 	std::string filename;
+	std::string ncname;
 	// neon2-only variables
 	long forecast_type_id; // from table forecast_type
 	double forecast_type_value;
