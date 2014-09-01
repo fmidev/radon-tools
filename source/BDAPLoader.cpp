@@ -215,31 +215,6 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
     itsGeomName = row[0];
 
-#ifdef NEON2
-    if (itsUseNeon2)
-    {
-      query.str("");
-
-      query << "SELECT name FROM geom WHERE nj = " << info.nj << " AND ni = " << info.ni;
-
-      if (options.dry_run)
-        cout << query.str() << endl;
-
-      NFmiNeon2DB::Instance().Query(query.str());
-
-      row = NFmiNeon2DB::Instance().FetchRow();
-
-      if (row.empty())
-      {
-        cerr << "Geometry not found" << endl;
-      }
-      else if (itsGeomName != row[0])
-      {
-          cerr << "neon2 geom_name does not match with neons!: " << row[0] << " vs " << itsGeomName << endl;
-      }
-    }
-#endif
-
     query.str("");
 
   }
