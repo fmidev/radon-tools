@@ -306,9 +306,7 @@ bool NetCDFLoader::Load(const string &theInfile)
           return false;
 	    }
 
-#ifdef NEON2
         itsDatabaseLoader.WriteToNeon2(info);
-#endif	
 
         if (options.verbose)
         {
@@ -349,9 +347,9 @@ bool NetCDFLoader::Load(const string &theInfile)
 		  {
             return false;
 		  }
-#ifdef NEON2
+
 		  itsDatabaseLoader.WriteToNeon2(info);
-#endif
+
           if (options.verbose)
   		  {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
