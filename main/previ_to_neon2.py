@@ -14,19 +14,20 @@ from optparse import OptionParser
 conn = None
 cur = None
 metaIds = {}
+tableCache = {}
 
 all_columns = ["producer_id", 
-					"analysis_time", 
-					"station_id", 
-					"param_id", 
-					"forecast_period", 
-					"latitude", 
-					"longitude", 
-					"level_id", 
-					"level_value",
-					"forecast_type_id",
-					"forecast_type_value",
-					"value"]
+				"analysis_time", 
+				"station_id", 
+				"param_id", 
+				"forecast_period", 
+				"latitude", 
+				"longitude", 
+				"level_id", 
+				"level_value",
+				"forecast_type_id",
+				"forecast_type_value",
+				"value"]
 
 # create a list of required columns
 
@@ -43,8 +44,6 @@ def ReadCommandLine(argv):
 Load previ csv to neon2.
 
 Program must know the values of the following metadata parameters. Values can be specified either in command line or at csv. Values at command line overwrite csv.
-
-producer_id: Id of producer as found from table fmi_producer. Command line or CSV.
 """
 
 	parser = OptionParser(usage="usage: %prog [options] filename",
@@ -53,9 +52,9 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 	parsinggroup = optparse.OptionGroup(parser, "Options for controlling data parsing")
 
 	parser.add_option("-v", "--verbose",
-					  action="store_true",
-					  default=False,
-					  help="Set verbose mode on")
+				  action="store_true",
+				  default=False,
+				  help="Set verbose mode on")
 
 	parsinggroup.add_option("-r", "--producer_id",
 					  action="store",
@@ -97,7 +96,7 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 					type="int",
 					help="Level id")
 
-	parsinggroup.add_option("-f", "--format",
+	parsinggroup.add_option("-F", "--format",
 					  action="store",
 					  type="string",
 					  help="Format (ordering) of CSV columns")
@@ -130,7 +129,7 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 	parser.add_option("--dry-run",
 					  action="store_true",
 					  default=False,
-					  help="Do not make any changes to database, sets --show-sql",)
+					  help="Do not make any changes to database, sets --show-sql")
 
 	parser.add_option_group(parsinggroup)
 	(options, arguments) = parser.parse_args()
@@ -153,12 +152,12 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 			print "Unknown column specified: %s" % (column)
 			sys.exit(2)
 
-	print format_columns
 	for column in set(required_columns) - set(format_columns):
 		try:
 			if options_dict[column] == None:
-				print "CSV column %s not specified with command line argument or with switch -f" % (column)
-				sys.exit(2)
+				if column not in ["latitude","longitude","station_id"]:
+					print "CSV column %s not specified with command line argument or with switch -F" % (column)
+					sys.exit(2)
 
 		except KeyError:
 				print column 
@@ -185,7 +184,18 @@ producer_id: Id of producer as found from table fmi_producer. Command line or CS
 
 	return (options,arguments)
 
+def MetaKey(options, cols):
+	# generate key that uniquely identifies a previ_meta id
+	# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
+	return "%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], cols["longitude"], cols["latitude"])
+
 def GetTableInfo(options, producer_id, analysis_time):
+
+	key = "%s_%s" % (producer_id, analysis_time)
+	try:
+		return tableCache[key]
+	except:
+		pass
 
 	query = """
 SELECT
@@ -216,6 +226,7 @@ WHERE
 	tableInfo.table_name = row[1]
 	tableInfo.partition_name = row[2]
 
+	tableCache[key] = tableInfo
 	return tableInfo
 
 def GetStationInfo(latitude, longitude):
@@ -295,7 +306,7 @@ FROM
 
 	return ret
 
-def InsertMetaId(cols):
+def InsertMetaId(options, cols):
 	query = """
 INSERT INTO previ_meta (
 	producer_id, 
@@ -311,14 +322,14 @@ RETURNING id"""
 
   	if cols["latitude"] != None and cols["longitude"] != None:
   		pos = "POINT(%s %s)" % (cols["longitude"], cols["latitude"])
-	
+
 	cur.execute(query, (cols["producer_id"], cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], pos))
   
 	global metaIds
   
 	row = cur.fetchone()
 
-	metaIds[str('_'.join(cols))] = row[0]
+	metaIds[MetaKey(options, cols)] = row[0]
   
 	return row[0]
 
@@ -334,7 +345,13 @@ def ReadFile(options, file):
 
 	producer_id = None
 
+	timestamp_masks = ['%Y-%m-%d %H:%M:%S', '%Y%m%d%H%M%S']
 	staticols = {}
+
+	staticols["longitude"] = None
+	staticols["latitude"] = None
+	staticols["station_id"] = None
+	staticols["forecast_type_value"] = -1
 
 	if options.analysis_time != None:
 		staticols["analysis_time"] = options.analysis_time.strftime("%Y-%m-%d %H:%M:%S")
@@ -363,10 +380,65 @@ def ReadFile(options, file):
 	if options.forecast_type_value != None:
 		staticols["forecast_type_value"] = options.forecast_type_value
 	
-	staticols["forecast_type_value"] = None
-
 	if options.forecast_type_value != None:
 		staticols["forecast_type_value"] = options.forecast_type_value
+
+
+	tableInfo = None
+
+	try:
+		tableInfo = GetTableInfo(options, options.producer_id, options.analysis_time) #cols["analysis_time"])
+	except ValueError,e:
+		print e
+		return
+
+	# prepared statements for insert and update
+
+	query = """
+PREPARE insertplan AS
+INSERT INTO %s.%s (
+	previ_meta_id, 
+	analysis_time, 
+	forecast_period, 
+	forecast_type_id, 
+	value, 
+	forecast_type_value) 
+VALUES ($1, $2, interval '1 hour' * $3, $4, $5, $6)""" % (tableInfo.schema_name, tableInfo.partition_name)
+
+	insertcur = conn.cursor()
+
+	insertcur.execute(query)
+
+	query = """
+PREPARE updateplan AS
+UPDATE %s.%s SET
+	value = $1
+WHERE 
+	previ_meta_id = $2 
+	AND 
+	analysis_time = $3 
+	AND 
+	forecast_period = $4 
+	AND 
+	forecast_type_id = $5
+	AND
+	forecast_type_value =$6""" % (tableInfo.schema_name, tableInfo.partition_name) 
+	
+	updatecur = conn.cursor()
+
+	updatecur.execute(query)
+
+	# prepared statements are faster when inserting data, but they
+	# can only be used when analysis time is static (specified from
+	# command line) since the table name is dependent on that time
+
+	usePreparedStatements = (options.analysis_time != None)
+
+	if usePreparedStatements:
+		print "Using prepared statements for insert and update"
+
+	else:
+		print "Not using prepared statements for insert and update"
 
 	for line in reader:
 
@@ -374,7 +446,7 @@ def ReadFile(options, file):
 			continue
 
 		totalrows += 1
-		
+
 		# ordered dict has keys always in same order when serialized
 		# --> our key is guaranteed to be always the same (in same order)
 
@@ -383,23 +455,33 @@ def ReadFile(options, file):
 		i = 0
 
 		for col in options.format.split(','):
-			if not col in cols:
+			if not col in cols or cols[col] is None:
 				cols[col] = None if line[i].strip() == "" else line[i].strip()
-			print col + " --> " + str(line[i])
 
 			i += 1
 
 		# check analysis_time format
 
-		if options.analysis_time is None and not re.match('^\d{14}$', cols["analysis_time"]):
-			print "Invalid analysis time format: %s" % (cols["analysis_time"])
-			continue
+		if options.analysis_time is None:
+			atime = cols["analysis_time"]
+			cols["analysis_time"] = None
 
-		if (cols["latitude"] != None and cols["longitude"] == None) or (cols["latitude"] == None and cols["longitude"] != None):
+			for mask in timestamp_masks:
+				try:
+					cols["analysis_time"] = datetime.datetime.strptime(atime, mask)
+					break
+				except:
+					pass
+
+			if cols["analysis_time"] == None:
+				print "Failed to parse analysis time %s" % (atime)
+				continue
+		
+		if (cols["latitude"] is None and cols["longitude"] is not None) or (cols["latitude"] is not None and cols["longitude"] is None):
 			print "Error, both latitude and longitude must be specified, or neither"
 			continue
 
-		if cols["station_id"] == None and (cols["latitude"] == None and cols["longitude"] == None):
+		if cols["station_id"] is None and (cols["latitude"] is None and cols["longitude"] is None):
 			print "Error, either station_id or coordinates or both must be specified"
 			continue
 
@@ -427,20 +509,7 @@ def ReadFile(options, file):
 			print cols
 			continue
 
-		tableInfo = None
-
-		try:
-			tableInfo = GetTableInfo(options, options.producer_id, cols["analysis_time"])
-		except ValueError,e:
-			print e
-			continue
-
-		# generate key that uniquely identifies a previ_meta id
-		# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
-
-		key = "%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], cols["longitude"], cols["latitude"])
-
-		print key
+		key = MetaKey(options, cols)
 
 		# Forecast period can be full timestamp or offset. In database we only store offset.
 
@@ -466,38 +535,44 @@ def ReadFile(options, file):
 		try:
 			meta_id = metaIds[key]		
 		except:
-			meta_id = InsertMetaId(cols)
+			meta_id = InsertMetaId(options, cols)
+			print "Got new meta id %s" % (meta_id)
 
+		if options.verbose:
+			for key,value in cols.items():
+				print "%s --> %s" % (key,value)
+			
 		cur.execute("SAVEPOINT x")
 
 		try:
-			query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
-
-			if options.show_sql:
-				print "%s %s" % (query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
 			
 			if not options.dry_run:
-				cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+				if usePreparedStatements:
+					insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+				else:
+					query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
+					cur.execute(query, (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
 
-			cur.execute("RELEASE SAVEPOINT x")
+				cur.execute("RELEASE SAVEPOINT x")
+
 			inserts += 1;
 
 		except Exception,e:
-			query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s"
-	  
-	  		cur.execute("ROLLBACK TO SAVEPOINT x")
-
-	  		if options.show_sql:
-				print "%s %s" % (query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"]))
 
 			if not options.dry_run:
-				cur.execute(query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"]))
+				cur.execute("ROLLBACK TO SAVEPOINT x")
+
+				if usePreparedStatements:
+		  			updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
+		  		else:
+		  			query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s AND forecast_type_value = %s"
+		  			cur.execute(query, (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
 			
 			updates += 1;
 
-			if totalrows % 100 == 0:
-				print str(datetime.datetime.now()) + " cumulative inserts: " + str(inserts) + ", updates: " + str(updates)
-				conn.commit()
+		if totalrows % 100 == 0:
+			print str(datetime.datetime.now()) + " cumulative inserts: " + str(inserts) + ", updates: " + str(updates)
+			conn.commit()
 	
 	conn.commit()
 	conn.close()
