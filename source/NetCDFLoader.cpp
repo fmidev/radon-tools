@@ -37,20 +37,17 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   reader.Read(theInfile);
 
-  if (!options.analysistime.empty())
+  if (options.analysistime.empty())
   {
-    reader.AnalysisTime(options.analysistime);
+    cerr << "Analysistime not specified" << endl;
+    return false;
   }
+
+  //reader.AnalysisTime(options.analysistime);
 
   if (!reader.IsConvention()) 
   {
     cerr << "File '" << theInfile << "' is not CF conforming NetCDF" << endl;
-    return false;
-  }
-
-  if (reader.AnalysisTime().empty() && options.analysistime.empty())
-  {
-    cerr << "Unable to determine analysistime for input file '" << theInfile << "'" << endl;
     return false;
   }
 
@@ -103,6 +100,7 @@ bool NetCDFLoader::Load(const string &theInfile)
   info.locdef = 0;
   info.eps_specifier = "0";
   info.timeRangeIndicator = 0;
+  info.timeUnit = 1; // hour
 
   stringstream ss;
 

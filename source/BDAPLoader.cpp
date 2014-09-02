@@ -142,9 +142,10 @@ string BDAPLoader::REFFileName(const fc_info &info)
          << "_"
          << info.ldefnumber;
     }
-	else if (info.ednum == 3)
-	{
-      ss << "/"
+  }
+  else if (info.ednum == 3)
+  {
+    ss << "/"
        << setw(0)
        << info.parname
        << "_"
@@ -162,11 +163,10 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << setw(3)
        << setfill('0')
        << info.fcst_per;
-	}
-
-    ss << "." << info.filetype;
   }
 
+  ss << "." << info.filetype;
+  
   return ss.str();
 
 }
@@ -577,7 +577,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
         << info.forecast_type_id << ", "
         << "'" << info.filename << "', "
         << "'" << itsHostname << "', "
-        << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value)) << ")";
+        << (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string> (info.forecast_type_value)) << ")";
 
   if (options.dry_run)
     cout << query.str() << endl;
