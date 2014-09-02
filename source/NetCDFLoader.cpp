@@ -169,7 +169,7 @@ bool NetCDFLoader::Load(const string &theInfile)
     float fctime = (fctimeEpoch - atimeEpoch)/3600;
 
     if (options.verbose)
-      cout << "Time " << reader.Time() << " (" << options.analysistime << " +" << fctime << " hours)" << endl;
+      cout << "Time " << static_cast<int> (reader.Time()) << " (" << options.analysistime << " +" << fctime << " hours)" << endl;
 
     info.fcst_per = static_cast<int> (fctime);
     info.step = static_cast<int> (fctime);
@@ -336,25 +336,24 @@ bool NetCDFLoader::Load(const string &theInfile)
           info.filename = theFileName;
 
           if (!options.dry_run)
-		  {
+          {
             if (!reader.WriteSlice(theFileName))
-			{
+            {
               return false;
-			}
-		  }
+            }
+          }
 
           if (!itsDatabaseLoader.WriteAS(info))
-		  {
+          {
             return false;
-		  }
+          }
 
-		  itsDatabaseLoader.WriteToNeon2(info);
+          itsDatabaseLoader.WriteToNeon2(info);
 
           if (options.verbose)
-  		  {
+  	  {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
-	      }
-		  
+          }
         }
       }
     } while (reader.NextParam());
