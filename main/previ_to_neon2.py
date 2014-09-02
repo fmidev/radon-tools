@@ -192,6 +192,10 @@ def MetaKey(options, cols):
 	# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
 	return "%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], cols["longitude"], cols["latitude"])
 
+def GetTotalSeconds(td): 
+	# no timedelta.total_seconds() in python 2.6
+	return (td.microseconds + (td.seconds + td.days * 24 * 3600) * 1e6) / 1e6
+
 def GetTableInfo(options, producer_id, analysis_time):
 
 	key = "%s_%s" % (producer_id, analysis_time)
@@ -444,7 +448,7 @@ WHERE
 		print "Not using prepared statements for insert and update"
 
 	start_time = datetime.datetime.now()
-	max_commit_chunk = 15000
+	max_commit_chunk = 20000
 	
 	commit_chunk = 200 
 
@@ -597,15 +601,16 @@ WHERE
 
 			if copySucceeded == False:
 				method = "insert"
-			print "%s using method '%s': cumulative inserts: %d, updates: %d, lines per second: %d" % (datetime.datetime.now(), method, inserts, updates, commit_chunk/(stop_time-start_time).total_seconds())
+			print "%s using method '%s': cumulative inserts: %d, updates: %d, lines per second: %d" % (datetime.datetime.now(), method, inserts, updates, commit_chunk/GetTotalSeconds(stop_time-start_time))
 			buff = []
 			colbuff = []
 
 			if copySucceeded:
 				commit_chunk = max_commit_chunk
 
-			elif not copySucceeded:
+			else:
 				commit_chunk = 200
+
 			conn.commit()
 	
 			start_time = stop_time
