@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.8.29
+Version:        14.9.4
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -32,6 +32,7 @@ Requires:	python-bunch
 Provides:	grid_to_neons
 Provides:	create_grid_tables
 Provides:	neon2_tables.py
+Provides:	previ_to_neon2.py
 
 %description
 Neons-tools includes programs for loading data to neons DB.
@@ -62,8 +63,15 @@ rm -rf %{buildroot}
 %{_bindir}/previ_to_neon2.py
 
 %changelog
+* Thu Sep  4 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.4-1.fmi
+- Additional features to previ_to_neon2.py and neon2_tables.py
+* Tue Sep  2 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.2-1.fmi
+- Adding features to previ_to_neon2.py
+- Fixes for grid_to_neons netcdf
+* Mon Sep  1 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.1-1.fmi
+- Adding features to previ_to_neon2.py
 * Fri Aug 29 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.29-1.fmi
-- Addin previ_to_neon2.py
+- Adding previ_to_neon2.py
 * Fri Aug 22 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.22-1.fmi
 - Changes to neon2 loading
 * Thu Aug 21 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.8.21-1.fmi
