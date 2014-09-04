@@ -11,6 +11,8 @@ import psycopg2
 import psycopg2.extras
 import re
 import bunch
+import getpass
+import os
 
 from pytz import timezone
 from bunch import Bunch
@@ -24,6 +26,8 @@ def ReadCommandLine(argv):
 
 	parser = OptionParser(usage="usage: %prog [options] filename",
 						  version="%prog 1.0")
+
+	databasegroup = optparse.OptionGroup(parser, "Options for database connection")
 
 	parser.add_option("-r", "--producer_id",
 					  action="store",
@@ -69,6 +73,32 @@ def ReadCommandLine(argv):
 					  action="store_true",
 					  default=False,
 					  help="Drop table instead of creating them",)
+
+	databasegroup.add_option("--host",
+					action="store",
+					type="string",
+					default="dbdev.fmi.fi",
+					help="Database hostname")
+
+	databasegroup.add_option("--port",
+					action="store",
+					type="string",
+					default="5432",
+					help="Database port")
+
+	databasegroup.add_option("--database",
+					action="store",
+					type="string",
+					default="neon2",
+					help="Database name")
+
+	databasegroup.add_option("--user",
+					action="store",
+					type="string",
+					default="wetodb",
+					help="Database username")
+
+	parser.add_option_group(databasegroup)
 
 	(options, arguments) = parser.parse_args()
   
@@ -138,7 +168,9 @@ def Validate(options, date):
 
 		if int(row[0]) != 1:
 			print "Parent table %s does not exist" % (element.table_name,)
-			return 1
+			print "Fixing.."
+			
+			CreateMainTable(options, element, producerinfo.class_id)
 
 		# Check main table view
 
@@ -153,7 +185,9 @@ def Validate(options, date):
 
 		if int(row[0]) != 1:
 			print "Parent table view public.%s_v does not exist" % (element.table_name,)
-			return 1
+			print "Fixing.."
+
+			CreateViews(options, element, producerinfo.class_id)
 
 		# Check that number of childs matches as_grid information
 
@@ -183,7 +217,7 @@ def Validate(options, date):
 		row = cur.fetchone()
 	
 		if int(row[0]) != childs:
-			print "Number of child tables for parent %s in as_grid (%d) does not match with database (%d)" % (element.table_name, childs, int(row[0]))
+			print "Number of child tables for parent %s in %s (%d) does not match with database (%d)" % (element.table_name, as_table, childs, int(row[0]))
 			return 1
 
 		# Check that parent has partitioning trigger
@@ -199,7 +233,9 @@ def Validate(options, date):
 
 		if int(row[0]) != 1:
 			print "Table %s does not have partitioning trigger defined" % (element.table_name)
-			return 1
+			print "Fixing.."
+
+			CreatePartitioningTrigger(options, element.schema_name, element.table_name)
 
 		print "Parent table %s is valid" % (element.table_name)
 
@@ -228,7 +264,7 @@ def Validate(options, date):
 			row = cur.fetchone()
 
 			if row == None:
-				print "Partition %s for table %s is not in %s" % (partition_name, element.table_name, as_table)
+				print "Partition for analysis time %s (%s) for table %s is not in %s" % (analysis_time, partition_name, element.table_name, as_table)
 				return 1
 
 			record_count = row[1]
@@ -440,6 +476,11 @@ def CreateMainTable(options, element, class_id):
 	if not options.dry_run:
 		try:
 			cur.execute(query)
+			query = "GRANT SELECT ON %s.%s TO neon2_ro" % (element.schema_name, element.table_name)
+			cur.execute(query)
+			query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO neon2_rw" % (element.schema_name, element.table_name)
+			cur.execute(query)
+
 		except psycopg2.ProgrammingError, e:
 			# Table existed already; this happened in dev but probably not in production
 			if e.pgcode == "42P07":
@@ -449,96 +490,8 @@ def CreateMainTable(options, element, class_id):
 			else:
 				print e
 				sys.exit(1)
-
-	# Create a view on top of table
-
-	if class_id == 1:
-		query = """
-CREATE OR REPLACE VIEW public.%s_v AS
-SELECT
-		a.producer_id,
-		p.name AS producer_name,
-		a.analysis_time,
-		a.geometry_id,
-		g.name AS geometry_name,
-		a.param_id,
-		p.name AS param_name,
-		a.level_id,
-		l.name AS level_name,
-		a.level_value,
-		a.forecast_period,
-		a.forecast_period + a.analysis_time AS forecast_time,
-		a.file_location,
-		a.file_server,
-		a.forecast_type_id,
-		t.name AS forecast_type_name,
-		a.forecast_type_value,
-		a.last_updater,
-		a.last_updated
-FROM
-		%s.%s a,
-		fmi_producer f,
-		level l,
-		param p,
-		geom g,
-		forecast_type t
-WHERE
-		a.producer_id = f.id
-		AND
-		a.level_id = l.id
-		AND
-		a.param_id = p.id
-		AND
-		a.geometry_id = g.id
-		AND 
-		a.forecast_type_id = t.id
-""" % (element.table_name, element.schema_name, element.table_name)
-	elif class_id == 3:
-		query = """
-CREATE OR REPLACE VIEW public.%s_v AS
-SELECT
-		m.producer_id,
-		p.name AS producer_name,
-		a.analysis_time,
-		m.station_id,
-		st_x(m.position) AS longitude,
-		st_y(m.position) AS latitude,
-		m.param_id,
-		p.name AS param_name,
-		m.level_id,
-		l.name AS level_name,
-		m.level_value,
-		a.forecast_period,
-		a.forecast_period + a.analysis_time AS forecast_time,
-		a.value,
-		a.forecast_type_id,
-		t.name AS forecast_type_name,
-		a.last_updater,
-		a.last_updated
-FROM
-		%s.%s a,
-		fmi_producer f,
-		level l,
-		param p,
-		previ_meta m,
-		forecast_type t
-WHERE
-		a.previ_meta_id = m.id
-		AND
-		m.producer_id = f.id
-		AND
-		m.level_id = l.id
-		AND
-		m.param_id = p.id
-		AND 
-		a.forecast_type_id = t.id
-		""" % (element.table_name, element.schema_name, element.table_name)
-
-	if options.show_sql:
-		print query
-
-	if not options.dry_run:
-		cur.execute(query)
+	CreateViews(options, element, class_id)
+	CreatePartitioningTrigger(options, element.schema_name, element.table_name)
 
 def CreatePartitioningTrigger(options, schema_name, table_name):
 
@@ -551,7 +504,7 @@ BEGIN
 	analysistime := to_char(NEW.analysis_time, 'yyyymmddhh24');
 """ % (table_name)
 
-	partitions = ListPartitions(options, element.table_name)
+	partitions = ListPartitions(options, table_name)
 
 	if len(partitions) == 0:
 		query += "	RAISE EXCEPTION 'No partitions available';"
@@ -718,6 +671,101 @@ def DropTables(options, element):
 	if not options.dry_run:
 		conn.commit()
 
+def CreateViews(options, element, class_id):
+
+	# Create a view on top of table
+
+	if class_id == 1:
+		query = """
+CREATE OR REPLACE VIEW public.%s_v AS
+SELECT
+		a.producer_id,
+		p.name AS producer_name,
+		a.analysis_time,
+		a.geometry_id,
+		g.name AS geometry_name,
+		a.param_id,
+		p.name AS param_name,
+		a.level_id,
+		l.name AS level_name,
+		a.level_value,
+		a.forecast_period,
+		a.forecast_period + a.analysis_time AS forecast_time,
+		a.file_location,
+		a.file_server,
+		a.forecast_type_id,
+		t.name AS forecast_type_name,
+		a.forecast_type_value,
+		a.last_updater,
+		a.last_updated
+FROM
+		%s.%s a,
+		fmi_producer f,
+		level l,
+		param p,
+		geom g,
+		forecast_type t
+WHERE
+		a.producer_id = f.id
+		AND
+		a.level_id = l.id
+		AND
+		a.param_id = p.id
+		AND
+		a.geometry_id = g.id
+		AND 
+		a.forecast_type_id = t.id
+""" % (element.table_name, element.schema_name, element.table_name)
+	elif class_id == 3:
+		query = """
+CREATE OR REPLACE VIEW public.%s_v AS
+SELECT
+		m.producer_id,
+		p.name AS producer_name,
+		a.analysis_time,
+		m.station_id,
+		st_x(m.position) AS longitude,
+		st_y(m.position) AS latitude,
+		m.param_id,
+		p.name AS param_name,
+		m.level_id,
+		l.name AS level_name,
+		m.level_value,
+		a.forecast_period,
+		a.forecast_period + a.analysis_time AS forecast_time,
+		a.value,
+		m.forecast_type_id,
+		t.name AS forecast_type_name,
+		m.forecast_type_value,
+		a.last_updater,
+		a.last_updated
+FROM
+		%s.%s a,
+		fmi_producer f,
+		level l,
+		param p,
+		previ_meta m,
+		forecast_type t
+WHERE
+		a.previ_meta_id = m.id
+		AND
+		m.producer_id = f.id
+		AND
+		m.level_id = l.id
+		AND
+		m.param_id = p.id
+		AND 
+		m.forecast_type_id = t.id
+		""" % (element.table_name, element.schema_name, element.table_name)
+
+	if options.show_sql:
+		print query
+
+	if not options.dry_run:
+		cur.execute(query)
+		query = "GRANT SELECT ON public.%s_v TO public" % (element.table_name)
+		cur.execute(query)
+
 
 def CreateTables(options, element, date):
 
@@ -787,6 +835,10 @@ def CreateTables(options, element, date):
 
 			if not options.dry_run:
 				cur.execute(query)
+				query = "GRANT SELECT ON %s.%s TO neon2_ro" % (element.schema_name, partition_name)
+				cur.execute(query)
+				query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO neon2_rw" % (element.schema_name, partition_name)
+				cur.execute(query)
 
 			as_table = None
 
@@ -850,14 +902,16 @@ if __name__ == '__main__':
 
 	(options,files) = ReadCommandLine(sys.argv[1:])
 
-	username = 'wetodb'
-	password = '3loHRgdio'
-	hostname = 'dbdev.fmi.fi'
-	port = 5432
+	print "Connecting to database %s at host %s port %s" % (options.database, options.host, options.port)
 
-	print "Connecting to database neon2 at host %s port %d" % (hostname, port)
+	password = None
 
-	dsn = "user=%s password=%s host=%s dbname=neon2 port=%d" % (username, password, hostname, port)
+	try:
+		password = os.environ["NEON2_PASSWORD"]
+	except:
+		password = getpass.getpass()
+
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options.user, password, options.host, options.database, options.port)
 	conn = psycopg2.connect(dsn)
 
 	conn.autocommit = 0
