@@ -6,10 +6,10 @@ import datetime
 import optparse
 import csv
 import psycopg2
-#import ppygis
-import collections
 import bunch
 import StringIO
+import getpass
+import os
 
 from bunch import Bunch
 from optparse import OptionParser
@@ -18,6 +18,7 @@ conn = None
 cur = None
 metaIds = {}
 tableCache = {}
+stations = {}
 
 all_columns = ["producer_id", 
 				"analysis_time", 
@@ -53,6 +54,7 @@ Program must know the values of the following metadata parameters. Values can be
 						  version="%prog 1.0", description=desc)
 			  
 	parsinggroup = optparse.OptionGroup(parser, "Options for controlling data parsing")
+	databasegroup = optparse.OptionGroup(parser, "Options for database connection")
 
 	parser.add_option("-v", "--verbose",
 				  action="store_true",
@@ -134,7 +136,33 @@ Program must know the values of the following metadata parameters. Values can be
 					  default=False,
 					  help="Do not make any changes to database, sets --show-sql")
 
+	databasegroup.add_option("--host",
+					action="store",
+					type="string",
+					default="dbdev.fmi.fi",
+					help="Database hostname")
+
+	databasegroup.add_option("--port",
+					action="store",
+					type="string",
+					default="5432",
+					help="Database port")
+
+	databasegroup.add_option("--database",
+					action="store",
+					type="string",
+					default="neon2",
+					help="Database name")
+
+	databasegroup.add_option("--user",
+					action="store",
+					type="string",
+					default="wetodb",
+					help="Database username")
+
 	parser.add_option_group(parsinggroup)
+	parser.add_option_group(databasegroup)
+
 	(options, arguments) = parser.parse_args()
   
 	# Check requirements
@@ -189,8 +217,11 @@ Program must know the values of the following metadata parameters. Values can be
 
 def MetaKey(options, cols):
 	# generate key that uniquely identifies a previ_meta id
-	# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
-	return "%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], cols["longitude"], cols["latitude"])
+	# producer_id_param_id_level_id_level_value_forecast_type_id_forecast_type_value_station_id_longitude_latitude
+	return "%s_%s_%s_%s_%s_%s_%s_%s_%s" % (options.producer_id, 
+		cols["param_id"], cols["level_id"], cols["level_value"],
+		cols["forecast_type_id"], cols["forecast_type_value"], 
+		cols["station_id"], cols["longitude"], cols["latitude"])
 
 def GetTotalSeconds(td): 
 	# no timedelta.total_seconds() in python 2.6
@@ -235,6 +266,32 @@ WHERE
 
 	tableCache[key] = tableInfo
 	return tableInfo
+
+def GetStations(network_id):
+
+	query = """
+SELECT 
+	station_id,
+	local_station_id::int
+FROM 
+	station_network_mapping
+WHERE
+	network_id = %s"""
+
+	if options.show_sql:
+		print "%s %s" % (query, network_id)
+
+	if not options.dry_run:
+		cur.execute(query, (network_id,))
+
+	rows = cur.fetchall()
+
+	ret = {}
+
+	for row in rows:
+		ret[row[1]] = row[0]
+
+	return ret
 
 def GetStationInfo(latitude, longitude):
 
@@ -287,12 +344,15 @@ SELECT
 	m.producer_id,
 	m.param_id, 
 	m.level_id, 
-	m.level_value, 
-	m.station_id, 
+	m.level_value,
+	m.forecast_type_id,
+	m.forecast_type_value, 
+	m.station_id,
 	st_x(m.position) AS longitude, 
 	st_y(m.position) AS latitude 
 FROM 
-	previ_meta m""" 
+	previ_meta m
+""" 
 
 	if options.show_sql:
 		print query
@@ -304,8 +364,8 @@ FROM
 	ret = {}
 
 	for row in rows:
-		# producer_id_param_id_level_id_level_value_station_id_longitude_latitude
-		key = "%s_%s_%s_%s_%s_%s_%s" % (row[1], row[2], row[3], row[4], row[5], row[6], row[7])
+		# producer_id_param_id_level_id_level_value_station_id_forecast_type_id_forecast_type_value_longitude_latitude
+		key = "%s_%s_%s_%s_%s_%s_%s_%s_%s" % (row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9])
 
 		ret[key] = row[0]
 
@@ -320,9 +380,11 @@ INSERT INTO previ_meta (
 	param_id,
 	level_id,
 	level_value,
+	forecast_type_id,
+	forecast_type_value,
 	station_id,
 	position) 
-VALUES (%s, %s, %s, %s, %s, ST_PointFromText(%s, 4326))
+VALUES (%s, %s, %s, %s, %s, %s, %s, ST_PointFromText(%s, 4326))
 RETURNING id"""
 
   	pos = None
@@ -330,7 +392,7 @@ RETURNING id"""
   	if cols["latitude"] != None and cols["longitude"] != None:
   		pos = "POINT(%s %s)" % (cols["longitude"], cols["latitude"])
 
-	cur.execute(query, (cols["producer_id"], cols["param_id"], cols["level_id"], cols["level_value"], cols["station_id"], pos))
+	cur.execute(query, (cols["producer_id"], cols["param_id"], cols["level_id"], cols["level_value"], cols["forecast_type_id"], cols["forecast_type_value"], cols["station_id"], pos))
   
 	global metaIds
   
@@ -403,14 +465,8 @@ def ReadFile(options, file):
 
 	query = """
 PREPARE insertplan AS
-INSERT INTO %s.%s (
-	previ_meta_id, 
-	analysis_time, 
-	forecast_period, 
-	forecast_type_id, 
-	value, 
-	forecast_type_value) 
-VALUES ($1, $2, interval '1 hour' * $3, $4, $5, $6)""" % (tableInfo.schema_name, tableInfo.partition_name)
+INSERT INTO %s.%s (previ_meta_id, analysis_time, forecast_period, value)
+VALUES ($1, $2, interval '1 hour' * $3, $4)""" % (tableInfo.schema_name, tableInfo.partition_name)
 
 	insertcur = conn.cursor()
 
@@ -426,10 +482,7 @@ WHERE
 	analysis_time = $3 
 	AND 
 	forecast_period = $4 
-	AND 
-	forecast_type_id = $5
-	AND
-	forecast_type_value =$6""" % (tableInfo.schema_name, tableInfo.partition_name) 
+""" % (tableInfo.schema_name, tableInfo.partition_name) 
 	
 	updatecur = conn.cursor()
 
@@ -467,6 +520,8 @@ WHERE
 
 		for col in options.format.split(','):
 			if not col in cols or cols[col] is None:
+				if col == "station_id":
+					cols[col] = stations[int(line[i].strip())]
 				cols[col] = None if line[i].strip() == "" else line[i].strip()
 			i += 1
 
@@ -543,7 +598,7 @@ WHERE
 		
 
 		cols["meta_id"] = meta_id
-		row = "%s\t%s\t%s\t%s\t%s\t%s" % (meta_id,cols["analysis_time"],cols["forecast_period"],cols["forecast_type_id"],cols["forecast_type_value"],cols["value"])
+		row = "%s\t%s\t%s\t%s" % (meta_id,cols["analysis_time"],cols["forecast_period"],cols["value"])
 		buff.append(row) 
 		colbuff.append(cols) 
 
@@ -558,7 +613,7 @@ WHERE
 				f = StringIO.StringIO("\n".join(buff))
 				cur.copy_from(f, 
 					tableInfo.schema_name + "." + tableInfo.partition_name, 
-					columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'forecast_type_id', 'forecast_type_value','value'])
+					columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'value'])
 				
 				inserts = inserts + len(buff)
 
@@ -575,10 +630,10 @@ WHERE
 						if not options.dry_run:
 							cur.execute("SAVEPOINT insert")
 							if usePreparedStatements:
-								insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+								insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["value"]))
 							else:
-								query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, forecast_type_id, value, forecast_type_value) VALUES (%s, %s, %s, %s, %s, %s)"
-								cur.execute(query, (cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["value"], cols["forecast_type_value"]))
+								query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, value) VALUES (%s, %s, %s, %s)"
+								cur.execute(query, (cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["value"]))
 							inserts += 1;
 
 					except Exception,e:
@@ -586,10 +641,10 @@ WHERE
 							cur.execute("ROLLBACK TO SAVEPOINT insert")
 
 						if usePreparedStatements:
-		  					updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
+		  					updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"]))
 		  				else:
-		  					query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s AND forecast_type_id = %s AND forecast_type_value = %s"
-			  				cur.execute(query, (cols["value"], cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["forecast_type_id"], cols["forecast_type_value"]))
+		  					query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s"
+			  				cur.execute(query, (cols["value"], cols['meta_id'], cols["analysis_time"], cols["forecast_period"]))
 			
 						updates += 1;
 				
@@ -624,15 +679,17 @@ WHERE
 if __name__ == '__main__':
 
 	(options,files) = ReadCommandLine(sys.argv[1:])
-	
-	username = 'wetodb'
-	password = '3loHRgdio'
-	hostname = 'dbdev.fmi.fi'
-	port = 5432
 
-	print "Connecting to database neon2 at host %s port %d" % (hostname, port)
+	print "Connecting to database %s at host %s port %s" % (options.database, options.host, options.port)
 
-	dsn = "user=%s password=%s host=%s dbname=neon2 port=%d" % (username, password, hostname, port)
+	password = None
+
+	try:
+		password = os.environ["NEON2_PASSWORD"]
+	except:
+		password = getpass.getpass()
+
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options.user, password, options.host, options.database, options.port)
 	conn = psycopg2.connect(dsn)
 
 	conn.autocommit = 0
@@ -640,6 +697,7 @@ if __name__ == '__main__':
 	cur = conn.cursor()
 
 	metaIds = GetMetaIds()
+	stations = GetStations(1)
 
 	for file in files:
 		print "Reading file '%s'" % (file)
