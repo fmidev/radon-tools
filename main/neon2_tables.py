@@ -848,7 +848,7 @@ def CreateTables(options, element, date):
 
 			elif producerinfo.class_id == 3:
 				as_table = 'as_previ'
-				query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (previ_meta_id, analysis_time, forecast_period, forecast_type_id)" % (element.schema_name, partition_name, partition_name)
+				query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (previ_meta_id, analysis_time, forecast_period)" % (element.schema_name, partition_name, partition_name)
 
 			if options.show_sql:
 				print query
