@@ -522,7 +522,8 @@ WHERE
 			if not col in cols or cols[col] is None:
 				if col == "station_id":
 					cols[col] = stations[int(line[i].strip())]
-				cols[col] = None if line[i].strip() == "" else line[i].strip()
+				else:
+					cols[col] = None if line[i].strip() == "" else line[i].strip()
 			i += 1
 
 		# check analysis_time format
