@@ -252,14 +252,14 @@ bool NetCDFLoader::Load(const string &theInfile)
       } 
       else 
       {
-        info.levname = options.level;
+        info.levname = boost::to_upper_copy(options.level);
         if (info.levname == "MEANSEA")
           info.levtype = 102;
         else if (info.levname == "DEPTH")
           info.levtype = 160;
         else if (info.levname == "HEIGHT")
           info.levtype = 105;
-        else if (info.levname == "PRESSURE" || info.levname == "pressure")
+        else if (info.levname == "PRESSURE")
           info.levtype = 100;
         else
           throw std::runtime_error("Invalid level type: " + info.levname);
