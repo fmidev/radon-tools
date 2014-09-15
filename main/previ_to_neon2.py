@@ -125,6 +125,10 @@ Program must know the values of the following metadata parameters. Values can be
 					  action="store_true",
 					  default=False,
 					  help="Try to resolve given latlon values to station id. If station id is not found from database, row will be discarded.")
+	parsinggroup.add_option("--bulk",
+					  action="store_true",
+					  default=False,
+					  help="use bulk loading, ie. disable triggers before inserting data. Results to faster data loading but will have race condition problems if multiple processes are simultaneously loading data to the same partition. Requires options --analysis_time.")
 
 	parser.add_option("--show_sql",
 					  action="store_true",
@@ -212,6 +216,10 @@ Program must know the values of the following metadata parameters. Values can be
 			
 	if options.dry_run:
 		options.show_sql = True
+
+	if options.bulk and options.analysis_time is None:
+		print "--bulk defined but --analysis_time is missing"
+		sys.exit(1)
 
 	return (options,arguments)
 
@@ -501,7 +509,7 @@ WHERE
 		print "Not using prepared statements for insert and update"
 
 	start_time = datetime.datetime.now()
-	max_commit_chunk = 20000
+	max_commit_chunk = 50000
 	
 	commit_chunk = 200 
 
@@ -611,12 +619,36 @@ WHERE
 
 				cur.execute("SAVEPOINT insert")
 
+				if options.bulk:
+					query = "ALTER TABLE %.s.%s DISABLE TRIGGER %s_%s_update_as_table_trg" % (tableInfo.schema_name, 
+							tableInfo.partition_name, 
+							tableInfo.partition_name,
+							options.analysis_time.strftime("%y%m%d%H"))
+
+					cur.execute(query)
+
 				f = StringIO.StringIO("\n".join(buff))
 				cur.copy_from(f, 
 					tableInfo.schema_name + "." + tableInfo.partition_name, 
 					columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'value'])
 				
 				inserts = inserts + len(buff)
+
+				if options.bulk:
+					query = "ALTER TABLE %.s.%s ENABLE TRIGGER %s_%s_update_as_table_trg" % (tableInfo.schema_name, 
+							tableInfo.partition_name, 
+							tableInfo.partition_name,
+							options.analysis_time.strftime("%y%m%d%H"))
+
+					cur.execute(query)
+
+					query = "UPDATE as_previ SET record_count = record_count + %d WHERE producer_id = %d AND analysis_time = %s"
+
+					cur.execute(query)
+
+					cur.query(query, (len(buff), options.producer_id, options.analysis_time))
+
+					cur.commit()
 
 			except Exception,e:
 				#print e
