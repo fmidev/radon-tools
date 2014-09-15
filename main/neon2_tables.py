@@ -308,13 +308,25 @@ def Validate(options, date):
 
 	return 0
 
-def PartitionExists(options, producer, geometry, partition):
+def GridPartitionExists(options, producer, geometry, partition):
 	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
 
 	if options.show_sql:
 		print "%s %s" % (query, (producer, geometry, partition)) 
 		
 	cur.execute(query, (producer, geometry, partition))
+
+	row = cur.fetchone()
+
+	return (int(row[0]) == 1)
+
+def PreviPartitionExists(options, producer, partition):
+	query = "SELECT count(*) FROM as_previ WHERE producer_id = %s AND partition_name = %s"
+
+	if options.show_sql:
+		print "%s %s" % (query, (producer, partition)) 
+		
+	cur.execute(query, (producer, partition))
 
 	row = cur.fetchone()
 
@@ -807,9 +819,14 @@ def CreateTables(options, element, date):
 		# Check if partition exists in as_grid
 		# This is the case when multiple geometries share one table
 
-		if PartitionExists(options, element.producer_id, element.geometry_id, partition_name):
-			print "Table partition %s for geometry %s exists already" % (partition_name, element.geometry_id)
-			continue
+		if producerinfo.class_id == 1:
+			if GridPartitionExists(options, element.producer_id, element.geometry_id, partition_name):
+				print "Table partition %s for geometry %s exists already" % (partition_name, element.geometry_id)
+				continue
+		else:
+			if PreviPartitionExists(options, element.producer_id, partition_name):
+				print "Table partition %s exists already" % (partition_name,)
+				continue
 
 		# Check that if as_grid did not have information on this partition, does the
 		# table still exist. If so, then we just need to add a row to as_grid.
