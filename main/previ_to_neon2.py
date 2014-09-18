@@ -476,6 +476,9 @@ PREPARE insertplan AS
 INSERT INTO %s.%s (previ_meta_id, analysis_time, forecast_period, value)
 VALUES ($1, $2, interval '1 hour' * $3, $4)""" % (tableInfo.schema_name, tableInfo.partition_name)
 
+	if options.show_sql:
+		print query
+
 	insertcur = conn.cursor()
 
 	insertcur.execute(query)
@@ -492,6 +495,9 @@ WHERE
 	forecast_period = $4 
 """ % (tableInfo.schema_name, tableInfo.partition_name) 
 	
+	if options.show_sql:
+		print query
+	
 	updatecur = conn.cursor()
 
 	updatecur.execute(query)
@@ -500,9 +506,7 @@ WHERE
 	# can only be used when analysis time is static (specified from
 	# command line) since the table name is dependent on that time
 
-	usePreparedStatements = (options.analysis_time != None)
-
-	if usePreparedStatements:
+	if options.analysis_time != None:
 		print "Using prepared statements for insert and update"
 
 	else:
@@ -615,80 +619,18 @@ WHERE
 
 		if totalrows % commit_chunk == 0:
 
-			try:
-
-				cur.execute("SAVEPOINT insert")
-
-				if options.bulk:
-					query = "ALTER TABLE %.s.%s DISABLE TRIGGER %s_%s_update_as_table_trg" % (tableInfo.schema_name, 
-							tableInfo.partition_name, 
-							tableInfo.partition_name,
-							options.analysis_time.strftime("%y%m%d%H"))
-
-					cur.execute(query)
-
-				f = StringIO.StringIO("\n".join(buff))
-				cur.copy_from(f, 
-					tableInfo.schema_name + "." + tableInfo.partition_name, 
-					columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'value'])
-				
-				inserts = inserts + len(buff)
-
-				if options.bulk:
-					query = "ALTER TABLE %.s.%s ENABLE TRIGGER %s_%s_update_as_table_trg" % (tableInfo.schema_name, 
-							tableInfo.partition_name, 
-							tableInfo.partition_name,
-							options.analysis_time.strftime("%y%m%d%H"))
-
-					cur.execute(query)
-
-					query = "UPDATE as_previ SET record_count = record_count + %d WHERE producer_id = %d AND analysis_time = %s"
-
-					cur.execute(query)
-
-					cur.query(query, (len(buff), options.producer_id, options.analysis_time))
-
-					cur.commit()
-
-			except Exception,e:
-				#print e
-				copySucceeded = False
-
-#				sys.exit(1)
-
-				cur.execute("ROLLBACK TO SAVEPOINT insert")
-				
-				for cols in colbuff:
-					try:
-						if not options.dry_run:
-							cur.execute("SAVEPOINT insert")
-							if usePreparedStatements:
-								insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s)", (meta_id, cols["analysis_time"], cols["forecast_period"], cols["value"]))
-							else:
-								query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, value) VALUES (%s, %s, %s, %s)"
-								cur.execute(query, (cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["value"]))
-							inserts += 1;
-
-					except Exception,e:
-						if not options.dry_run:
-							cur.execute("ROLLBACK TO SAVEPOINT insert")
-
-						if usePreparedStatements:
-		  					updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s)", (cols["value"], meta_id, cols["analysis_time"], cols["forecast_period"]))
-		  				else:
-		  					query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s"
-			  				cur.execute(query, (cols["value"], cols['meta_id'], cols["analysis_time"], cols["forecast_period"]))
+			ret = LoadToDatabase(options, tableInfo, buff, colbuff, insertcur, updatecur)
 			
-						updates += 1;
-				
-				cur.execute("RELEASE SAVEPOINT insert")
-		
+			inserts += ret.inserts
+			updates += ret.updates
+
 			stop_time = datetime.datetime.now()
 
 			method = "copy"
 
-			if copySucceeded == False:
+			if ret.copySucceeded == False:
 				method = "insert"
+
 			print "%s using method '%s': cumulative inserts: %d, updates: %d, lines per second: %d" % (datetime.datetime.now(), method, inserts, updates, commit_chunk/GetTotalSeconds(stop_time-start_time))
 			buff = []
 			colbuff = []
@@ -702,10 +644,103 @@ WHERE
 			conn.commit()
 	
 			start_time = stop_time
+
+	ret = LoadToDatabase(options, tableInfo, buff, colbuff, insertcur, updatecur)
+
+	inserts += ret.inserts
+	updates += ret.updates
+
 	conn.commit()
 	conn.close()
 
-	print "Did",inserts,"inserts,",updates,"updates"
+	print "%s did %s inserts, %s updates" % (datetime.datetime.now(), inserts, updates)
+
+def LoadToDatabase(options, tableInfo, buff, colbuff, insertcure, updatecur):
+
+	ret = Bunch()
+
+	ret.copySucceeded = True
+	ret.inserts = 0
+	ret.updates = 0
+
+	usePreparedStatements = (options.analysis_time != None)
+
+	query = None
+
+	try:
+
+		cur.execute("SAVEPOINT insert")
+
+		if options.bulk:
+			query = "ALTER TABLE %s.%s DISABLE TRIGGER %s_update_as_table_trg" % (tableInfo.schema_name, 
+					tableInfo.partition_name, 
+					tableInfo.partition_name)
+
+			if options.show_sql:
+				print "%s" % (query)
+
+			cur.execute(query)
+
+		f = StringIO.StringIO("\n".join(buff))
+		cur.copy_from(f, tableInfo.schema_name + "." + tableInfo.partition_name, 
+			columns = ['previ_meta_id', 'analysis_time', 'forecast_period', 'value'])
+
+		ret.inserts = len(buff)
+
+		if options.bulk:
+			query = "ALTER TABLE %s.%s ENABLE TRIGGER %s_update_as_table_trg" % (tableInfo.schema_name, 
+					tableInfo.partition_name, 
+					tableInfo.partition_name)
+
+			if options.show_sql:
+				print "%s" % (query)
+
+			cur.execute(query)
+
+			query = "UPDATE as_previ SET record_count = record_count + %d" % (ret.inserts) 
+			query += " WHERE producer_id = %s AND analysis_time = %s"
+
+			if options.show_sql:
+				print "%s" % (query)
+
+			cur.execute(query, (options.producer_id, options.analysis_time))
+
+	except Exception,e:
+
+		ret.copySucceeded = False
+		cur.execute("ROLLBACK TO SAVEPOINT insert")
+		
+		for cols in colbuff:
+			try:
+				if not options.dry_run:
+					cur.execute("SAVEPOINT insert")
+					if usePreparedStatements:
+						insertcur.execute("EXECUTE insertplan (%s, %s, %s, %s)", (cols["meta_id"], cols["analysis_time"], cols["forecast_period"], cols["value"]))
+						if options.show_sql:
+							print "EXECUTE insertplan (%s, %s, %s, %s)", (cols["meta_id"], cols["analysis_time"], cols["forecast_period"], cols["value"])
+					else:
+						query = "INSERT INTO " + tableInfo.schema_name + "." + tableInfo.partition_name + " (previ_meta_id, analysis_time, forecast_period, value) VALUES (%s, %s, %s, %s)"
+						cur.execute(query, (cols['meta_id'], cols["analysis_time"], cols["forecast_period"], cols["value"]))
+					ret.inserts += 1
+
+			except Exception,e:
+				if not options.dry_run:
+					cur.execute("ROLLBACK TO SAVEPOINT insert")
+
+					if usePreparedStatements:
+						updatecur.execute("EXECUTE updateplan (%s,%s,%s,%s)", (cols["value"], cols["meta_id"], cols["analysis_time"], cols["forecast_period"]))
+						if options.show_sql:
+							print "EXECUTE updateplan (%s,%s,%s,%s)", (cols["value"], cols["meta_id"], cols["analysis_time"], cols["forecast_period"])
+					else:
+						query = "UPDATE " + tableInfo.schema_name + "." + tableInfo.partition_name + " SET value = %s WHERE previ_meta_id = %s AND analysis_time = %s AND forecast_period = %s"
+	  					cur.execute(query, (cols["value"], cols['meta_id'], cols["analysis_time"], cols["forecast_period"]))
+
+					ret.updates += 1
+		
+		cur.execute("RELEASE SAVEPOINT insert")
+	conn.commit()
+
+	return ret
 
 # Main body
 
