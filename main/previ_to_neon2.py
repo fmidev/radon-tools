@@ -597,6 +597,9 @@ WHERE
 				print e
 				continue
 
+		# Assume forecast period unit is one hour
+		cols["forecast_period"] = "%s:00:00" % (cols['forecast_period'])
+
 		meta_id = None
 
 		try:
