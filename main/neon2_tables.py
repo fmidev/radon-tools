@@ -692,7 +692,7 @@ def CreateViews(options, element, class_id):
 CREATE OR REPLACE VIEW public.%s_v AS
 SELECT
 		a.producer_id,
-		p.name AS producer_name,
+		f.name AS producer_name,
 		a.analysis_time,
 		a.geometry_id,
 		g.name AS geometry_name,
@@ -733,7 +733,7 @@ WHERE
 CREATE OR REPLACE VIEW public.%s_v AS
 SELECT
 		m.producer_id,
-		p.name AS producer_name,
+		f.name AS producer_name,
 		a.analysis_time,
 		m.station_id,
 		st_x(m.position) AS longitude,
