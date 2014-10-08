@@ -177,13 +177,13 @@ bool GribLoader::Load(const string &theInfile)
 bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader) 
 {
 
-  g.centre = reader.Message()->Centre();
-  g.ednum = reader.Message()->Edition();
+  g.centre = reader.Message().Centre();
+  g.ednum = reader.Message().Edition();
 
-  g.param = reader.Message()->ParameterNumber();
-  g.levtype = reader.Message()->LevelType();
+  g.param = reader.Message().ParameterNumber();
+  g.levtype = reader.Message().LevelType();
 
-  g.process = reader.Message()->Process();
+  g.process = reader.Message().Process();
 
   if (options.process != 0)
     g.process = options.process;
@@ -192,8 +192,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
     g.filetype = "grib";
 
-    g.novers = reader.Message()->Table2Version();
-    g.timeRangeIndicator = reader.Message()->TimeRangeIndicator();
+    g.novers = reader.Message().Table2Version();
+    g.timeRangeIndicator = reader.Message().TimeRangeIndicator();
     
     g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
@@ -214,17 +214,17 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     g.timeRangeIndicator = 0;
 
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message()->ParameterCategory(), reader.Message()->ParameterDiscipline(), g.process);
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message().ParameterCategory(), reader.Message().ParameterDiscipline(), g.process);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
 
-    g.category = reader.Message()->ParameterCategory();
-    g.discipline = reader.Message()->ParameterDiscipline();
+    g.category = reader.Message().ParameterCategory();
+    g.discipline = reader.Message().ParameterDiscipline();
 
     if (g.parname.empty())
     {
       if (options.verbose)
       {
-        cerr << "Parameter name not found for category " << reader.Message()->ParameterCategory() << ", discipline " << reader.Message()->ParameterDiscipline() << " number " << g.param << endl;
+        cerr << "Parameter name not found for category " << reader.Message().ParameterCategory() << ", discipline " << reader.Message().ParameterDiscipline() << " number " << g.param << endl;
       }
 
     return false;
@@ -240,20 +240,20 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     return false;
   }
 
-  g.year = reader.Message()->Year();
-  g.month = reader.Message()->Month();
-  g.day = reader.Message()->Day();
-  g.hour = reader.Message()->Hour();
-  g.minute = reader.Message()->Minute();
+  g.year = reader.Message().Year();
+  g.month = reader.Message().Month();
+  g.day = reader.Message().Day();
+  g.hour = reader.Message().Hour();
+  g.minute = reader.Message().Minute();
 
-  g.ni = reader.Message()->SizeX();
-  g.nj = reader.Message()->SizeY();
+  g.ni = reader.Message().SizeX();
+  g.nj = reader.Message().SizeY();
 
-  //g.di = reader.Message()->iDirectionIncrement();
-  //g.dj = reader.Message()->jDirectionIncrement();
+  //g.di = reader.Message().iDirectionIncrement();
+  //g.dj = reader.Message().jDirectionIncrement();
 
-  g.lat = reader.Message()->Y0() * 1000;
-  g.lon = reader.Message()->X0() * 1000;
+  g.lat = reader.Message().Y0() * 1000;
+  g.lon = reader.Message().X0() * 1000;
 
   // This is because we need to find the 
   // correct geometry from GRID_REG_GEOM in neons
@@ -268,29 +268,29 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.lon += 360000;  // Area is whole globe, ECMWF special case
   } 
 
-  g.gridtype = reader.Message()->GridType();
+  g.gridtype = reader.Message().GridType();
   
-  switch (reader.Message()->NormalizedGridType()) 
+  switch (reader.Message().NormalizedGridType()) 
   {
     case 0: // ll
-      g.di = reader.Message()->iDirectionIncrement();
-      g.dj = reader.Message()->jDirectionIncrement();
+      g.di = reader.Message().iDirectionIncrement();
+      g.dj = reader.Message().jDirectionIncrement();
       g.di *= 1000;
       g.dj *= 1000;
       g.grtyp = "ll";
       break;
 
     case 10: // rll
-      g.di = reader.Message()->iDirectionIncrement();
-      g.dj = reader.Message()->jDirectionIncrement();
+      g.di = reader.Message().iDirectionIncrement();
+      g.dj = reader.Message().jDirectionIncrement();
       g.di *= 1000;
       g.dj *= 1000;
       g.grtyp = "rll";
       break;
 
     case 5: // ps, ei tarkoita puoluetta
-      g.di = reader.Message()->XLengthInMeters();
-      g.dj = reader.Message()->YLengthInMeters();
+      g.di = reader.Message().XLengthInMeters();
+      g.dj = reader.Message().YLengthInMeters();
       g.grtyp = "ps";
       break;
 
@@ -317,7 +317,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.base_date = ss.str();
 
-  g.level1 = reader.Message()->LevelValue();
+  g.level1 = reader.Message().LevelValue();
   g.level2 = 0;
 
   g.lvl1_lvl2 = g.level1 + 1000 * g.level2;
@@ -326,9 +326,9 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.locdef = 0; 
   // if exists, otherwise zero
-  if (reader.Message()->KeyExists("localDefinitionNumber"))
+  if (reader.Message().KeyExists("localDefinitionNumber"))
   {
-    g.locdef = reader.Message()->LocalDefinitionNumber();  
+    g.locdef = reader.Message().LocalDefinitionNumber();  
   }
 
   if (g.ednum == 1) 
@@ -336,8 +336,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
      if (g.locdef == 1 || g.locdef == 2 || g.locdef == 5 || g.locdef == 15 || g.locdef == 16 || g.locdef == 30) 
      {
-       g.ldeftype = reader.Message()->DataType();
-       g.ldefnumber = reader.Message()->PerturbationNumber();
+       g.ldeftype = reader.Message().Type();
+       g.ldefnumber = reader.Message().PerturbationNumber();
      }
      else if (g.locdef == 19) 
      {
@@ -351,40 +351,40 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
      {
        case 1:
        case 11:
-         g.ldeftype = reader.Message()->TypeOfEnsembleForecast();
-         g.ldefnumber = reader.Message()->PerturbationNumber();
+         g.ldeftype = reader.Message().TypeOfEnsembleForecast();
+         g.ldefnumber = reader.Message().PerturbationNumber();
          break;
 
        case 2:
        case 12:
-         g.ldeftype = reader.Message()->DerivedForecast();
-         g.ldefnumber = reader.Message()->NumberOfForecastsInTheEnsemble();
+         g.ldeftype = reader.Message().DerivedForecast();
+         g.ldefnumber = reader.Message().NumberOfForecastsInTheEnsemble();
          break;
 
        case 3:
        case 4:
        case 13:
        case 14:
-         g.ldeftype = reader.Message()->DerivedForecast();
-         g.ldefnumber = reader.Message()->ClusterIdentifier();
+         g.ldeftype = reader.Message().DerivedForecast();
+         g.ldefnumber = reader.Message().ClusterIdentifier();
          break;
 
        case 5:
        case 9:
-         g.ldeftype = reader.Message()->ForecastProbabilityNumber();
-         g.ldefnumber = reader.Message()->ProbabilityType();
+         g.ldeftype = reader.Message().ForecastProbabilityNumber();
+         g.ldefnumber = reader.Message().ProbabilityType();
          break;
 
        case 6:
        case 10:
-         g.ldeftype = reader.Message()->PercentileValue();
+         g.ldeftype = reader.Message().PercentileValue();
          g.ldefnumber = 0;
          break;
 
        case 8:
-         g.ldeftype = reader.Message()->NumberOfTimeRange();
-         g.ldefnumber = reader.Message()->TypeOfTimeIncrement();
-         g.step = reader.Message()->EndStep();
+         g.ldeftype = reader.Message().NumberOfTimeRange();
+         g.ldefnumber = reader.Message().TypeOfTimeIncrement();
+         g.step = reader.Message().EndStep();
          break;
      }
    }
@@ -401,9 +401,9 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
     long definitionNumber = 0;
 
-    if (reader.Message()->KeyExists("localDefinitionNumber"))
+    if (reader.Message().KeyExists("localDefinitionNumber"))
     {
-      definitionNumber = reader.Message()->LocalDefinitionNumber();
+      definitionNumber = reader.Message().LocalDefinitionNumber();
     }
 
     // EC uses local definition number in Grib1
@@ -420,8 +420,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
       case 1:
         // MARS labeling or ensemble forecast data
       {
-        long definitionType = reader.Message()->DataType();
-        long perturbationNumber = reader.Message()->PerturbationNumber();
+        long definitionType = reader.Message().Type();
+        long perturbationNumber = reader.Message().PerturbationNumber();
 
         switch (definitionType)
         {
@@ -450,7 +450,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
       // grib2
 
-      long typeOfGeneratingProcess = reader.Message()->TypeOfGeneratingProcess();
+      long typeOfGeneratingProcess = reader.Message().TypeOfGeneratingProcess();
 
       switch (typeOfGeneratingProcess)
       {
@@ -470,8 +470,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
           // eps
         {
 
-          long typeOfEnsemble = reader.Message()->TypeOfEnsembleForecast();
-          long perturbationNumber = reader.Message()->PerturbationNumber();
+          long typeOfEnsemble = reader.Message().TypeOfEnsembleForecast();
+          long perturbationNumber = reader.Message().PerturbationNumber();
 
           switch (typeOfEnsemble)
           {
@@ -510,14 +510,14 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.eps_specifier = "0";
  
-  g.stepType = reader.Message()->TimeRangeIndicator();
-  g.timeUnit = reader.Message()->UnitOfTimeRange();
+  g.stepType = reader.Message().TimeRangeIndicator();
+  g.timeUnit = reader.Message().UnitOfTimeRange();
 
-  g.startstep = reader.Message()->NormalizedStep(false, false);
-  g.endstep = reader.Message()->NormalizedStep(true, false);
+  g.startstep = reader.Message().NormalizedStep(false, false);
+  g.endstep = reader.Message().NormalizedStep(true, false);
   g.step = g.endstep;
   
-  g.fcst_per = reader.Message()->NormalizedStep(true, true);
+  g.fcst_per = reader.Message().NormalizedStep(true, true);
 
   return true;
 }
