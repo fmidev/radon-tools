@@ -42,8 +42,11 @@ install:
 	mkdir -p $(bindir)
 	$(INSTALL_PROG) build/release/grid_to_neons $(bindir)
 	$(INSTALL_PROG) build/release/create_grid_tables $(bindir)
-	$(INSTALL_PROG) main/neon2_tables.py $(bindir)
-	$(INSTALL_PROG) main/previ_to_neon2.py $(bindir)
+
+	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
+		$(INSTALL_PROG) main/neon2_tables.py $(bindir) ; \
+		$(INSTALL_PROG) main/previ_to_neon2.py $(bindir) ; \
+	fi;
 
 test:	debug
 	cd regression && sh test_all.sh

@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.9.4
+Version:        14.10.8
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -18,21 +18,21 @@ BuildRequires:  libfmigrib-devel
 BuildRequires:  libfmidb-devel >= 14.8.19
 BuildRequires:  grib_api-devel >= 1.11.0
 BuildRequires:  boost-devel >= 1.54
+Requires:       hdf5
+Requires:       oracle-instantclient-basic
 %if %{defined suse_version}
 Requires:	libjasper
 Requires:	libnetcdf4 >= 4.0.1
 %else
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-%endif
-Requires:       hdf5
-Requires:       oracle-instantclient-basic
 Requires:	python-psycopg2
 Requires:	python-bunch
-Provides:	grid_to_neons
-Provides:	create_grid_tables
 Provides:	neon2_tables.py
 Provides:	previ_to_neon2.py
+%endif
+Provides:	grid_to_neons
+Provides:	create_grid_tables
 
 %description
 Neons-tools includes programs for loading data to neons DB.
@@ -59,10 +59,25 @@ rm -rf %{buildroot}
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_neons
 %{_bindir}/create_grid_tables
+
+%if "%{dist}" == ".el6"
 %{_bindir}/neon2_tables.py
 %{_bindir}/previ_to_neon2.py
+%endif
 
 %changelog
+* Wed Oct  8 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.8-1.fmi
+- Changes in fmigrib
+* Thu Sep 24 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.24-1.fmi
+- Small fixes in previ_to_neon2.py and neon2_tables.py
+* Thu Sep 18 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.18-1.fmi
+- previ_to_neon2.py --bulk
+* Mon Sep 15 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.15-1.fmi
+- Small fixes
+* Mon Sep  8 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.8-1.fmi
+- Bugfix in previ_to_neon2.py
+* Fri Sep  5 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.5-1.fmi
+- Bugfixing in previ table creation
 * Thu Sep  4 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.4-1.fmi
 - Additional features to previ_to_neon2.py and neon2_tables.py
 * Tue Sep  2 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.2-1.fmi
