@@ -5,7 +5,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include "NFmiNeonsDB.h"
-#include "NFmiNeon2DB.h"
+#include "NFmiRadonDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
@@ -149,7 +149,7 @@ bool GribLoader::Load(const string &theInfile)
       return false;
     }
 
-    itsDatabaseLoader.WriteToNeon2(g);
+    itsDatabaseLoader.WriteToRadon(g);
 
     success++;
 

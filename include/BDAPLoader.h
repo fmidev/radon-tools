@@ -18,7 +18,7 @@ class BDAPLoader
     std::string REFFileName(const fc_info &info);
 
     bool WriteAS(const fc_info &info);
-    bool WriteToNeon2(const fc_info &info);
+    bool WriteToRadon(const fc_info &info);
 
 private:
 
@@ -40,7 +40,7 @@ private:
     char *base;
     std::string itsHostname;
 
-	bool itsUseNeon2;
+	bool itsUseRadon;
 
 
 };

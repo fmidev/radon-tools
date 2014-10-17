@@ -1,6 +1,6 @@
 #include "BDAPLoader.h"
 #include "NFmiNeonsDB.h"
-#include "NFmiNeon2DB.h"
+#include "NFmiRadonDB.h"
 #include <iostream>
 #include <sstream>
 #include <iomanip>
@@ -15,7 +15,7 @@ BDAPLoader::BDAPLoader()
   : itsUsername("wetodb")
   , itsPassword("3loHRgdio")
   , itsDatabase("neons")
-  , itsUseNeon2(false)
+  , itsUseRadon(false)
 {
 
   char *dbName;
@@ -26,8 +26,8 @@ BDAPLoader::BDAPLoader()
   NFmiNeonsDB::Instance().Connect(itsUsername, itsPassword, itsDatabase);
   try
   {
-    NFmiNeon2DB::Instance().Connect(itsUsername, itsPassword, "neon2");
-    itsUseNeon2 = true;
+    NFmiRadonDB::Instance().Connect(itsUsername, itsPassword, "neon2");
+    itsUseRadon = true;
   }
   catch (int e) {
     // nada
@@ -410,12 +410,12 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
 }
 
-bool BDAPLoader::WriteToNeon2(const fc_info &info)
+bool BDAPLoader::WriteToRadon(const fc_info &info)
 {
 
   // Clear cache
 
-  if (!itsUseNeon2)
+  if (!itsUseRadon)
   {
     return false;
   }
@@ -427,7 +427,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
   stringstream query;
   vector<string> row;
 
-  map<string,string> r = NFmiNeon2DB::Instance().ProducerFromGrib(info.centre, info.process);
+  map<string,string> r = NFmiRadonDB::Instance().ProducerFromGrib(info.centre, info.process);
 
   long geometry_id = 0;
   string geometry_name = "";
@@ -445,9 +445,9 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     if (options.dry_run)
       cout << query.str() << endl;
 
-    NFmiNeon2DB::Instance().Query(query.str());
+    NFmiRadonDB::Instance().Query(query.str());
 
-    row = NFmiNeon2DB::Instance().FetchRow();
+    row = NFmiRadonDB::Instance().FetchRow();
 
     if (row.empty())
     {
@@ -461,7 +461,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   }
 
-  map<string,string> l = NFmiNeon2DB::Instance().LevelFromGrib(producer_id, info.levtype, info.ednum);
+  map<string,string> l = NFmiRadonDB::Instance().LevelFromGrib(producer_id, info.levtype, info.ednum);
 
   if (l.empty())
   {
@@ -479,7 +479,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
     if (info.ednum == 1)
     {
-      p = NFmiNeon2DB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 	  
 	  if (p.empty())
 	  {
@@ -490,7 +490,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     }
     else if (info.ednum == 2)
     {
-      p = NFmiNeon2DB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
 	  if (p.empty())
 	  {
@@ -501,7 +501,7 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
     }
 	else if (info.ednum == 3)
 	{
-      p = NFmiNeon2DB::Instance().ParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().ParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
 	  if (p.empty())
 	  {
@@ -527,12 +527,12 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
           << " AND geometry_id = " << geometry_id
           << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
 
-    NFmiNeon2DB::Instance().Query(query.str());
+    NFmiRadonDB::Instance().Query(query.str());
 
     if (options.dry_run)
       cout << query.str() << endl;
 
-    row = NFmiNeon2DB::Instance().FetchRow();
+    row = NFmiRadonDB::Instance().FetchRow();
 
     if (row.empty())
     {
@@ -584,8 +584,8 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
 
   try
   {
-    if (!options.dry_run && itsUseNeon2)
-      NFmiNeon2DB::Instance().Execute(query.str());
+    if (!options.dry_run && itsUseRadon)
+      NFmiRadonDB::Instance().Execute(query.str());
   }
   catch (int e)
   {
@@ -620,27 +620,27 @@ bool BDAPLoader::WriteToNeon2(const fc_info &info)
       try
       {
         if (!options.dry_run)
-          NFmiNeon2DB::Instance().Execute(query.str());
+          NFmiRadonDB::Instance().Execute(query.str());
       }
       catch (int ee)
       {
         // Give up
-        NFmiNeon2DB::Instance().Rollback();
+        NFmiRadonDB::Instance().Rollback();
         return false;
       }
     }
     else
     {
-      NFmiNeon2DB::Instance().Rollback();
+      NFmiRadonDB::Instance().Rollback();
       cerr << "Load failed with: " << info.filename << endl;
       return false;
     }
   }
 
   if (options.dry_run)
-    NFmiNeon2DB::Instance().Rollback();
+    NFmiRadonDB::Instance().Rollback();
   else
-    NFmiNeon2DB::Instance().Commit();
+    NFmiRadonDB::Instance().Commit();
 
   return true;
 

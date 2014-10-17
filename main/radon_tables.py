@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Create or drop tables to neon2 database based on the metadata in the database
+# Create or drop tables to radon database based on the metadata in the database
 #
 
 import sys
@@ -77,7 +77,7 @@ def ReadCommandLine(argv):
 	databasegroup.add_option("--host",
 					action="store",
 					type="string",
-					default="dbdev.fmi.fi",
+					default="vorlon.fmi.fi",
 					help="Database hostname")
 
 	databasegroup.add_option("--port",
@@ -89,7 +89,7 @@ def ReadCommandLine(argv):
 	databasegroup.add_option("--database",
 					action="store",
 					type="string",
-					default="neon2",
+					default="radon",
 					help="Database name")
 
 	databasegroup.add_option("--user",
@@ -488,9 +488,9 @@ def CreateMainTable(options, element, class_id):
 	if not options.dry_run:
 		try:
 			cur.execute(query)
-			query = "GRANT SELECT ON %s.%s TO neon2_ro" % (element.schema_name, element.table_name)
+			query = "GRANT SELECT ON %s.%s TO radon_ro" % (element.schema_name, element.table_name)
 			cur.execute(query)
-			query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO neon2_rw" % (element.schema_name, element.table_name)
+			query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO radon_rw" % (element.schema_name, element.table_name)
 			cur.execute(query)
 
 		except psycopg2.ProgrammingError, e:
@@ -852,9 +852,9 @@ def CreateTables(options, element, date):
 
 			if not options.dry_run:
 				cur.execute(query)
-				query = "GRANT SELECT ON %s.%s TO neon2_ro" % (element.schema_name, partition_name)
+				query = "GRANT SELECT ON %s.%s TO radon_ro" % (element.schema_name, partition_name)
 				cur.execute(query)
-				query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO neon2_rw" % (element.schema_name, partition_name)
+				query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO radon_rw" % (element.schema_name, partition_name)
 				cur.execute(query)
 
 			as_table = None
@@ -924,7 +924,7 @@ if __name__ == '__main__':
 	password = None
 
 	try:
-		password = os.environ["NEON2_PASSWORD"]
+		password = os.environ["RADON_PASSWORD"]
 	except:
 		password = getpass.getpass()
 

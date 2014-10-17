@@ -45,7 +45,7 @@ required_columns.remove("forecast_type_value")
 def ReadCommandLine(argv):
 
 	desc = """
-Load previ csv to neon2.
+Load previ csv to radon.
 
 Program must know the values of the following metadata parameters. Values can be specified either in command line or at csv. Values at command line overwrite csv.
 """
@@ -143,7 +143,7 @@ Program must know the values of the following metadata parameters. Values can be
 	databasegroup.add_option("--host",
 					action="store",
 					type="string",
-					default="dbdev.fmi.fi",
+					default="vorlon.fmi.fi",
 					help="Database hostname")
 
 	databasegroup.add_option("--port",
@@ -155,7 +155,7 @@ Program must know the values of the following metadata parameters. Values can be
 	databasegroup.add_option("--database",
 					action="store",
 					type="string",
-					default="neon2",
+					default="radon",
 					help="Database name")
 
 	databasegroup.add_option("--user",
@@ -756,7 +756,7 @@ if __name__ == '__main__':
 	password = None
 
 	try:
-		password = os.environ["NEON2_PASSWORD"]
+		password = os.environ["RADON_PASSWORD"]
 	except:
 		password = getpass.getpass()
 

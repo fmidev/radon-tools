@@ -306,7 +306,7 @@ bool NetCDFLoader::Load(const string &theInfile)
           return false;
 	    }
 
-        itsDatabaseLoader.WriteToNeon2(info);
+        itsDatabaseLoader.WriteToRadon(info);
 
         if (options.verbose)
         {
@@ -348,7 +348,7 @@ bool NetCDFLoader::Load(const string &theInfile)
             return false;
           }
 
-          itsDatabaseLoader.WriteToNeon2(info);
+          itsDatabaseLoader.WriteToRadon(info);
 
           if (options.verbose)
   	  {
