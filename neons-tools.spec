@@ -6,17 +6,17 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.10.8
+Version:        14.10.22
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
-License:        LGPLv3
+License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel
-BuildRequires:  libfmidb-devel >= 14.8.19
-BuildRequires:  grib_api-devel >= 1.11.0
+BuildRequires:  libfmigrib-devel >= 14.10.9
+BuildRequires:  libfmidb-devel >= 14.9.20
+BuildRequires:  grib_api-devel >= 1.12.3
 BuildRequires:  boost-devel >= 1.54
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
@@ -28,8 +28,8 @@ Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:	python-psycopg2
 Requires:	python-bunch
-Provides:	neon2_tables.py
-Provides:	previ_to_neon2.py
+Provides:	radon_tables.py
+Provides:	previ_to_radon.py
 %endif
 Provides:	grid_to_neons
 Provides:	create_grid_tables
@@ -61,11 +61,15 @@ rm -rf %{buildroot}
 %{_bindir}/create_grid_tables
 
 %if "%{dist}" == ".el6"
-%{_bindir}/neon2_tables.py
-%{_bindir}/previ_to_neon2.py
+%{_bindir}/radon_tables.py
+%{_bindir}/previ_to_radon.py
 %endif
 
 %changelog
+* Wed Oct 22 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.22-1.fmi
+- More renaming
+* Mon Oct 20 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.20-1.fmi
+- Renaming neon2 --> radon
 * Wed Oct  8 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.8-1.fmi
 - Changes in fmigrib
 * Thu Sep 24 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.24-1.fmi

@@ -44,8 +44,8 @@ install:
 	$(INSTALL_PROG) build/release/create_grid_tables $(bindir)
 
 	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
-		$(INSTALL_PROG) main/neon2_tables.py $(bindir) ; \
-		$(INSTALL_PROG) main/previ_to_neon2.py $(bindir) ; \
+		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \
+		$(INSTALL_PROG) main/previ_to_radon.py $(bindir) ; \
 	fi;
 
 test:	debug
