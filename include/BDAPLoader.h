@@ -40,8 +40,7 @@ private:
     char *base;
     std::string itsHostname;
 
-	bool itsUseRadon;
-
+    bool itsUseRadon;
 
 };
 

@@ -26,7 +26,7 @@ BDAPLoader::BDAPLoader()
   NFmiNeonsDB::Instance().Connect(itsUsername, itsPassword, itsDatabase);
   try
   {
-    NFmiRadonDB::Instance().Connect(itsUsername, itsPassword, "neon2");
+    NFmiRadonDB::Instance().Connect(itsUsername, itsPassword, "radon");
     itsUseRadon = true;
   }
   catch (int e) {
@@ -420,7 +420,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     return false;
   }
 
-  cout << "Writing to neon2" << endl;
+  cout << "Writing to radon" << endl;
 
   Init();
 
@@ -465,7 +465,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   if (l.empty())
   {
-    cerr << "Level " << info.levtype << " not found from neon2 for producer " << producer_id << "\n";
+    cerr << "Level " << info.levtype << " not found from radon for producer " << producer_id << "\n";
     return false;
   }
 
@@ -483,7 +483,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 	  
 	  if (p.empty())
 	  {
-        cerr << "Parameter not found from neon2\n";
+        cerr << "Parameter not found from radon\n";
         cerr << "Table version: " << info.novers << " param " << info.param << " tri " << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
 		return false;
 	  }
@@ -494,7 +494,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
 	  if (p.empty())
 	  {
-        cerr << "Parameter not found from neon2\n";
+        cerr << "Parameter not found from radon\n";
         cerr << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
 		return false;
 	  }
@@ -505,7 +505,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
 	  if (p.empty())
 	  {
-        cerr << "Parameter not found from neon2\n";
+        cerr << "Parameter not found from radon\n";
         cerr << "NetCDF name: " << info.ncname << endl;
 		return false;
 	  }
