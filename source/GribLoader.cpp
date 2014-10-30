@@ -195,7 +195,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.novers = reader.Message().Table2Version();
     g.timeRangeIndicator = reader.Message().TimeRangeIndicator();
     
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator);
+    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator, g.levtype);
     g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
     if (g.parname.empty())
