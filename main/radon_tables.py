@@ -640,7 +640,8 @@ def DropTables(options, element):
 						print "Not removing file since I'm in testing still"
 						#os.remove(file)
 
-			query = "DELETE FROM " + element.table_name + " WHERE producer_id = %s AND analysis_time = %s"
+			elif as_table == 'as_previ':
+				query = "DELETE FROM " + element.table_name + " WHERE previ_meta_id = (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time = %s"
 
 			args = (element.producer_id, analysis_time)
 

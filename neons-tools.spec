@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.10.22
+Version:        14.11.4
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -15,7 +15,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 14.10.9
-BuildRequires:  libfmidb-devel >= 14.9.20
+BuildRequires:  libfmidb-devel >= 14.10.30
 BuildRequires:  grib_api-devel >= 1.12.3
 BuildRequires:  boost-devel >= 1.54
 Requires:       hdf5
@@ -66,6 +66,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Nov  4 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.4-1.fmi
+- Fix in radon_tables.py
+* Thu Oct 30 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.30-1.fmi
+- Use level type to fetch param name
 * Wed Oct 22 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.22-1.fmi
 - More renaming
 * Mon Oct 20 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.20-1.fmi
