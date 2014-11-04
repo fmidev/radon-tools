@@ -573,15 +573,26 @@ def DropTables(options, element):
 	producerinfo = GetProducer(element.producer_id)
 
 	as_table = 'as_grid'
-
-	if producerinfo.class_id == 3:
+	query = ""
+	
+	args = (element.producer_id,)
+	
+	if producerinfo.class_id == 1:
+		print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id)
+		args = args + (element.geometry_id,)
+		query = "SELECT analysis_time, partition_name, delete_time FROM as_grid WHERE producer_id = %s AND geometry_id = %s"
+		
+	elif producerinfo.class_id == 3:
 		as_table = 'as_previ'
+		print "Producer: %d" % (element.producer_id)
 
-	print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id)
+		query = "SELECT analysis_time, partition_name, delete_time FROM as_previ WHERE producer_id = %s"
 
-	query = "SELECT analysis_time, partition_name, delete_time FROM as_grid WHERE producer_id = %s AND geometry_id = %s"
 
-	cur.execute(query, (element.producer_id, element.geometry_id))
+	if options.show_sql:
+		print "%s, %s" % (query, args)
+
+	cur.execute(query, args)
 
 	rows = cur.fetchall()
 
@@ -659,7 +670,7 @@ def DropTables(options, element):
 			# If table partition is empty and it is not referenced in as_{grid|previ} anymore,
 			# we can drop it
 
-			query = "SELECT count(*) FROM as_grid WHERE partition_name = %s"
+			query = "SELECT count(*) FROM " + as_table + " WHERE partition_name = %s"
 
 			cur.execute(query, (partition_name,))
 
