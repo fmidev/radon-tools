@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.11.4
+Version:        14.11.5
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -66,6 +66,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Nov  5 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.5-1.fmi
+- Minor changes form yesterday
 * Tue Nov  4 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.4-1.fmi
 - Fix in radon_tables.py
 * Thu Oct 30 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.30-1.fmi
