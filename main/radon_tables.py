@@ -170,7 +170,7 @@ def Validate(options, date):
 			print "Parent table %s does not exist" % (element.table_name,)
 			print "Fixing.."
 			
-			CreateMainTable(options, element, producerinfo.class_id)
+			CreateMainTable(options, element, producerinfo)
 
 		# Check main table view
 
@@ -235,7 +235,7 @@ def Validate(options, date):
 			print "Table %s does not have partitioning trigger defined" % (element.table_name)
 			print "Fixing.."
 
-			CreatePartitioningTrigger(options, element.schema_name, element.table_name)
+			CreatePartitioningTrigger(options, producerinfo, element.schema_name, element.table_name)
 
 		print "Parent table %s is valid" % (element.table_name)
 
@@ -454,9 +454,14 @@ def GetDefinitions(options):
 	
 	return ret
 
-def ListPartitions(options, table_name):
+def ListPartitions(options, producerinfo, table_name):
 
-	query = "SELECT table_name, partition_name FROM as_grid WHERE table_name = %s ORDER BY partition_name"
+	as_table = "as_grid"
+
+	if producerinfo.class_id == 3:
+		as_table = "as_previ"
+
+	query = "SELECT table_name, partition_name FROM " + as_table + " WHERE table_name = %s ORDER BY partition_name"
 
 	if options.show_sql:
 		print query
@@ -473,9 +478,11 @@ def ListPartitions(options, table_name):
 	return partitions
 
 
-def CreateMainTable(options, element, class_id):
+def CreateMainTable(options, element, producerinfo):
 
 	template_table = "grid_data_template"
+
+	class_id = producerinfo.class_id
 
 	if class_id == 3:
 		template_table = "previ_data_template"
@@ -503,9 +510,9 @@ def CreateMainTable(options, element, class_id):
 				print e
 				sys.exit(1)
 	CreateViews(options, element, class_id)
-	CreatePartitioningTrigger(options, element.schema_name, element.table_name)
+	CreatePartitioningTrigger(options, producerinfo, element.schema_name, element.table_name)
 
-def CreatePartitioningTrigger(options, schema_name, table_name):
+def CreatePartitioningTrigger(options, producerinfo, schema_name, table_name):
 
 	query = """
 CREATE OR REPLACE FUNCTION %s_partitioning_f()
@@ -516,7 +523,7 @@ BEGIN
 	analysistime := to_char(NEW.analysis_time, 'yyyymmddhh24');
 """ % (table_name)
 
-	partitions = ListPartitions(options, table_name)
+	partitions = ListPartitions(options, producerinfo, table_name)
 
 	if len(partitions) == 0:
 		query += "	RAISE EXCEPTION 'No partitions available';"
@@ -538,7 +545,7 @@ BEGIN
 
 		query += """
 	ELSE
-		RAISE EXCEPTION 'Partition not found for analysis_time';
+		RAISE EXCEPTION 'Partition not found for analysis_time %', NEW.analysis_time;
 	END IF;"""
 
 	query += """
@@ -812,7 +819,7 @@ def CreateTables(options, element, date):
 	if int(cur.fetchone()[0]) == 0:
 
 		print "Parent table %s.%s does not exists, creating" % (element.schema_name, element.table_name)
-		CreateMainTable(options, element, producerinfo.class_id)
+		CreateMainTable(options, element, producerinfo)
 
 	# All DDL on one producer is done in one transaction
 
@@ -853,11 +860,12 @@ def CreateTables(options, element, date):
 
 		row = cur.fetchone()
 
-		if int(row[0]) == 0:
+		if row == None or int(row[0]) == 0:
 			partitionAdded = True
 			print "Creating partition %s" % (partition_name)
 
-			query = "CREATE TABLE %s.%s (CHECK (date_trunc('hour', analysis_time) = to_timestamp('%s', 'yyyymmddhh24'))) INHERITS (%s.%s)" % (element.schema_name, partition_name, analysis_time, element.schema_name, element.table_name)
+			analysis_time_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H').strftime('%Y-%m-%d %H:%M:%S')
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, analysis_time_timestamp, element.schema_name, element.table_name)
 
 			if options.show_sql:
 				print query
@@ -922,7 +930,7 @@ def CreateTables(options, element, date):
 	# Update trigger 
 
 	if partitionAdded:
-		CreatePartitioningTrigger(options, element.schema_name, element.table_name)
+		CreatePartitioningTrigger(options, producerinfo, element.schema_name, element.table_name)
 
 	if not options.dry_run:
 		conn.commit()
@@ -960,7 +968,7 @@ if __name__ == '__main__':
 	for element in definitions:
 		if options.recreate_triggers:
 			print "Recreating triggers for table %s" % (element.table_name)
-			CreatePartitioningTrigger(options, element.schema_name, element.tablename)
+			CreatePartitioningTrigger(options, GetProducer(element.producer_id), element.schema_name, element.tablename)
 			conn.commit()
 		elif options.drop:
 			DropTables(options, element)
