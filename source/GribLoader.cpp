@@ -188,6 +188,10 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   if (options.process != 0)
     g.process = options.process;
 
+  // Default to deterministic forecast
+  
+  g.forecast_type_id = 1;
+  
   if (g.ednum == 1) 
   {
     g.filetype = "grib";
@@ -202,7 +206,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     {
       if (options.verbose)
       {
-        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << endl;
+        cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param << ", time range indicator " << g.timeRangeIndicator << " level type " << g.levtype << endl;
       }
 
       return false;
