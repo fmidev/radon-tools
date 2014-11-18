@@ -106,7 +106,6 @@ string BDAPLoader::REFFileName(const fc_info &info)
          << "_"
          << info.ldefnumber;
     }
-    ss << "." << info.filetype;
   }
   else if (info.ednum == 2) 
   {
