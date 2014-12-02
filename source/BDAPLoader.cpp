@@ -440,8 +440,8 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
             << "WHERE g.projection_id = p.id"
             << " AND nj = " << info.nj
             << " AND ni = " << info.ni
-            << " AND st_x(first_point) = " << info.lon
-            << " AND st_y(first_point) = " << info.lat
+            << " AND 1000 * st_x(first_point) = " << info.lon
+            << " AND 1000 * st_y(first_point) = " << info.lat
             << " AND di = " << info.di
             << " AND dj = " << info.dj
             << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
@@ -456,6 +456,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     if (row.empty())
     {
       cerr << "Geometry not found" << endl;
+      return false;
     }
 
     geometry_id = boost::lexical_cast<long> (row[0]);
