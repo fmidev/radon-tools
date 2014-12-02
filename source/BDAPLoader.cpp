@@ -436,9 +436,14 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   if (geometry_id == 0)
   {
 
-    query << "SELECT g.id,g.name FROM geom g, projection p WHERE g.projection_id = p.id AND"
-            << " nj = " << info.nj
+    query << "SELECT g.id,g.name FROM geom g, projection p "
+            << "WHERE g.projection_id = p.id"
+            << " AND nj = " << info.nj
             << " AND ni = " << info.ni
+            << " AND st_x(first_point) = " << info.lon
+            << " AND st_y(first_point) = " << info.lat
+            << " AND di = " << info.di
+            << " AND dj = " << info.dj
             << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
 
     if (options.dry_run)
@@ -480,36 +485,35 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     {
       p = NFmiRadonDB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 	  
-	  if (p.empty())
-	  {
+      if (p.empty())
+      {
         cerr << "Parameter not found from radon\n";
         cerr << "Table version: " << info.novers << " param " << info.param << " tri " << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-		return false;
-	  }
+        return false;
+      }
     }
     else if (info.ednum == 2)
     {
       p = NFmiRadonDB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
-	  if (p.empty())
-	  {
+      if (p.empty())
+      {
         cerr << "Parameter not found from radon\n";
         cerr << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-		return false;
-	  }
+        return false;
+      }
     }
-	else if (info.ednum == 3)
-	{
+    else if (info.ednum == 3)
+    {
       p = NFmiRadonDB::Instance().ParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
-	  if (p.empty())
-	  {
+      if (p.empty())
+      {
         cerr << "Parameter not found from radon\n";
         cerr << "NetCDF name: " << info.ncname << endl;
-		return false;
-	  }
-	}
-
+	return false;
+      }
+    }
     param_id = boost::lexical_cast<long> (p["id"]);
   }
 
@@ -535,7 +539,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
     if (row.empty())
     {
-      cerr << "Data set definition not found from NEON2 table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
+      cerr << "Data set definition not found from radon table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
       cerr << "The data could be too old" << endl;
       return false;
     }
