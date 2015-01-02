@@ -426,7 +426,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   stringstream query;
   vector<string> row;
 
-  map<string,string> r = NFmiRadonDB::Instance().ProducerFromGrib(info.centre, info.process);
+  map<string,string> r = NFmiRadonDB::Instance().GetProducerFromGrib(info.centre, info.process);
 
   long geometry_id = 0;
   string geometry_name = "";
@@ -466,7 +466,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   }
 
-  map<string,string> l = NFmiRadonDB::Instance().LevelFromGrib(producer_id, info.levtype, info.ednum);
+  map<string,string> l = NFmiRadonDB::Instance().GetLevelFromGrib(producer_id, info.levtype, info.ednum);
 
   if (l.empty())
   {
@@ -484,7 +484,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
     if (info.ednum == 1)
     {
-      p = NFmiRadonDB::Instance().ParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 	  
       if (p.empty())
       {
@@ -495,7 +495,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     }
     else if (info.ednum == 2)
     {
-      p = NFmiRadonDB::Instance().ParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
       if (p.empty())
       {
@@ -506,7 +506,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     }
     else if (info.ednum == 3)
     {
-      p = NFmiRadonDB::Instance().ParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = NFmiRadonDB::Instance().GetParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
 
       if (p.empty())
       {
