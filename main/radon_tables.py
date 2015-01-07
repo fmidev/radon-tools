@@ -968,7 +968,7 @@ if __name__ == '__main__':
 	for element in definitions:
 		if options.recreate_triggers:
 			print "Recreating triggers for table %s" % (element.table_name)
-			CreatePartitioningTrigger(options, GetProducer(element.producer_id), element.schema_name, element.tablename)
+			CreatePartitioningTrigger(options, GetProducer(element.producer_id), element.schema_name, element.table_name)
 			conn.commit()
 		elif options.drop:
 			DropTables(options, element)
