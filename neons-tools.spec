@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        14.12.2
+Version:        15.1.26
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -66,6 +66,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jan 26 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.26-1.fmi
+- Changes in fmidb
+* Wed Jan  7 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.7-1.fmi
+- Changes in fmidb
 * Tue Dec  2 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.12.2-1.fmi
 - Minor changes
 * Tue Nov  5 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.5-1.fmi
