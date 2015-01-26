@@ -19,19 +19,23 @@ RELEASE = (not DEBUG)
 
 # Assign compilers
 
-env['CC'] = 'gcc'
-env['CXX'] = 'g++'
-
 if os.environ.get('CC') != None:
         env['CC'] = os.environ.get('CC')
+else:
+	env['CC'] = 'gcc'
 
 if os.environ.get('CXX') != None:
         env['CXX'] = os.environ.get('CXX')
+else:
+	env['CXX'] = 'g++'
 
 
 # Includes
 
 includes = []
+
+if os.environ.get('INCLUDE') != None:
+        includes.append(os.environ.get('INCLUDE'))
 
 includes.append('include')
 

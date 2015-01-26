@@ -43,7 +43,7 @@ Table creation tools are also included.
 
 %build
 %if %{defined suse_version}
-make %{?_smp_mflags} CC=/usr/bin/g++-4.6 INCLUDE=-I/lustre/apps/partio/auxlibs
+make %{?_smp_mflags} CC=/usr/bin/g++-4.6 INCLUDE=/lustre/apps/partio/auxlibs
 %else
 make %{?_smp_mflags}
 %endif
