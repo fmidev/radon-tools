@@ -442,8 +442,8 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
             << " AND ni = " << info.ni
             << " AND 1000 * st_x(first_point) = " << info.lon
             << " AND 1000 * st_y(first_point) = " << info.lat
-            << " AND di = " << info.di
-            << " AND dj = " << info.dj
+            << " AND 1000 * di = " << info.di
+            << " AND 1000 * dj = " << info.dj
             << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
 
     if (options.dry_run)
