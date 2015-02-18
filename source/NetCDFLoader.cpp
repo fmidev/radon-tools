@@ -426,6 +426,19 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
       exit(1);
     }
   }
+  else if (mask == "hours since 2014-01-01 00:00:00")
+  {
+
+    try
+    {
+      e = (3600 * boost::lexical_cast<long> (dateTime));
+    }
+    catch(boost::bad_lexical_cast&)
+    {
+      cerr << "Date cast failed" << endl;
+      exit(1);
+    }
+  }
   else 
   {
 
