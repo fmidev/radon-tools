@@ -428,6 +428,12 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   map<string,string> r = NFmiRadonDB::Instance().GetProducerFromGrib(info.centre, info.process);
 
+  if (r.size() == 0)
+  {
+    cerr << "Producer information not found for centre " << info.centre << ", process " << info.process << endl;
+    return false;
+  }
+
   long geometry_id = 0;
   string geometry_name = "";
 
