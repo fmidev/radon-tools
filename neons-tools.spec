@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.1.26
+Version:        15.2.18
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -15,8 +15,8 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 14.10.9
-BuildRequires:  libfmidb-devel >= 14.10.30
-BuildRequires:  grib_api-devel >= 1.12.3
+BuildRequires:  libfmidb-devel >= 15.2.6
+BuildRequires:  grib_api-devel >= 1.13.0
 BuildRequires:  boost-devel >= 1.54
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
@@ -43,7 +43,7 @@ Table creation tools are also included.
 
 %build
 %if %{defined suse_version}
-make %{?_smp_mflags} CC=/usr/bin/g++-4.6 INCLUDE=/lustre/apps/partio/auxlibs
+CXX=/usr/bin/g++-4.6 INCLUDE=/lustre/apps/partio/auxlibs make %{?_smp_mflags}
 %else
 make %{?_smp_mflags}
 %endif
@@ -66,6 +66,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Feb 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.2.18-1.fmi
+- Fix crash when radon producer information was missing
+- Link with grib_api 1.13.0
 * Wed Jan 26 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.26-1.fmi
 - Changes in fmidb
 * Wed Jan  7 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.7-1.fmi
