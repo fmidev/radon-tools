@@ -10,6 +10,12 @@
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
 
+timespec start_ms_ts, stop_ms_ts;
+
+#ifdef DEBUG
+timespec start_ts, stop_ts;
+#endif
+
 extern Options options;
 
 using namespace std;
@@ -25,7 +31,18 @@ GribLoader::~GribLoader()
 bool GribLoader::Load(const string &theInfile) 
 {
 
+#ifdef DEBUG
+  clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
   NFmiGrib reader(theInfile);
+
+#ifdef DEBUG
+  clock_gettime(CLOCK_REALTIME, &stop_ts);
+  size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+  size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+  cerr << "reader initialization: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
 
   // Read all message from file
 
@@ -56,13 +73,20 @@ bool GribLoader::Load(const string &theInfile)
   {
 
     if (options.verbose)
+    {
+      clock_gettime(CLOCK_REALTIME, &start_ms_ts);
       cout << "Message " << reader.CurrentMessageIndex() << ": ";
+    }
 
     fc_info g;
 
     /*
      * Read metadata from grib msg
      */
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
 
     if (!CopyMetaData(g, reader) || pskip.count(g.parname) > 0 || lskip.count(g.levname) > 0)
     {
@@ -71,6 +95,13 @@ bool GribLoader::Load(const string &theInfile)
 
       continue;
     }
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "grib reading: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
 
     if (parameters.size() > 0) 
     {
@@ -130,6 +161,10 @@ bool GribLoader::Load(const string &theInfile)
      * Write grib msg to disk with unique filename.
      */
 
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
     if (!options.dry_run)
     {
       if (!reader.WriteMessage(theFileName))
@@ -139,9 +174,20 @@ bool GribLoader::Load(const string &theInfile)
       }
     }
 
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to disk: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
+
     /*
      * Update new file information to database
      */
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
 
     if (!itsDatabaseLoader.WriteAS(g))
     {
@@ -149,10 +195,33 @@ bool GribLoader::Load(const string &theInfile)
       return false;
     }
 
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to neons: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
     itsDatabaseLoader.WriteToRadon(g);
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to radon: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
 
     success++;
 
+    if (options.verbose)
+    {
+      clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
+      size_t start_ms = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
+      size_t stop_ms = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
+      cout << "Message loaded in " << (stop_ms - start_ms) / 1000 / 1000 << " ms" << endl;
+    }
   }
 
   cout << "Loaded " << success << " fields successfully\n";

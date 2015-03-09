@@ -419,7 +419,8 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     return false;
   }
 
-  cout << "Writing to radon" << endl;
+  if (options.verbose)
+    cout << "Writing to radon" << endl;
 
   Init();
 
@@ -478,7 +479,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   {
     cerr << "Level " << info.levtype << " not found from radon for producer " << producer_id << "\n";
     return false;
-  }
+  } 
 
   long level_id = boost::lexical_cast<long> (l["id"]);
 
