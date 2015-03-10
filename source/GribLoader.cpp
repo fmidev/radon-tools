@@ -10,7 +10,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
 #include <thread>
-#include <atomic>
+#include <cstdatomic>
 
 #ifdef DEBUG
 timespec start_ts, stop_ts;
@@ -181,7 +181,6 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   } 
 
   g.gridtype = message.GridType();
-  
   switch (message.NormalizedGridType()) 
   {
     case 0: // ll
@@ -207,7 +206,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
       break;
 
     default:
-      cerr << "Invalid geometry for GRIB: only latlon, rotated latlon and polster are supported" << endl;
+      cerr << "Invalid geometry for GRIB: " << message.NormalizedGridType() << ", only latlon, rotated latlon and polster are supported" << endl;
       return false;
       break;
 
@@ -389,7 +388,7 @@ unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
 
   }
 
-  return 0;
+  return unique_ptr<NFmiGribMessage> ();
 }
 
 void Process(unique_ptr<NFmiGribMessage> message)
