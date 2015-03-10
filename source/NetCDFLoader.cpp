@@ -301,13 +301,19 @@ bool NetCDFLoader::Load(const string &theInfile)
           }
 		}
 
-        if (!itsDatabaseLoader.WriteAS(info))
-	    {
-          return false;
-	    }
-
-        itsDatabaseLoader.WriteToRadon(info);
-
+		if (options.neons)
+		{
+		  if (!itsDatabaseLoader.WriteAS(info))
+	      {
+            return false;
+	      }
+		}
+		
+		if (options.radon)
+		{
+          itsDatabaseLoader.WriteToRadon(info);
+		}
+		
         if (options.verbose)
         {
           cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
@@ -343,15 +349,21 @@ bool NetCDFLoader::Load(const string &theInfile)
             }
           }
 
-          if (!itsDatabaseLoader.WriteAS(info))
-          {
-            return false;
-          }
-
-          itsDatabaseLoader.WriteToRadon(info);
-
+		  if (options.neons)
+		  {
+            if (!itsDatabaseLoader.WriteAS(info))
+            {
+              return false;
+            }
+		  }
+		  
+		  if (options.radon)
+		  {
+            itsDatabaseLoader.WriteToRadon(info);
+		  }
+		  
           if (options.verbose)
-  	  {
+  	      {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
           }
         }

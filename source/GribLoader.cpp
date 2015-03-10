@@ -263,7 +263,13 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
 
         switch (definitionType)
         {
-          case 10:
+            case 9:
+            // deterministic forecast
+            g.forecast_type_id = 1;
+            g.forecast_type_value = kFloatMissing;
+            break;		
+          
+		  case 10:
             // cf -- control forecast
             g.forecast_type_id = 4;
             g.forecast_type_value = kFloatMissing;
