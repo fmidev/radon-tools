@@ -16,7 +16,11 @@ struct Options
   , use_level_value(false)
   , use_inverse_level_value(false)
   , dry_run(false)
-  , leveltypes("") {}
+  , leveltypes("")
+  , threadcount(4)
+  , neons(true)
+  , radon(true)
+  {}
 
   bool verbose;                 // -v
   bool netcdf;                  // -n
@@ -31,6 +35,9 @@ struct Options
   bool use_inverse_level_value; // --use-inverse-level-value
   bool dry_run;                 // -d;
   std::string leveltypes;       // -l
+  short threadcount;			// -j
+  bool neons;					// -N
+  bool radon;					// -R
 };
 
 #endif

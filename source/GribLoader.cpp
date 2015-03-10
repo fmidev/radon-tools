@@ -9,8 +9,8 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
-
-timespec start_ms_ts, stop_ms_ts;
+#include <thread>
+#include <atomic>
 
 #ifdef DEBUG
 timespec start_ts, stop_ts;
@@ -20,33 +20,25 @@ extern Options options;
 
 using namespace std;
 
-GribLoader::GribLoader() : itsDatabaseLoader()
-{
-}
+void Process(unique_ptr<NFmiGribMessage> message);
 
-GribLoader::~GribLoader() 
-{
-}
+vector<string> parameters;
+vector<string> levels;
+  
+atomic<int> success(0);
+atomic<int> failed(0);
+
+mutex distMutex;
+  
+GribLoader::GribLoader() {}
+GribLoader::~GribLoader() {}
 
 bool GribLoader::Load(const string &theInfile) 
 {
 
-#ifdef DEBUG
-  clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
-  NFmiGrib reader(theInfile);
-
-#ifdef DEBUG
-  clock_gettime(CLOCK_REALTIME, &stop_ts);
-  size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-  size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-  cerr << "reader initialization: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
+  itsReader.Open(theInfile);
 
   // Read all message from file
-
-  vector<string> levels;
 
   string levelString = options.level;
 
@@ -55,8 +47,6 @@ bool GribLoader::Load(const string &theInfile)
     boost::split(levels, levelString, boost::is_any_of(","), boost::token_compress_on);
   }
 
-  vector<string> parameters;
-
   string paramString = options.parameters;
 
   if (!paramString.empty()) 
@@ -64,166 +54,18 @@ bool GribLoader::Load(const string &theInfile)
     boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
   }
 
-  map<string,string> pskip;
-  map<string,string> lskip;
-  int success = 0;
-  int failed = 0;
-
-  while (reader.NextMessage()) 
+  vector<thread> threadgroup;
+  
+  for (short i = 0; i < options.threadcount; i++)
   {
-
-    if (options.verbose)
-    {
-      clock_gettime(CLOCK_REALTIME, &start_ms_ts);
-      cout << "Message " << reader.CurrentMessageIndex() << ": ";
-    }
-
-    fc_info g;
-
-    /*
-     * Read metadata from grib msg
-     */
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
-    if (!CopyMetaData(g, reader) || pskip.count(g.parname) > 0 || lskip.count(g.levname) > 0)
-    {
-      if (options.verbose)
-       cout << "Skipping due to cached information" << endl;
-
-      continue;
-    }
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "grib reading: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
-
-    if (parameters.size() > 0) 
-    {
-      if (std::find(parameters.begin(), parameters.end(), g.parname) == parameters.end()) 
-      {
-
-        if (options.verbose)
-          cout << "Skipping parameter " << g.parname << endl;
-
-        pskip[g.parname] = 1;
-
-        continue;
-      }
-    }
-
-    if (levels.size() > 0) 
-    {
-      if (std::find(levels.begin(), levels.end(), g.levname) == levels.end()) 
-      {
-
-        if (options.verbose)
-          cout << "Skipping level " << g.levname << endl;
-
-        lskip[g.levname] = 1;
-
-        continue;
-      }
-    }
-
-    if (options.verbose)
-      cout << "Parameter: " << g.parname << " at level " << g.levname << " " << g.lvl1_lvl2 << endl;
-
-    string theFileName = itsDatabaseLoader.REFFileName(g);
-
-    if (theFileName.empty())
-      exit(1);
-
-    g.filename = theFileName;
-
-    namespace fs = boost::filesystem;
-
-    fs::path pathname(theFileName);
-
-    if (!fs::is_directory(pathname.parent_path())) 
-    {
-
-      // Create directory
-
-      if (options.verbose)
-        cout << "Creating directory " << pathname.parent_path().string() << endl;
-
-      if (!options.dry_run)
-        fs::create_directories(pathname.parent_path());
-    }
-
-    /*
-     * Write grib msg to disk with unique filename.
-     */
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
-    if (!options.dry_run)
-    {
-      if (!reader.WriteMessage(theFileName))
-      {
-        failed++;
-        return false;
-      }
-    }
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to disk: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
-
-    /*
-     * Update new file information to database
-     */
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
-    if (!itsDatabaseLoader.WriteAS(g))
-    {
-      failed++;
-      return false;
-    }
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to neons: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
-    itsDatabaseLoader.WriteToRadon(g);
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to radon: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
-
-    success++;
-
-    if (options.verbose)
-    {
-      clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
-      size_t start_ms = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
-      size_t stop_ms = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
-      cout << "Message loaded in " << (stop_ms - start_ms) / 1000 / 1000 << " ms" << endl;
-    }
+	  threadgroup.push_back(thread(&GribLoader::Run, this, i));
   }
-
+  
+  for (unsigned short i = 0; i < threadgroup.size(); i++)
+  {
+	  threadgroup[i].join();
+  }
+  
   cout << "Loaded " << success << " fields successfully\n";
 
   if (failed > 0)
@@ -243,16 +85,16 @@ bool GribLoader::Load(const string &theInfile)
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
  */
 
-bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader) 
+bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message) 
 {
 
-  g.centre = reader.Message().Centre();
-  g.ednum = reader.Message().Edition();
+  g.centre = message.Centre();
+  g.ednum = message.Edition();
 
-  g.param = reader.Message().ParameterNumber();
-  g.levtype = reader.Message().LevelType();
+  g.param = message.ParameterNumber();
+  g.levtype = message.LevelType();
 
-  g.process = reader.Message().Process();
+  g.process = message.Process();
 
   if (options.process != 0)
     g.process = options.process;
@@ -265,11 +107,11 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
     g.filetype = "grib";
 
-    g.novers = reader.Message().Table2Version();
-    g.timeRangeIndicator = reader.Message().TimeRangeIndicator();
+    g.novers = message.Table2Version();
+    g.timeRangeIndicator = message.TimeRangeIndicator();
     
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator, g.levtype);
-    g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
+    g.parname = databaseLoader.NeonsDB().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator, g.levtype);
+    g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
 
     if (g.parname.empty())
     {
@@ -287,17 +129,17 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
     g.timeRangeIndicator = 0;
 
-    g.parname = NFmiNeonsDB::Instance().GetGridParameterNameForGrib2(g.param, reader.Message().ParameterCategory(), reader.Message().ParameterDiscipline(), g.process);
-    g.levname = NFmiNeonsDB::Instance().GetGridLevelName(g.levtype, g.process);
+    g.parname = databaseLoader.NeonsDB().GetGridParameterNameForGrib2(g.param, message.ParameterCategory(), message.ParameterDiscipline(), g.process);
+    g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.levtype, g.process);
 
-    g.category = reader.Message().ParameterCategory();
-    g.discipline = reader.Message().ParameterDiscipline();
+    g.category = message.ParameterCategory();
+    g.discipline = message.ParameterDiscipline();
 
     if (g.parname.empty())
     {
       if (options.verbose)
       {
-        cerr << "Parameter name not found for category " << reader.Message().ParameterCategory() << ", discipline " << reader.Message().ParameterDiscipline() << " number " << g.param << endl;
+        cerr << "Parameter name not found for category " << message.ParameterCategory() << ", discipline " << message.ParameterDiscipline() << " number " << g.param << endl;
       }
 
     return false;
@@ -313,20 +155,17 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     return false;
   }
 
-  g.year = reader.Message().Year();
-  g.month = reader.Message().Month();
-  g.day = reader.Message().Day();
-  g.hour = reader.Message().Hour();
-  g.minute = reader.Message().Minute();
+  g.year = message.Year();
+  g.month = message.Month();
+  g.day = message.Day();
+  g.hour = message.Hour();
+  g.minute = message.Minute();
 
-  g.ni = reader.Message().SizeX();
-  g.nj = reader.Message().SizeY();
+  g.ni = message.SizeX();
+  g.nj = message.SizeY();
 
-  //g.di = reader.Message().iDirectionIncrement();
-  //g.dj = reader.Message().jDirectionIncrement();
-
-  g.lat = reader.Message().Y0() * 1000;
-  g.lon = reader.Message().X0() * 1000;
+  g.lat = message.Y0() * 1000;
+  g.lon = message.X0() * 1000;
 
   // This is because we need to find the 
   // correct geometry from GRID_REG_GEOM in neons
@@ -341,29 +180,29 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
     g.lon += 360000;  // Area is whole globe, ECMWF special case
   } 
 
-  g.gridtype = reader.Message().GridType();
+  g.gridtype = message.GridType();
   
-  switch (reader.Message().NormalizedGridType()) 
+  switch (message.NormalizedGridType()) 
   {
     case 0: // ll
-      g.di = reader.Message().iDirectionIncrement();
-      g.dj = reader.Message().jDirectionIncrement();
+      g.di = message.iDirectionIncrement();
+      g.dj = message.jDirectionIncrement();
       g.di *= 1000;
       g.dj *= 1000;
       g.grtyp = "ll";
       break;
 
     case 10: // rll
-      g.di = reader.Message().iDirectionIncrement();
-      g.dj = reader.Message().jDirectionIncrement();
+      g.di = message.iDirectionIncrement();
+      g.dj = message.jDirectionIncrement();
       g.di *= 1000;
       g.dj *= 1000;
       g.grtyp = "rll";
       break;
 
     case 5: // ps, ei tarkoita puoluetta
-      g.di = reader.Message().XLengthInMeters();
-      g.dj = reader.Message().YLengthInMeters();
+      g.di = message.XLengthInMeters();
+      g.dj = message.YLengthInMeters();
       g.grtyp = "ps";
       break;
 
@@ -390,83 +229,10 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.base_date = ss.str();
 
-  g.level1 = reader.Message().LevelValue();
+  g.level1 = message.LevelValue();
   g.level2 = 0;
 
   g.lvl1_lvl2 = g.level1 + 1000 * g.level2;
-
-#if 0
-
-  g.locdef = 0; 
-  // if exists, otherwise zero
-  if (reader.Message().KeyExists("localDefinitionNumber"))
-  {
-    g.locdef = reader.Message().LocalDefinitionNumber();  
-  }
-
-  if (g.ednum == 1) 
-  {
-
-     if (g.locdef == 1 || g.locdef == 2 || g.locdef == 5 || g.locdef == 15 || g.locdef == 16 || g.locdef == 30) 
-     {
-       g.ldeftype = reader.Message().Type();
-       g.ldefnumber = reader.Message().PerturbationNumber();
-     }
-     else if (g.locdef == 19) 
-     {
-       g.ldefnumber = 0;
-     }
-   }
-   else if (g.ednum == 2) 
-   {
-
-     switch (g.locdef) 
-     {
-       case 1:
-       case 11:
-         g.ldeftype = reader.Message().TypeOfEnsembleForecast();
-         g.ldefnumber = reader.Message().PerturbationNumber();
-         break;
-
-       case 2:
-       case 12:
-         g.ldeftype = reader.Message().DerivedForecast();
-         g.ldefnumber = reader.Message().NumberOfForecastsInTheEnsemble();
-         break;
-
-       case 3:
-       case 4:
-       case 13:
-       case 14:
-         g.ldeftype = reader.Message().DerivedForecast();
-         g.ldefnumber = reader.Message().ClusterIdentifier();
-         break;
-
-       case 5:
-       case 9:
-         g.ldeftype = reader.Message().ForecastProbabilityNumber();
-         g.ldefnumber = reader.Message().ProbabilityType();
-         break;
-
-       case 6:
-       case 10:
-         g.ldeftype = reader.Message().PercentileValue();
-         g.ldefnumber = 0;
-         break;
-
-       case 8:
-         g.ldeftype = reader.Message().NumberOfTimeRange();
-         g.ldefnumber = reader.Message().TypeOfTimeIncrement();
-         g.step = reader.Message().EndStep();
-         break;
-     }
-   }
-
-  if (g.locdef > 0)
-    g.eps_specifier = boost::lexical_cast<string> (g.locdef) + "_" + boost::lexical_cast<string> (g.ldeftype) + "_" + boost::lexical_cast<string> (g.ldefnumber);
-  else
-    g.eps_specifier = "0";
-#endif
   
   // Rewritten EPS logic
 
@@ -474,9 +240,9 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
     long definitionNumber = 0;
 
-    if (reader.Message().KeyExists("localDefinitionNumber"))
+    if (message.KeyExists("localDefinitionNumber"))
     {
-      definitionNumber = reader.Message().LocalDefinitionNumber();
+      definitionNumber = message.LocalDefinitionNumber();
     }
 
     // EC uses local definition number in Grib1
@@ -493,8 +259,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
       case 1:
         // MARS labeling or ensemble forecast data
       {
-        long definitionType = reader.Message().Type();
-        long perturbationNumber = reader.Message().PerturbationNumber();
+        long definitionType = message.Type();
+        long perturbationNumber = message.PerturbationNumber();
 
         switch (definitionType)
         {
@@ -523,7 +289,7 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
   {
       // grib2
 
-      long typeOfGeneratingProcess = reader.Message().TypeOfGeneratingProcess();
+      long typeOfGeneratingProcess = message.TypeOfGeneratingProcess();
 
       switch (typeOfGeneratingProcess)
       {
@@ -543,8 +309,8 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
           // eps
         {
 
-          long typeOfEnsemble = reader.Message().TypeOfEnsembleForecast();
-          long perturbationNumber = reader.Message().PerturbationNumber();
+          long typeOfEnsemble = message.TypeOfEnsembleForecast();
+          long perturbationNumber = message.PerturbationNumber();
 
           switch (typeOfEnsemble)
           {
@@ -583,14 +349,203 @@ bool GribLoader::CopyMetaData(fc_info &g, NFmiGrib &reader)
 
   g.eps_specifier = "0";
  
-  g.stepType = reader.Message().TimeRangeIndicator();
-  g.timeUnit = reader.Message().UnitOfTimeRange();
+  g.stepType = message.TimeRangeIndicator();
+  g.timeUnit = message.UnitOfTimeRange();
 
-  g.startstep = reader.Message().NormalizedStep(false, false);
-  g.endstep = reader.Message().NormalizedStep(true, false);
+  g.startstep = message.NormalizedStep(false, false);
+  g.endstep = message.NormalizedStep(true, false);
   g.step = g.endstep;
   
-  g.fcst_per = reader.Message().NormalizedStep(true, true);
+  g.fcst_per = message.NormalizedStep(true, true);
 
   return true;
+}
+
+void GribLoader::Run(short threadId)
+{
+  printf("Thread %d started\n", threadId);
+  unique_ptr<NFmiGribMessage> myMessage;
+  
+  while(myMessage = DistributeMessages())
+  {
+    Process(move(myMessage));
+  }
+  
+  printf("Thread %d stopped\n", threadId);
+  
+}
+
+unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
+{
+  lock_guard<mutex> lock(distMutex);
+  while (itsReader.NextMessage()) 
+  {
+    if (options.verbose)
+    {
+      cout << "Message " << itsReader.CurrentMessageIndex() << ": ";
+    }
+
+    return itsReader.CloneMessage();
+
+  }
+
+  return 0;
+}
+
+void Process(unique_ptr<NFmiGribMessage> message)
+{
+   fc_info g;
+   BDAPLoader databaseLoader;
+
+   timespec start_ms_ts, stop_ms_ts;
+   
+   if (options.verbose)
+   {
+     clock_gettime(CLOCK_REALTIME, &start_ms_ts);
+   }
+    /*
+     * Read metadata from grib msg
+     */
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
+    if (!CopyMetaData(databaseLoader, g, *message))
+    {
+      return;
+    }
+
+    if (parameters.size() > 0) 
+    {
+      if (std::find(parameters.begin(), parameters.end(), g.parname) == parameters.end()) 
+      {
+
+        if (options.verbose)
+          cout << "Skipping parameter " << g.parname << endl;
+
+        return;
+      }
+    }
+
+    if (levels.size() > 0) 
+    {
+      if (std::find(levels.begin(), levels.end(), g.levname) == levels.end()) 
+      {
+
+        if (options.verbose)
+          cout << "Skipping level " << g.levname << endl;
+
+        return;
+      }
+    }
+
+	
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "grib reading: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
+
+    if (options.verbose)
+      cout << "Parameter: " << g.parname << " at level " << g.levname << " " << g.lvl1_lvl2 << endl;
+
+    string theFileName = databaseLoader.REFFileName(g);
+
+    if (theFileName.empty())
+      exit(1);
+
+    g.filename = theFileName;
+
+    namespace fs = boost::filesystem;
+
+    fs::path pathname(theFileName);
+
+    if (!fs::is_directory(pathname.parent_path())) 
+    {
+
+      // Create directory
+
+      if (options.verbose)
+        cout << "Creating directory " << pathname.parent_path().string() << endl;
+
+      if (!options.dry_run)
+        fs::create_directories(pathname.parent_path());
+    }
+
+    /*
+     * Write grib msg to disk with unique filename.
+     */
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
+    if (!options.dry_run)
+    {
+      if (!message->Write(theFileName, false))
+      {
+        failed++;
+        return;
+      }
+    }
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to disk: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
+
+    /*
+     * Update new file information to database
+     */
+
+	if (options.neons)
+	{
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+
+      if (!databaseLoader.WriteAS(g))
+      {
+        failed++;
+        return;
+      }
+	  
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to neons: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
+	}
+
+	if (options.radon)
+	{
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+#endif
+		databaseLoader.WriteToRadon(g);
+
+#ifdef DEBUG
+    clock_gettime(CLOCK_REALTIME, &stop_ts);
+    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
+    cerr << "write to radon: " << (stop - start) / 1000 / 1000 << " ms" << endl;
+#endif
+
+	}
+
+    success++;
+
+    if (options.verbose)
+    {
+      clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
+      size_t start_ms = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
+      size_t stop_ms = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
+      cout << "Message loaded in " << (stop_ms - start_ms) / 1000 / 1000 << " ms" << endl;
+    }
+ 	
 }

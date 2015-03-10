@@ -3,6 +3,9 @@
 
 #include <string>
 #include "fc_info.h"
+#include <memory>
+#include "NFmiNeonsDB.h"
+#include "NFmiRadonDB.h"
 
 class BDAPLoader 
 {
@@ -20,19 +23,20 @@ class BDAPLoader
     bool WriteAS(const fc_info &info);
     bool WriteToRadon(const fc_info &info);
 
+	NFmiNeonsDB& NeonsDB() const;
+	NFmiRadonDB& RadonDB() const;
+	
 private:
+    void InitPool(const std::string& username, const std::string& password, const std::string& database);
 
     std::string itsUsername;
     std::string itsPassword;
     std::string itsDatabase;
 
     std::string itsGeomName;
-    std::string itsModelName;
     std::string itsModelType;
-    std::string itsTypeSmt;
     std::string itsDsetId;
     std::string itsTableName;
-    std::string itsRecCntDsetIni;
 
     bool ReadREFEnvironment();
     void Init();
@@ -41,6 +45,8 @@ private:
     std::string itsHostname;
 
     bool itsUseRadon;
+	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
+	std::unique_ptr<NFmiRadonDB> itsRadonDB;
 
 };
 

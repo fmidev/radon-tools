@@ -7,6 +7,7 @@
 #include <string>
 #include "BDAPLoader.h"
 #include "NFmiGrib.h"
+#include <memory>
 
 class GribLoader
 {
@@ -16,10 +17,11 @@ class GribLoader
     ~GribLoader();
 
     bool Load(const std::string &theInfile);
+protected:
+    void Run(short threadId);
 
   private:
+    std::unique_ptr<NFmiGribMessage> DistributeMessages();
 
-    bool CopyMetaData(fc_info &g, NFmiGrib &reader);
-	BDAPLoader itsDatabaseLoader;
-	
+    NFmiGrib itsReader;
 };
