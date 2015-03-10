@@ -29,6 +29,19 @@ if os.environ.get('CXX') != None:
 else:
 	env['CXX'] = 'g++'
 
+# cuda toolkit path
+
+cuda_toolkit_path = '/usr/local/cuda-6.5'
+
+if os.environ.get('CUDA_TOOLKIT_PATH') is None:
+        print "Environment variable CUDA_TOOLKIT_PATH not set, assuming " + cuda_toolkit_path
+else:
+        cuda_toolkit_path = os.environ['CUDA_TOOLKIT_PATH']
+
+have_cuda = False
+
+if os.path.isfile(cuda_toolkit_path + '/lib64/libcudart.so'):
+        have_cuda = True
 
 # Includes
 
@@ -62,7 +75,6 @@ env.Append(LIBPATH = librarypaths)
 
 libraries = []
 
-libraries.append('fmigrib')
 libraries.append('fmidb')
 libraries.append('fminc')
 libraries.append('odbc')
@@ -71,6 +83,9 @@ libraries.append('grib_api')
 libraries.append('netcdf_c++')
 
 env.Append(LIBS = libraries)
+
+env.Append(LIBS=env.File('/usr/lib64/libfmigrib.a'))
+env.Append(LIBS=['grib_api'])
 
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
@@ -82,6 +97,8 @@ for lib in boost_libraries:
 
 	env.Append(LIBS=env.File(libfile))
 
+if have_cuda:
+	env.Append(LIBS=env.File(cuda_toolkit_path + '/lib64/libcudart_static.a'))
 
 # CFLAGS
 

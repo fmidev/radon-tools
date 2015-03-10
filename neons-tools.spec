@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.2.18
+Version:        15.3.10
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,8 +14,8 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 14.10.9
-BuildRequires:  libfmidb-devel >= 15.2.6
+BuildRequires:  libfmigrib-devel >= 15.3.10
+BuildRequires:  libfmidb-devel >= 15.3.10
 BuildRequires:  grib_api-devel >= 1.13.0
 BuildRequires:  boost-devel >= 1.54
 Requires:       hdf5
@@ -66,6 +66,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.10-1.fmi
+- New version of grid_to_neons with threading support
 * Wed Feb 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.2.18-1.fmi
 - Fix crash when radon producer information was missing
 - Link with grib_api 1.13.0

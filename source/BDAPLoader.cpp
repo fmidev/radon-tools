@@ -43,14 +43,14 @@ void BDAPLoader::InitPool(const string& username, const string& password, const 
   NFmiNeonsDBPool::Instance()->Username(username);
   NFmiNeonsDBPool::Instance()->Password(password);
   NFmiNeonsDBPool::Instance()->Database(database);
-  NFmiNeonsDBPool::Instance()->MaxWorkers(2);
+  NFmiNeonsDBPool::Instance()->MaxWorkers(8);
 
   try
   {
     NFmiRadonDBPool::Instance()->Username(username);
     NFmiRadonDBPool::Instance()->Password(password);
     NFmiRadonDBPool::Instance()->Database("radon");
-	NFmiRadonDBPool::Instance()->MaxWorkers(8);
+    NFmiRadonDBPool::Instance()->MaxWorkers(8);
 	
     itsUseRadon = true;
   }
