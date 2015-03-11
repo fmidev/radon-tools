@@ -17,7 +17,7 @@ struct Options
   , use_inverse_level_value(false)
   , dry_run(false)
   , leveltypes("")
-  , threadcount(4)
+  , threadcount(2)
   , neons(true)
   , radon(true)
   {}

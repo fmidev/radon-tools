@@ -20,7 +20,7 @@ extern Options options;
 
 using namespace std;
 
-void Process(unique_ptr<NFmiGribMessage> message);
+void Process(unique_ptr<NFmiGribMessage> message, short threadId);
 
 vector<string> parameters;
 vector<string> levels;
@@ -373,7 +373,7 @@ void GribLoader::Run(short threadId)
   
   while(myMessage = DistributeMessages())
   {
-    Process(move(myMessage));
+    Process(move(myMessage), threadId);
   }
   
   printf("Thread %d stopped\n", threadId);
@@ -387,7 +387,7 @@ unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
   {
     if (options.verbose)
     {
-      cout << "Message " << itsReader.CurrentMessageIndex() << ": ";
+      printf("Message %d\n", itsReader.CurrentMessageIndex());
     }
 
     return itsReader.CloneMessage();
@@ -397,7 +397,7 @@ unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
   return unique_ptr<NFmiGribMessage> ();
 }
 
-void Process(unique_ptr<NFmiGribMessage> message)
+void Process(unique_ptr<NFmiGribMessage> message, short threadId)
 {
    fc_info g;
    BDAPLoader databaseLoader;
@@ -452,9 +452,6 @@ void Process(unique_ptr<NFmiGribMessage> message)
     size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
     cerr << "grib reading: " << (stop - start) / 1000 / 1000 << " ms" << endl;
 #endif
-
-    if (options.verbose)
-      cout << "Parameter: " << g.parname << " at level " << g.levname << " " << g.lvl1_lvl2 << endl;
 
     string theFileName = databaseLoader.REFFileName(g);
 
@@ -550,7 +547,7 @@ void Process(unique_ptr<NFmiGribMessage> message)
       clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
       size_t start_ms = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
       size_t stop_ms = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
-      cout << "Message loaded in " << (stop_ms - start_ms) / 1000 / 1000 << " ms" << endl;
+      printf("Thread %d: Parameter %s at level %s %ld loaded in %ld ms\n", threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, (stop_ms - start_ms) / 1000 / 1000);
     }
  	
 }

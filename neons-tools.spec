@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.3.10
+Version:        15.3.11
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -66,6 +66,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Mar 11 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.11-1.fmi
+- Reducing default thread count to two
 * Tue Mar 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.10-1.fmi
 - New version of grid_to_neons with threading support
 * Wed Feb 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.2.18-1.fmi
