@@ -188,7 +188,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (pskip.count(ncname) > 0)
         continue;
 
-      string grid_parameter_name = NFmiNeonsDB::Instance().GetGribParameterNameFromNetCDF(info.process, ncname);
+      string grid_parameter_name = itsDatabaseLoader.NeonsDB().GetGribParameterNameFromNetCDF(info.process, ncname);
 
       if (grid_parameter_name.empty()) 
       {
@@ -216,7 +216,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-      map<string, string> parameter = NFmiNeonsDB::Instance().GetParameterDefinition(info.process, grid_parameter_name);
+      map<string, string> parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
 
       if (parameter.empty()) 
       {
@@ -294,30 +294,30 @@ bool NetCDFLoader::Load(const string &theInfile)
         info.filename = theFileName;
 
         if (!options.dry_run)
-		{
+        {
           if (!reader.WriteSlice(theFileName))
-		  {
+          {
             return false;
           }
-		}
+        }
 
-		if (options.neons)
-		{
-		  if (!itsDatabaseLoader.WriteAS(info))
-	      {
+        if (options.neons)
+        {
+          if (!itsDatabaseLoader.WriteAS(info))
+          {
             return false;
-	      }
-		}
+          }
+        }
 		
-		if (options.radon)
-		{
+        if (options.radon)
+        {
           itsDatabaseLoader.WriteToRadon(info);
-		}
+        }
 		
         if (options.verbose)
         {
           cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
-	    }
+        }
       }
       else 
       {
@@ -349,21 +349,21 @@ bool NetCDFLoader::Load(const string &theInfile)
             }
           }
 
-		  if (options.neons)
-		  {
+          if (options.neons)
+          {
             if (!itsDatabaseLoader.WriteAS(info))
             {
               return false;
             }
-		  }
+          }
 		  
-		  if (options.radon)
-		  {
+          if (options.radon)
+          {
             itsDatabaseLoader.WriteToRadon(info);
-		  }
+          }
 		  
           if (options.verbose)
-  	      {
+          {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
           }
         }
