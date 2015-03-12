@@ -441,9 +441,10 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
   else if (mask == "hours since 2014-01-01 00:00:00")
   {
 
+    long offset = 1388534400; // seconds from 1970-01-01 to 2014-01-01
     try
     {
-      e = (3600 * boost::lexical_cast<long> (dateTime));
+      e = (3600 * boost::lexical_cast<long> (dateTime)) + offset;
     }
     catch(boost::bad_lexical_cast&)
     {
