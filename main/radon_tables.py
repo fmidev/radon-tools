@@ -893,7 +893,7 @@ def CreateTables(options, element, date):
 			if not options.dry_run:
 				cur.execute(query)
 						
-			query = "CREATE TRIGGER %s_update_as_table_trg BEFORE INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
+			query = "CREATE TRIGGER %s_update_as_table_trg AFTER INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_after_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
 
 			if options.show_sql:
 				print query
