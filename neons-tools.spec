@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.3.12
+Version:        15.3.17
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -66,6 +66,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar 17 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.17-1.fmi
+- Optimizations in grib loading
+* Mon Mar 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.16-1.fmi
+- Update to radon trigger
 * Thu Mar 12 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.12-1.fmi
 - Fix issue with netcdf file loading
 * Wed Mar 11 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.11-1.fmi
