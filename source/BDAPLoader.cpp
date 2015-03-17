@@ -238,8 +238,6 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
   stringstream query;
 
-  string dset_name = "AF";
-
   vector<string> row;
 
   if (itsGeomName.empty()) 
@@ -259,40 +257,16 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   if (itsModelType.empty()) 
   {
 
-    query << "SELECT "
-          << "dset_id, "
-		  << "table_name "
-          << "FROM as_grid a, "
-		  << "grid_num_model_grib nu, "
-          << "grid_model m, "
-          << "grid_model_name na "
-          << "WHERE nu.model_id = " << info.process
-          << " AND nu.ident_id = " << info.centre
-          << " AND m.flag_mod = 0 "
-          << " AND nu.model_name = na.model_name "
-          << " AND m.model_name = na.model_name "
-		  << " AND m.model_type = a.model_type "
-		  << " AND geom_name = '" << itsGeomName << "'"
-		  << " AND dset_name = '" << dset_name << "'" 
-		  << " AND base_date = '" << info.base_date << "'";	
-
-    if (options.dry_run)
-      cout << query.str() << endl;
-
-    itsNeonsDB->Query(query.str());
-
-    row = itsNeonsDB->FetchRow();
-
-    if (row.empty()) 
+    auto dsetinfo = itsNeonsDB->GetGridDatasetInfo(info.centre, info.process, itsGeomName, info.base_date);
+	
+    if (dsetinfo.empty()) 
     {
       cerr << "Model definition not found" << endl;
       return false;
     }
 
-    itsDsetId = row[0];
-	itsTableName = row[1];
-
-    query.str("");
+    itsDsetId = dsetinfo["dset_id"];
+	itsTableName = dsetinfo["table_name"];
 
   }
 
@@ -306,7 +280,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
           << "WHERE "
           << "model_type = '" << itsModelType << "'"
           << " AND geom_name = '" << itsGeomName << "'"
-          << " AND dset_name = '" << dset_name << "'"
+          << " AND dset_name = 'AF'"
           << " AND base_date = '" << info.base_date << "'";
 
     itsNeonsDB->Query(query.str());

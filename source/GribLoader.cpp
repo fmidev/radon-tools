@@ -9,8 +9,12 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
-#include <thread>
+
+#if defined __GNUC__ && __GNUC_MINOR__ < 5
 #include <cstdatomic>
+#else
+#include <atomic>
+#endif
 
 #ifdef DEBUG
 timespec start_ts, stop_ts;
@@ -20,7 +24,7 @@ extern Options options;
 
 using namespace std;
 
-void Process(unique_ptr<NFmiGribMessage> message, short threadId);
+void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId);
 
 vector<string> parameters;
 vector<string> levels;
@@ -54,11 +58,11 @@ bool GribLoader::Load(const string &theInfile)
     boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
   }
 
-  vector<thread> threadgroup;
+  vector<boost::thread> threadgroup;
   
   for (short i = 0; i < options.threadcount; i++)
   {
-	  threadgroup.push_back(thread(&GribLoader::Run, this, i));
+	  threadgroup.push_back(boost::thread(&GribLoader::Run, this, i));
   }
   
   for (unsigned short i = 0; i < threadgroup.size(); i++)
@@ -369,11 +373,14 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
 void GribLoader::Run(short threadId)
 {
   printf("Thread %d started\n", threadId);
+  
+  itsThreadedLoader.reset(new BDAPLoader());
+
   unique_ptr<NFmiGribMessage> myMessage;
   
   while(myMessage = DistributeMessages())
   {
-    Process(move(myMessage), threadId);
+    Process(*itsThreadedLoader, move(myMessage), threadId);
   }
   
   printf("Thread %d stopped\n", threadId);
@@ -397,10 +404,9 @@ unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
   return unique_ptr<NFmiGribMessage> ();
 }
 
-void Process(unique_ptr<NFmiGribMessage> message, short threadId)
+void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId)
 {
    fc_info g;
-   BDAPLoader databaseLoader;
 
    timespec start_ms_ts, stop_ms_ts;
    
