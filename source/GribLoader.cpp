@@ -16,10 +16,6 @@
 #include <atomic>
 #endif
 
-#ifdef DEBUG
-timespec start_ts, stop_ts;
-#endif
-
 extern Options options;
 
 using namespace std;
@@ -406,21 +402,17 @@ unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
 
 void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId)
 {
-   fc_info g;
+    fc_info g;
 
-   timespec start_ms_ts, stop_ms_ts;
-   
-   if (options.verbose)
-   {
-     clock_gettime(CLOCK_REALTIME, &start_ms_ts);
-   }
+    timespec start_ms_ts, stop_ms_ts, start_ts, stop_ts;;
+
+    if (options.verbose)
+    {
+      clock_gettime(CLOCK_REALTIME, &start_ms_ts);
+    }
     /*
      * Read metadata from grib msg
      */
-
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
 
     if (!CopyMetaData(databaseLoader, g, *message))
     {
@@ -451,14 +443,6 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
       }
     }
 
-	
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "grib reading: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
-
     string theFileName = databaseLoader.REFFileName(g);
 
     if (theFileName.empty())
@@ -469,7 +453,9 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
     namespace fs = boost::filesystem;
 
     fs::path pathname(theFileName);
-
+	
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+	
     if (!fs::is_directory(pathname.parent_path())) 
     {
 
@@ -486,10 +472,6 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
      * Write grib msg to disk with unique filename.
      */
 
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-
     if (!options.dry_run)
     {
       if (!message->Write(theFileName, false))
@@ -499,61 +481,51 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
       }
     }
 
-#ifdef DEBUG
     clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to disk: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
+    size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
+    size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
 
+	size_t writeTime = (stop-start) / 1000 / 1000;
+	
     /*
      * Update new file information to database
      */
 
+    clock_gettime(CLOCK_REALTIME, &start_ts);
+	
 	if (options.neons)
 	{
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
 
       if (!databaseLoader.WriteAS(g))
       {
         failed++;
         return;
       }
-	  
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &stop_ts);
-    start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
-    stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to neons: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
 	}
 
 	if (options.radon)
 	{
-#ifdef DEBUG
-    clock_gettime(CLOCK_REALTIME, &start_ts);
-#endif
-		databaseLoader.WriteToRadon(g);
+      databaseLoader.WriteToRadon(g);
+	}
 
-#ifdef DEBUG
     clock_gettime(CLOCK_REALTIME, &stop_ts);
     start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
     stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
-    cerr << "write to radon: " << (stop - start) / 1000 / 1000 << " ms" << endl;
-#endif
-
-	}
-
+    size_t databaseTime = (stop - start) / 1000 / 1000;
+	
     success++;
 
     if (options.verbose)
     {
       clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
-      size_t start_ms = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
-      size_t stop_ms = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
-      printf("Thread %d: Parameter %s at level %s %ld loaded in %ld ms\n", threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, (stop_ms - start_ms) / 1000 / 1000);
+      start = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
+      stop = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
+	  size_t messageTime = (stop - start) / 1000 / 1000;
+	  
+	  size_t otherTime = messageTime - writeTime - databaseTime;
+	  
+      printf("Thread %d: Parameter %s at %s/%ld write time=%ld, database time=%ld, other=%ld, total=%ld ms\n", 
+			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, writeTime, databaseTime, otherTime, messageTime);
     }
  	
 }
