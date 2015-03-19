@@ -1,5 +1,3 @@
-%define dist .el6
-
 %if %{defined suse_version}
 %define dist .sles11
 %endif
@@ -18,6 +16,7 @@ BuildRequires:  libfmigrib-devel >= 15.3.10
 BuildRequires:  libfmidb-devel >= 15.3.10
 BuildRequires:  grib_api-devel >= 1.13.0
 BuildRequires:  boost-devel >= 1.54
+BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 %if %{defined suse_version}
@@ -79,13 +78,13 @@ rm -rf %{buildroot}
 * Wed Feb 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.2.18-1.fmi
 - Fix crash when radon producer information was missing
 - Link with grib_api 1.13.0
-* Wed Jan 26 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.26-1.fmi
+* Mon Jan 26 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.26-1.fmi
 - Changes in fmidb
 * Wed Jan  7 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.1.7-1.fmi
 - Changes in fmidb
 * Tue Dec  2 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.12.2-1.fmi
 - Minor changes
-* Tue Nov  5 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.5-1.fmi
+* Wed Nov  5 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.5-1.fmi
 - Minor changes from yesterday
 * Tue Nov  4 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.11.4-1.fmi
 - Fix in radon_tables.py
@@ -97,7 +96,7 @@ rm -rf %{buildroot}
 - Renaming neon2 --> radon
 * Wed Oct  8 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.10.8-1.fmi
 - Changes in fmigrib
-* Thu Sep 24 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.24-1.fmi
+* Wed Sep 24 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.24-1.fmi
 - Small fixes in previ_to_neon2.py and neon2_tables.py
 * Thu Sep 18 2014 Mikko Partio <mikko.partio@fmi.fi> - 14.9.18-1.fmi
 - previ_to_neon2.py --bulk
