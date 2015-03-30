@@ -4,7 +4,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.3.17
+Version:        15.3.30
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -13,7 +13,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 15.3.10
-BuildRequires:  libfmidb-devel >= 15.3.10
+BuildRequires:  libfmidb-devel >= 15.3.17
 BuildRequires:  grib_api-devel >= 1.13.0
 BuildRequires:  boost-devel >= 1.54
 BuildRequires:  scons
@@ -65,6 +65,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Mar 30 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.30-1.fmi
+- Thread safety issues
+* Wed Mar 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.18-1.fmi
+- More detailed timing information
 * Tue Mar 17 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.17-1.fmi
 - Optimizations in grib loading
 * Mon Mar 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.16-1.fmi
