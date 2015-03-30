@@ -21,6 +21,7 @@ extern Options options;
 using namespace std;
 
 void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId);
+void CreateDirectory(const string& theFileName);
 
 vector<string> parameters;
 vector<string> levels;
@@ -28,7 +29,7 @@ vector<string> levels;
 atomic<int> success(0);
 atomic<int> failed(0);
 
-mutex distMutex;
+mutex distMutex, dirCreateMutex;
   
 GribLoader::GribLoader() {}
 GribLoader::~GribLoader() {}
@@ -404,7 +405,7 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
 {
     fc_info g;
 
-    timespec start_ms_ts, stop_ms_ts, start_ts, stop_ts;;
+    timespec start_ms_ts, stop_ms_ts, start_ts, stop_ts;
 
     if (options.verbose)
     {
@@ -450,24 +451,10 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
 
     g.filename = theFileName;
 
-    namespace fs = boost::filesystem;
-
-    fs::path pathname(theFileName);
-	
     clock_gettime(CLOCK_REALTIME, &start_ts);
 	
-    if (!fs::is_directory(pathname.parent_path())) 
-    {
-
-      // Create directory
-
-      if (options.verbose)
-        cout << "Creating directory " << pathname.parent_path().string() << endl;
-
-      if (!options.dry_run)
-        fs::create_directories(pathname.parent_path());
-    }
-
+    CreateDirectory(theFileName);
+	
     /*
      * Write grib msg to disk with unique filename.
      */
@@ -528,4 +515,26 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
 			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, writeTime, databaseTime, otherTime, messageTime);
     }
  	
+}
+
+void CreateDirectory(const string& theFileName)
+{	
+    namespace fs = boost::filesystem;
+
+    fs::path pathname(theFileName);
+	
+	lock_guard<mutex> lock(dirCreateMutex);
+	
+	if (!fs::is_directory(pathname.parent_path())) 
+    {
+
+      // Create directory
+
+      if (options.verbose)
+        cout << "Creating directory " << pathname.parent_path().string() << endl;
+
+      if (!options.dry_run)
+        fs::create_directories(pathname.parent_path());
+    }
+	
 }

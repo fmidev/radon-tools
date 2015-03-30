@@ -14,6 +14,7 @@ BDAPLoader::BDAPLoader()
   : itsUsername("wetodb")
   , itsPassword("3loHRgdio")
   , itsDatabase("neons")
+  , base(0)
   , itsUseRadon(false)
 {
 
@@ -81,8 +82,13 @@ string BDAPLoader::REFFileName(const fc_info &info)
 
   // Determine file name
 
-  if (!ReadREFEnvironment())
-    return "";
+  if (!base)
+  {
+	if (!ReadREFEnvironment())
+	{
+      return "";
+	}
+  }
 
   stringstream ss;
 
