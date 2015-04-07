@@ -347,14 +347,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
 		  break;
 	  }
   }
-    
-  // Force eps_specifier to 0 because for some EC data it gets value other than zero from
-  // the if-chain above and that does not work well with hilake.
-  // When the issue with logic above is fixed, this hotfix can be removed. In the mean while
-  // it might not be safe to load actual EPS data with this program.
-
-  g.eps_specifier = "0";
- 
+  
   g.stepType = message.TimeRangeIndicator();
   g.timeUnit = message.UnitOfTimeRange();
 

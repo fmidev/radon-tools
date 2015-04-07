@@ -97,8 +97,6 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   info.ednum = 3;
   info.level2 = 0;
-  info.locdef = 0;
-  info.eps_specifier = "0";
   info.timeRangeIndicator = 0;
   info.timeUnit = 1; // hour
 

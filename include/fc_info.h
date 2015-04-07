@@ -35,21 +35,17 @@ struct fc_info
 	, level1(0)
 	, level2(0)
 	, lvl1_lvl2(0)
-	, locdef(0)
-	, ldeftype(0)
-	, ldefnumber(0)
 	, fcst_per(0)
 	, timeRangeIndicator(0)
 	, base_date("")
 	, parname("")
 	, levname("")
 	, grtyp("")
-	, eps_specifier("")
 	, filetype("")
 	, filename("")
 	, ncname("")
-	, forecast_type_id(0)
-	, forecast_type_value(kFloatMissing)
+	, forecast_type_id(1) // deterministic
+	, forecast_type_value(-1)
 	{ 
 	};
 
@@ -83,20 +79,15 @@ struct fc_info
 	long level1;
 	long level2;
 	long lvl1_lvl2;
-	long locdef;
-	long ldeftype;
-	long ldefnumber;
 	long fcst_per;
 	long timeRangeIndicator;
 	std::string base_date;
 	std::string parname;
 	std::string levname;
 	std::string grtyp;
-	std::string eps_specifier;
 	std::string filetype;
 	std::string filename;
 	std::string ncname;
-	// neon2-only variables
 	long forecast_type_id; // from table forecast_type
 	double forecast_type_value;
 };

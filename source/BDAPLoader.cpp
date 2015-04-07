@@ -27,17 +27,17 @@ BDAPLoader::BDAPLoader()
   
   if (options.neons)
   {
-	  itsNeonsDB = std::unique_ptr<NFmiNeonsDB> (NFmiNeonsDBPool::Instance()->GetConnection());
+      itsNeonsDB = std::unique_ptr<NFmiNeonsDB> (NFmiNeonsDBPool::Instance()->GetConnection());
   }
   
   if (options.radon)
   {
-	  itsRadonDB = std::unique_ptr<NFmiRadonDB> (NFmiRadonDBPool::Instance()->GetConnection());
+      itsRadonDB = std::unique_ptr<NFmiRadonDB> (NFmiRadonDBPool::Instance()->GetConnection());
   }   
 
 }
 
-	
+  
 void BDAPLoader::InitPool(const string& username, const string& password, const string& database)
 {
   NFmiNeonsDBPool::Instance()->ReadWriteTransaction(true);
@@ -52,7 +52,7 @@ void BDAPLoader::InitPool(const string& username, const string& password, const 
     NFmiRadonDBPool::Instance()->Password(password);
     NFmiRadonDBPool::Instance()->Database("radon");
     NFmiRadonDBPool::Instance()->MaxWorkers(8);
-	
+  
     itsUseRadon = true;
   }
   catch (int e) {
@@ -67,13 +67,13 @@ BDAPLoader::~BDAPLoader()
   if (itsNeonsDB)
   {
     NFmiNeonsDBPool::Instance()->Release(itsNeonsDB.get());
-	itsNeonsDB.release();
+    itsNeonsDB.release();
   }
   
   if (itsRadonDB)
   {
     NFmiRadonDBPool::Instance()->Release(itsRadonDB.get());
-	itsRadonDB.release();
+    itsRadonDB.release();
   }
 }
 
@@ -84,10 +84,10 @@ string BDAPLoader::REFFileName(const fc_info &info)
 
   if (!base)
   {
-	if (!ReadREFEnvironment())
-	{
-      return "";
-	}
+    if (!ReadREFEnvironment())
+    {
+        return "";
+    }
   }
 
   stringstream ss;
@@ -137,17 +137,7 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << setw(3)
        << setfill('0')
        << info.fcst_per;
-   
-      if (info.locdef != 0) 
-      {
-      ss << setw(0)
-         << "_"
-         << info.locdef
-         << "_"
-         << info.ldeftype
-         << "_"
-         << info.ldefnumber;
-    }
+
   }
   else if (info.ednum == 2) 
   {
@@ -173,16 +163,6 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << setfill('0')
        << info.fcst_per;
 
-    if (info.locdef != 0) 
-    {
-      ss << setw(0)
-         << "_"
-         << info.locdef
-         << "_"
-         << info.ldeftype
-         << "_"
-         << info.ldefnumber;
-    }
   }
   else if (info.ednum == 3)
   {
@@ -203,9 +183,16 @@ string BDAPLoader::REFFileName(const fc_info &info)
        << info.nj
        << setw(3)
        << setfill('0')
-       << info.fcst_per;
+       << info.fcst_per;       
   }
+  
+  ss << "_" << info.forecast_type_id;
 
+  if (info.forecast_type_id == 4) 
+  {
+    ss << "_" << info.forecast_type_value;
+  }
+  
   ss << "." << info.filetype;
   
   return ss.str();
@@ -249,7 +236,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   if (itsGeomName.empty()) 
   {
     auto geominfo = itsNeonsDB->GetGeometryDefinition(info.ni, info.nj, info.lat, info.lon, info.di, info.dj);
-	  
+    
     if (geominfo.empty()) 
     {
       cerr << "Geometry not found" << endl;
@@ -264,7 +251,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   {
 
     auto dsetinfo = itsNeonsDB->GetGridDatasetInfo(info.centre, info.process, itsGeomName, info.base_date);
-	
+  
     if (dsetinfo.empty()) 
     {
       cerr << "Model definition not found" << endl;
@@ -272,7 +259,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
     }
 
     itsDsetId = dsetinfo["dset_id"];
-	itsTableName = dsetinfo["table_name"];
+    itsTableName = dsetinfo["table_name"];
 
   }
 
@@ -331,6 +318,13 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 
   query.str("");
 
+  string eps_specifier = boost::lexical_cast<string> (info.forecast_type_id);
+  
+  if (info.forecast_type_id == 4)
+  {
+    eps_specifier += "_" + boost::lexical_cast<string> (info.forecast_type_value);	  
+  }
+  
   query << "INSERT INTO " << itsTableName
         << " (dset_id, parm_name, lvl_type, lvl1_lvl2, fcst_per, eps_specifier, file_location, file_server) "
         << "VALUES ("
@@ -339,7 +333,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
         << "'" << info.levname << "', "
         << info.lvl1_lvl2 << ", "
         << info.fcst_per << ", "
-        << "'" << info.eps_specifier << "', "
+        << "'" << eps_specifier << "', "
         << "'" << info.filename << "', "
         << "'" << itsHostname << "')";
 
@@ -364,7 +358,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
       query.str("");
 
       query << "UPDATE " << itsTableName
-            << " SET eps_specifier = '" << info.eps_specifier << "'"
+            << " SET eps_specifier = '" << eps_specifier << "'"
             << " WHERE "
             << "dset_id = " << itsDsetId
             << " AND parm_name = '" << info.parname << "'"
@@ -454,7 +448,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     if (options.dry_run)
       cout << query.str() << endl;
 
-   itsRadonDB->Query(query.str());
+    itsRadonDB->Query(query.str());
 
     row = itsRadonDB->FetchRow();
 
@@ -490,7 +484,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     if (info.ednum == 1)
     {
       p = itsRadonDB->GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
-	  
+
       if (p.empty())
       {
         cerr << "Parameter not found from radon\n";
@@ -517,7 +511,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       {
         cerr << "Parameter not found from radon\n";
         cerr << "NetCDF name: " << info.ncname << endl;
-	return false;
+      return false;
       }
     }
     param_id = boost::lexical_cast<long> (p["id"]);
@@ -572,7 +566,9 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       interval = " * interval '1 hour'";
       break;
   }
-  
+
+  string forecastTypeValue = (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string> (info.forecast_type_value));
+
   query << "INSERT INTO " << schema << "." << tableName
         << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, file_location, file_server, forecast_type_value) "
         << "VALUES ("
@@ -586,15 +582,37 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
         << info.forecast_type_id << ", "
         << "'" << info.filename << "', "
         << "'" << itsHostname << "', "
-        << (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string> (info.forecast_type_value)) << ")";
-
-  if (options.dry_run)
-    cout << query.str() << endl;
+        << forecastTypeValue << ")";
 
   try
   {
-    if (!options.dry_run && itsUseRadon)
-      itsRadonDB->Execute(query.str());
+    if (itsUseRadon)
+    {
+      if (options.dry_run)
+      {
+        cout << query.str() << endl;
+      }
+    else
+    {
+        itsRadonDB->Execute(query.str());
+      }
+    query.str("");
+    
+    query << "UPDATE as_grid "
+              << "SET record_count = record_count+1 "
+              << "WHERE producer_id = " << producer_id
+              << " AND geometry_id = " << geometry_id
+              << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')";
+    
+      if (options.dry_run)
+      {
+        cout << query.str() << endl;
+      }
+      else
+      {
+        itsRadonDB->Execute(query.str());
+      }
+    }
   }
   catch (int e)
   {
@@ -611,7 +629,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       query << "UPDATE " << schema << "." << tableName
             << " SET file_location = '" << info.filename << "', "
             << " file_server = '" << itsHostname << "', "
-            << " forecast_type_value = " << (info.forecast_type_value == kFloatMissing ? "NULL" : boost::lexical_cast<string> (info.forecast_type_value))
+            << " forecast_type_value = " << forecastTypeValue
             << " WHERE "
             << " producer_id = " << producer_id
             << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
@@ -622,9 +640,6 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
             << " AND forecast_period = " << info.fcst_per
             << " AND forecast_type_id = " << info.forecast_type_id
         ;
-
-      if (options.dry_run)
-        cout << query.str() << endl;
 
       try
       {
