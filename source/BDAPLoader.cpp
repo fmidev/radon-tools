@@ -207,20 +207,9 @@ void BDAPLoader::Init()
   itsDsetId = "";
   itsTableName = "";
 
-  char* host;
-  
-  if ((host = getenv("HOSTNAME")) == NULL)
-  {
-    // env variable hostname not set
-    host = new char[100];
-    gethostname(host, 100);
-    itsHostname = string(host);
-    delete [] host;
-  }
-  else
-  {
-    itsHostname = string(host);
-  }
+  char host[255];
+  gethostname(host, 100);
+  itsHostname = string(host);
 }
 
 bool BDAPLoader::WriteAS(const fc_info &info) 
@@ -411,9 +400,6 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     return false;
   }
 
-  if (options.verbose)
-    cout << "Writing to radon" << endl;
-
   Init();
 
   stringstream query;
@@ -423,7 +409,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   if (r.size() == 0)
   {
-    cerr << "Producer information not found for centre " << info.centre << ", process " << info.process << endl;
+    cerr << "Producer information not found from radon for centre " << info.centre << ", process " << info.process << endl;
     return false;
   }
 
@@ -434,34 +420,16 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   if (geometry_id == 0)
   {
+    auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat, info.lon, info.di, info.dj, info.ednum, info.gridtype);
 
-    query << "SELECT g.id,g.name FROM geom g, projection p "
-            << "WHERE g.projection_id = p.id"
-            << " AND nj = " << info.nj
-            << " AND ni = " << info.ni
-            << " AND 1000 * st_x(first_point) = " << info.lon
-            << " AND 1000 * st_y(first_point) = " << info.lat
-            << " AND 1000 * di = " << info.di
-            << " AND 1000 * dj = " << info.dj
-            << " AND p." << (info.ednum == 1 ? "grib1_number = " : "grib2_number = ") << info.gridtype;
-
-    if (options.dry_run)
-      cout << query.str() << endl;
-
-    itsRadonDB->Query(query.str());
-
-    row = itsRadonDB->FetchRow();
-
-    if (row.empty())
+    if (geominfo.empty())
     {
-      cerr << "Geometry not found" << endl;
+      cerr << "Geometry not found from radon" << endl;
       return false;
     }
 
-    geometry_id = boost::lexical_cast<long> (row[0]);
-    geometry_name = row[1];
-
-    query.str("");
+    geometry_id = boost::lexical_cast<long> (geominfo["id"]);
+    geometry_name = geominfo["name"];
 
   }
 
@@ -539,7 +507,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
     if (row.empty())
     {
-      cerr << "Data set definition not found from radon table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
+      cerr << "Destination table definition not found from radon table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
       cerr << "The data could be too old" << endl;
       return false;
     }
@@ -630,7 +598,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
             << " SET file_location = '" << info.filename << "', "
             << " file_server = '" << itsHostname << "', "
             << " forecast_type_value = " << forecastTypeValue
-            << " WHERE "
+            << " WHERE"
             << " producer_id = " << producer_id
             << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
             << " AND geometry_id = " << geometry_id
@@ -656,7 +624,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     else
     {
       itsRadonDB->Rollback();
-      cerr << "Load failed with: " << info.filename << endl;
+      cerr << "Load to radon failed with: " << info.filename << endl;
       return false;
     }
   }
