@@ -4,8 +4,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.3.30
-Release:        1%{?dist}.fmi
+Version:        15.4.16
+Release:        2%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -29,6 +29,7 @@ Requires:	python-psycopg2
 Requires:	python-bunch
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
+Provides:       previ_to_neons.py
 %endif
 Provides:	grid_to_neons
 Provides:	create_grid_tables
@@ -59,12 +60,19 @@ rm -rf %{buildroot}
 %{_bindir}/grid_to_neons
 %{_bindir}/create_grid_tables
 
-%if "%{dist}" == ".el6"
+%if %{undefined suse_version}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
+%{_bindir}/previ_to_neons.py
 %endif
 
 %changelog
+* Thu Apr 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.16-2.fmi
+- Adding previ_to_neons.py
+* Thu Apr 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.16-1.fmi
+- Changes in fmigrib
+* Tue Apr  7 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.7-1.fmi
+- Improved eps support
 * Mon Mar 30 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.30-1.fmi
 - Thread safety issues
 * Wed Mar 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.3.18-1.fmi

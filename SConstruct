@@ -89,13 +89,7 @@ env.Append(LIBS=['grib_api'])
 
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
-for lib in boost_libraries:
-	libfile = '/usr/lib/x86_64-linux-gnu//lib' + lib + '.a'
-
-	if not os.path.isfile(libfile):
-		libfile = '/usr/lib64/lib' + lib + '-mt.a'
-
-	env.Append(LIBS=env.File(libfile))
+env.Append(LIBS = boost_libraries)
 
 if have_cuda:
 	env.Append(LIBS=env.File(cuda_toolkit_path + '/lib64/libcudart_static.a'))

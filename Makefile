@@ -46,6 +46,7 @@ install:
 	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
 		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \
 		$(INSTALL_PROG) main/previ_to_radon.py $(bindir) ; \
+		$(INSTALL_PROG) main/previ_to_neons.py $(bindir) ; \
 	fi;
 
 test:	debug
