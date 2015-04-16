@@ -7,7 +7,6 @@
 #include <string>
 #include "BDAPLoader.h"
 #include "NFmiGrib.h"
-#include <memory>
 #include <boost/thread.hpp>
 
 class GribLoader
@@ -22,7 +21,7 @@ protected:
     void Run(short threadId);
 
   private:
-    std::unique_ptr<NFmiGribMessage> DistributeMessages();
+    bool DistributeMessages(NFmiGribMessage& newMessage);
 
     NFmiGrib itsReader;
     boost::thread_specific_ptr<BDAPLoader> itsThreadedLoader;

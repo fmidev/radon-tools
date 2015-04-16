@@ -20,7 +20,7 @@ extern Options options;
 
 using namespace std;
 
-void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId);
+void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
 void CreateDirectory(const string& theFileName);
 
 vector<string> parameters;
@@ -236,117 +236,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   
   // Rewritten EPS logic
 
-  if (g.ednum == 1)
-  {
-    long definitionNumber = 0;
-
-    if (message.KeyExists("localDefinitionNumber"))
-    {
-      definitionNumber = message.LocalDefinitionNumber();
-    }
-
-    // EC uses local definition number in Grib1
-    // http://old.ecmwf.int/publications/manuals/d/gribapi/fm92/grib1/show/local/
-  
-    switch (definitionNumber)
-    {
-      case 0:
-        // no local definition --> deterministic
-        g.forecast_type_id = 1;
-        g.forecast_type_value = kFloatMissing;
-        break;
-
-      case 1:
-        // MARS labeling or ensemble forecast data
-      {
-        long definitionType = message.Type();
-        long perturbationNumber = message.PerturbationNumber();
-
-        switch (definitionType)
-        {
-            case 9:
-            // deterministic forecast
-            g.forecast_type_id = 1;
-            g.forecast_type_value = kFloatMissing;
-            break;		
-          
-		  case 10:
-            // cf -- control forecast
-            g.forecast_type_id = 4;
-            g.forecast_type_value = kFloatMissing;
-            break;
-          case 11:
-            // pf -- perturbed forecast
-            g.forecast_type_id = 3;
-            g.forecast_type_value = perturbationNumber;
-            break;
-          default:
-            cerr << "Unknown localDefinitionType: " << definitionType << endl;
-            break;
-        }
-		break;
-      }
-      default:
-        cerr << "Unknown localDefinitionNumber: " << definitionNumber << endl;
-        break;
-    }
-  }
-  else
-  {
-      // grib2
-
-      long typeOfGeneratingProcess = message.TypeOfGeneratingProcess();
-
-      switch (typeOfGeneratingProcess)
-      {
-        case 0:
-          // Analysis
-          g.forecast_type_id = 2;
-          g.forecast_type_value = kFloatMissing;
-          break;
-
-        case 2:
-          // deterministic
-          g.forecast_type_id = 1;
-          g.forecast_type_value = kFloatMissing;
-          break;
-
-        case 4:
-          // eps
-        {
-
-          long typeOfEnsemble = message.TypeOfEnsembleForecast();
-          long perturbationNumber = message.PerturbationNumber();
-
-          switch (typeOfEnsemble)
-          {
-            case 0:
-            case 1:
-              // control forecast
-              g.forecast_type_id = 4;
-              g.forecast_type_value = kFloatMissing;
-              break;
-
-            case 2:
-            case 3:
-            case 192:
-              // perturbed forecast
-              g.forecast_type_id = 3;
-              g.forecast_type_value = perturbationNumber;
-              break;
-
-            default:
-              cerr << "Unknown type of ensemble: " << typeOfEnsemble << endl;
-              break;
-	      }
-          break;
-        }
-
-	    default:
-		  cerr << "Unknown type of generating process: " << typeOfGeneratingProcess << endl;
-		  break;
-	  }
-  }
+  g.forecast_type_id = message.ForecastType();
+  g.forecast_type_value = message.ForecastTypeValue();
   
   g.stepType = message.TimeRangeIndicator();
   g.timeUnit = message.UnitOfTimeRange();
@@ -366,35 +257,36 @@ void GribLoader::Run(short threadId)
   
   itsThreadedLoader.reset(new BDAPLoader());
 
-  unique_ptr<NFmiGribMessage> myMessage;
+  NFmiGribMessage myMessage;
   
-  while(myMessage = DistributeMessages())
+  while(DistributeMessages(myMessage))
   {
-    Process(*itsThreadedLoader, move(myMessage), threadId);
+    Process(*itsThreadedLoader, myMessage, threadId);
   }
   
   printf("Thread %d stopped\n", threadId);
   
 }
 
-unique_ptr<NFmiGribMessage> GribLoader::DistributeMessages()
+bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
 {
   lock_guard<mutex> lock(distMutex);
-  while (itsReader.NextMessage()) 
+  if (itsReader.NextMessage()) 
   {
     if (options.verbose)
     {
       printf("Message %d\n", itsReader.CurrentMessageIndex());
     }
 
-    return itsReader.CloneMessage();
+	newMessage = NFmiGribMessage(itsReader.Message());
+	return true;
 
   }
 
-  return unique_ptr<NFmiGribMessage> ();
+  return false;
 }
 
-void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, short threadId)
+void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
 {
     fc_info g;
 
@@ -408,7 +300,7 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
      * Read metadata from grib msg
      */
 
-    if (!CopyMetaData(databaseLoader, g, *message))
+    if (!CopyMetaData(databaseLoader, g, message))
     {
       return;
     }
@@ -454,7 +346,7 @@ void Process(BDAPLoader& databaseLoader, unique_ptr<NFmiGribMessage> message, sh
 
     if (!options.dry_run)
     {
-      if (!message->Write(theFileName, false))
+      if (!message.Write(theFileName, false))
       {
         failed++;
         return;

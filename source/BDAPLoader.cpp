@@ -624,7 +624,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     else
     {
       itsRadonDB->Rollback();
-      cerr << "Load to radon failed with: " << info.filename << endl;
+      cerr << "Load to radon failed with: " << info.filename << ", error code: " << e << endl;
       return false;
     }
   }
