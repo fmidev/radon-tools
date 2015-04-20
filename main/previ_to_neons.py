@@ -29,8 +29,6 @@ from optparse import OptionParser
 
 conn = None
 cur = None
-tableCache = {}
-stations = {}
 
 # ReadCommandLine()
 # 
