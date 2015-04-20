@@ -112,81 +112,27 @@ string BDAPLoader::REFFileName(const fc_info &info)
      << setfill('0')
      << info.minute
      << "/"
-     << info.fcst_per;
-
-  if (info.ednum == 1) 
-  {
-    ss << "/"
-       << setw(0)
-       << info.param
-       << "_"
-       << info.levtype
-       << "_"
-       << info.level1
-       << "_"
-       << info.level2
-       << "_"
-       << info.grtyp
-       << "_"
-       << info.ni
-       << "_"
-       << info.nj
-       << "_"
-       << info.timeRangeIndicator
-       << "_0_"
-       << setw(3)
-       << setfill('0')
-       << info.fcst_per;
-
-  }
-  else if (info.ednum == 2) 
-  {
-    ss << "/"
-       << setw(0)
-       << info.parname
-       << "_"
-       << info.levname
-       << "_"
-       << info.level1
-       << "_"
-       << info.level2
-       << "_"
-       << info.grtyp
-       << "_"
-       << info.ni
-       << "_"
-       << info.nj
-       << "_"
-       << info.timeRangeIndicator
-       << "_0_"
-       << setw(3)
-       << setfill('0')
-       << info.fcst_per;
-
-  }
-  else if (info.ednum == 3)
-  {
-    ss << "/"
-       << setw(0)
-       << info.parname
-       << "_"
-       << info.levname
-       << "_"
-       << info.level1
-       << "_"
-       << info.level2
-       << "_"
-       << info.grtyp
-       << "_"
-       << info.ni
-       << "_"
-       << info.nj
-       << setw(3)
-       << setfill('0')
-       << info.fcst_per;       
-  }
-  
-  ss << "_" << info.forecast_type_id;
+     << info.fcst_per
+     << "/"
+     << info.parname
+     << "_"
+     << info.levname
+     << "_"
+     << info.level1
+     << "_"
+     << info.level2
+     << "_"
+     << info.grtyp
+     << "_"
+     << info.ni
+     << "_"
+     << info.nj
+     << "_0_"
+     << setw(3)
+     << setfill('0')
+     << info.fcst_per
+     << "_" 
+     << info.forecast_type_id;
 
   if (info.forecast_type_id == 4) 
   {
