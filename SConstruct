@@ -94,6 +94,7 @@ env.Append(LIBS = boost_libraries)
 if have_cuda:
 	env.Append(LIBS=env.File(cuda_toolkit_path + '/lib64/libcudart_static.a'))
 
+env.Append(LIBS = ['dl','rt'])
 # CFLAGS
 
 # "Normal" flags
