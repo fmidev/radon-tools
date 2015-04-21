@@ -23,7 +23,8 @@ const double kFloatMissing = 32700.;
 const int membersize = 51;
 
 bool Process(const std::string& inFile, const std::string& outFile);
-void Sort (std::vector<std::vector<double>>& fields, int membersize);
+void Sort(std::vector<std::vector<double>>& fields, int membersize);
+void Flip(std::vector<double>& fec, size_t ni, size_t nj);
 
 using namespace std;
 
@@ -54,7 +55,7 @@ bool Process(const string& inFile, const string& outFile)
 	bool allocate = true;		
 	int messageNum = -1;
 		
-	size_t sizedecoded = 0;
+	size_t sizedecoded = 0, ni = 0, nj = 0;
 	
 	long paramId = -1;
 
@@ -89,6 +90,9 @@ bool Process(const string& inFile, const string& outFile)
 			}
 			
 			allocate = false;
+			
+			ni = reader.Message().SizeX();
+			nj = reader.Message().SizeY();
 		}
 		
 		for (size_t i = 0; i<sizedecoded; i++) 
@@ -127,6 +131,14 @@ bool Process(const string& inFile, const string& outFile)
 		maxim[i] = fields[i][50];	
 	}
 	
+	Flip(minim, ni, nj);
+	Flip(val10, ni, nj);
+	Flip(val25, ni, nj);
+	Flip(median, ni, nj);
+	Flip(val75, ni, nj);
+	Flip(val90, ni, nj);
+	Flip(maxim, ni, nj);
+
 	assert(reader.Message().Edition() == 1);
  
 	switch (paramId)
@@ -208,5 +220,23 @@ void Sort(vector<vector<double>>& fields, int perturbationsize)
 	for (size_t i = 0; i < fields.size(); i++)
 	{
 		sort(fields[i].begin(), fields[i].end());
+	}
+}
+
+void Flip(vector<double>& vec, size_t ni, size_t nj)
+{
+	size_t halfSize = static_cast<size_t> (nj/2);
+
+	for (size_t y = 0; y < halfSize; y++)
+	{
+		for (size_t x = 0; x < ni; x++)
+		{
+			size_t upperIndex = y * ni + x, lowerIndex = (nj-1-y) * ni + x;
+			double upper = vec[upperIndex];
+			double lower = vec[lowerIndex];
+
+			vec[lowerIndex] = upper;
+			vec[upperIndex] = lower;
+		}
 	}
 }
