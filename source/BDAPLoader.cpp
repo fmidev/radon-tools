@@ -600,3 +600,8 @@ NFmiNeonsDB& BDAPLoader::NeonsDB() const
 {
   return *itsNeonsDB;
 }
+
+NFmiRadonDB& BDAPLoader::RadonDB() const
+{
+  return *itsRadonDB;
+}
