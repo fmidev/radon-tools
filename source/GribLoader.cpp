@@ -303,8 +303,8 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
       printf("Message %d\n", itsReader.CurrentMessageIndex());
     }
 
-	newMessage = NFmiGribMessage(itsReader.Message());
-	return true;
+    newMessage = NFmiGribMessage(itsReader.Message());
+    return true;
 
   }
 
@@ -382,7 +382,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     size_t start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
     size_t stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
 
-	size_t writeTime = (stop-start) / 1000 / 1000;
+    size_t writeTime = (stop-start) / 1000 / 1000;
 	
     /*
      * Update new file information to database
@@ -390,20 +390,19 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
 
     clock_gettime(CLOCK_REALTIME, &start_ts);
 	
-	if (options.neons)
-	{
-cout << "LOADING NEONS\n";
+    if (options.neons)
+    {
       if (!databaseLoader.WriteAS(g))
       {
         failed++;
         return;
       }
-	}
+    }
 
-	if (options.radon)
-	{
+    if (options.radon)
+    {
       databaseLoader.WriteToRadon(g);
-	}
+    }
 
     clock_gettime(CLOCK_REALTIME, &stop_ts);
     start = static_cast<size_t> (start_ts.tv_sec*1000000000 + start_ts.tv_nsec);
@@ -417,9 +416,9 @@ cout << "LOADING NEONS\n";
       clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
       start = static_cast<size_t> (start_ms_ts.tv_sec*1000000000 + start_ms_ts.tv_nsec);
       stop = static_cast<size_t> (stop_ms_ts.tv_sec*1000000000 + stop_ms_ts.tv_nsec);
-	  size_t messageTime = (stop - start) / 1000 / 1000;
+      size_t messageTime = (stop - start) / 1000 / 1000;
 	  
-	  size_t otherTime = messageTime - writeTime - databaseTime;
+      size_t otherTime = messageTime - writeTime - databaseTime;
 	  
       printf("Thread %d: Parameter %s at %s/%ld write time=%ld, database time=%ld, other=%ld, total=%ld ms\n", 
 			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, writeTime, databaseTime, otherTime, messageTime);
@@ -433,9 +432,9 @@ void CreateDirectory(const string& theFileName)
 
     fs::path pathname(theFileName);
 	
-	lock_guard<mutex> lock(dirCreateMutex);
+    lock_guard<mutex> lock(dirCreateMutex);
 	
-	if (!fs::is_directory(pathname.parent_path())) 
+    if (!fs::is_directory(pathname.parent_path())) 
     {
 
       // Create directory
