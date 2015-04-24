@@ -65,9 +65,6 @@ librarypaths = []
 
 librarypaths.append('/usr/lib64')
 librarypaths.append('/usr/lib64/oracle')
-librarypaths.append('/home/partio/workspace/fmidb/lib')
-librarypaths.append('/home/partio/workspace/fminc/lib')
-librarypaths.append('/home/partio/workspace/fmigrib/lib')
 
 env.Append(LIBPATH = librarypaths)
 

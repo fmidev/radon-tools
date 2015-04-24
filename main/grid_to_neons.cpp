@@ -36,7 +36,7 @@ bool parse_options(int argc, char * argv[])
     ("use-level-value",po::bool_switch(&options.use_level_value),"use level value instead of index")
     ("use-inverse-level-value",po::bool_switch(&options.use_inverse_level_value),"use inverse level value instead of index")
     ("dry-run", po::bool_switch(&options.dry_run), "dry run (no changes made to database or disk), show all sql statements")
-	("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
+    ("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
     ("neons,N", po::bool_switch(&neons_switch), "use only neons database")
     ("radon,R", po::bool_switch(&radon_switch), "use only radon database")
     ;
