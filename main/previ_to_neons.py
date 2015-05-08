@@ -94,7 +94,7 @@ def GetTotalSeconds(td):
 def GetStationInfo(station_id):
 
 	# use to_char to prevent floating point inaccuracies
-	query = "SELECT to_char(lat/1e5),to_char(lon/1e5),nom_station FROM station WHERE id_station = :id_station"
+	query = "SELECT to_char(lat/1e5),to_char(lon/1e5),nom_station FROM station WHERE indicatif_omm = :id_station"
 
 	args = {'id_station' : station_id}
 
@@ -133,16 +133,18 @@ def ReadFile(options, file):
 	num_points = int(f.readline().strip())
 
 	# print "previ version: %s" % (version)
-	print "producer name:\t%s" % (ref_prod)
-	print "producer id:\t%d" % (producer_id)
-	print "station id:\t%s" % (station_id)
-	print "initial time:\t%s" % (initial_time)
-	print "created time:\t%s" % (created_time)
-	print "num of data points:\t%d" % (num_points)
+	print "Producer:\t%s %s" % (ref_prod, producer_id)
+	print "Station id:\t%s" % (station_id)
+	print "Initial, created time:\t%s %s" % (initial_time, created_time)
+	print "Num of data points:\t%d" % (num_points)
 
 	cur.execute("ALTER SESSION SET NLS_DATE_FORMAT='yyyymmddhh24miss'")
 
 	stationinfo = GetStationInfo(station_id)
+
+	if stationinfo == None:
+		print "ERR: station %s not found from neons table 'station'" % (station_id)
+		continue
 
 	query = "SELECT previ_id, tbl_name FROM as_previ WHERE ref_prod = :ref_prod AND :initial_time BETWEEN dat_debut_prevu AND dat_fin_prevu"
 
