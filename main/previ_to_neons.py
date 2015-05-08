@@ -25,6 +25,7 @@ import cx_Oracle
 import getpass
 import os
 
+from decimal import Decimal
 from optparse import OptionParser
 
 conn = None
@@ -92,13 +93,20 @@ def GetTotalSeconds(td):
 
 def GetStationInfo(station_id):
 
-	query = "SELECT lat/1e5,lon/1e5,nom_station FROM station WHERE id_station = :id_station"
+	# use to_char to prevent floating point inaccuracies
+	query = "SELECT to_char(lat/1e5),to_char(lon/1e5),nom_station FROM station WHERE id_station = :id_station"
 
-	cur.prepare(query)
-	cur.execute(None, {'id_station' : station_id})
+	args = {'id_station' : station_id}
+
+	if options.show_sql:
+		PrintQuery(query, args)
+	
+	cur.execute(query, args)
 
 	return cur.fetchone()
 
+def PrintQuery(query, args):
+	print "%s;\nargs: %s" % (query, args)
 
 def ReadFile(options, file):
 	
@@ -124,23 +132,27 @@ def ReadFile(options, file):
 
 	num_points = int(f.readline().strip())
 
-	print "previ version: %s" % (version)
-	print "producer name: %s" % (ref_prod)
-	print "producer id: %d" % (producer_id)
-	print "station id: %s" % (station_id)
-	print "initial time: %s" % (initial_time)
-	print "created time: %s" % (created_time)
-	print "num of data points: %d" % (num_points)
+	# print "previ version: %s" % (version)
+	print "producer name:\t%s" % (ref_prod)
+	print "producer id:\t%d" % (producer_id)
+	print "station id:\t%s" % (station_id)
+	print "initial time:\t%s" % (initial_time)
+	print "created time:\t%s" % (created_time)
+	print "num of data points:\t%d" % (num_points)
 
-	cur.execute("ALTER SESSION SET NLS_DATE_FORMAT='yyyy-mm-dd hh24:mi:ss'")
+	cur.execute("ALTER SESSION SET NLS_DATE_FORMAT='yyyymmddhh24miss'")
 
 	stationinfo = GetStationInfo(station_id)
 
 	query = "SELECT previ_id, tbl_name FROM as_previ WHERE ref_prod = :ref_prod AND :initial_time BETWEEN dat_debut_prevu AND dat_fin_prevu"
 
-	cur.prepare(query)
+	args = {'ref_prod' : ref_prod, 'initial_time' : initial_time}
 
-	cur.execute(None, {'ref_prod' : ref_prod, 'initial_time' : initial_time})
+	if options.show_sql:
+		PrintQuery(query, args)
+	
+	cur.execute(query, args)
+
 	row = cur.fetchone()
 
 	if row is None:
@@ -150,13 +162,24 @@ def ReadFile(options, file):
 	dset_id = row[0]
 	tbl_name = row[1]
 
-	print "dset_id: %s for table_name: %s" % (dset_id, tbl_name)
-	
-	cols = "watlev_cm"
+	# print "dset_id: %s for table_name: %s" % (dset_id, tbl_name)
+	query = "SELECT col_name FROM previ_col WHERE previ_type = :ref_prod ORDER BY ordre"
+	args = {'ref_prod' : ref_prod}
 
-	query = """
-INSERT INTO %s ( 
-  previ_id, 
+	if options.show_sql:
+		PrintQuery(query, args)
+
+	cur.execute(query, args)
+
+	cols = []
+
+	for row in cur.fetchall():
+		cols.append(row[0])
+
+	binds = [':' + x for x in cols]
+
+	iquery = """
+INSERT INTO bdm.%s (previ_id, 
   latitude, 
   longitude, 
   lltbufr_val, 
@@ -171,35 +194,40 @@ INSERT INTO %s (
   :lat, 
   :lon, 
   :lltbufr_val, 
-  :dat_prevu, 
-  :dat_run, 
+  to_date(:dat_prevu, 'yyyymmddhh24mi'), 
+  to_date(:dat_run, 'yyyymmddhh24mi'),  
   :echeance,
   :heure_res_run,
   :dat_insert,
-  :value)""" % (tbl_name, cols)
+  %s)""" % (tbl_name, ','.join(cols), ','.join(binds))
 
-	print query
 	icur = conn.cursor()
 
-	icur.prepare(query)
+	icur.prepare(iquery)
 	
-	query = """
-UPDATE %s SET
-  %s = :value
+	uquery = """UPDATE %s SET
+dat_insert = :dat_insert,
+echeance = :echeance,
+longitude = :lon,
+latitude = :lat,
+heure_res_run = :heure_res_run,
+""" % (tbl_name)
+
+	for i, col in enumerate(cols):
+		uquery += col + " = " + binds[i]
+
+	uquery +="""
 WHERE 
   previ_id = :previ_id
   AND
   lltbufr_val = :lltbufr_val
   AND
-  dat_run = :dat_run
+  dat_run = to_date(:dat_run, 'yyyymmddhh24mi')
   AND
-  dat_prevu = :dat_prevu
-  AND
-  dat_insert = :dat_insert
-""" % (tbl_name, cols)	
+  dat_prevu = to_date(:dat_prevu, 'yyyymmddhh24mi')""" 
 
 	ucur = conn.cursor()
-	ucur.prepare(query)
+	ucur.prepare(uquery)
 
 	totalrows = 0
 	inserts = 0
@@ -207,13 +235,16 @@ WHERE
 
 	for line in f:
 		totalrows = totalrows + 1
-
 		(forecast_time, value) = line.strip().split()
-		value = float(value)
+
+		if value == "32700.0":
+			value = None
+		else:
+			value = Decimal(value)
 		
 #		print "%s %f" % (forecast_time, value)
 
-		echeance = int((datetime.datetime.strptime(forecast_time, '%Y%m%d%H%M%S') - datetime.datetime.strptime(initial_time, '%Y%m%d%H%M%S')).total_seconds()/3600)
+		echeance = int(GetTotalSeconds(datetime.datetime.strptime(forecast_time, '%Y%m%d%H%M%S') - datetime.datetime.strptime(initial_time, '%Y%m%d%H%M%S'))/3600)
 
 		if echeance < 0:
 			print "Logical error in the data: forecast step is negative (%d hours)" % (echeance)
@@ -228,33 +259,40 @@ WHERE
 #		print echeance
 #		print analysis_hour
 
+		args = {
+			'previ_id' : dset_id, 
+			'lat' : (stationinfo[0]), 
+			'lon' : (stationinfo[1]), 
+			'lltbufr_val' : station_id, 
+			'dat_prevu' : forecast_time, 
+			'dat_run' : initial_time, 
+			'echeance' : echeance,
+			'heure_res_run' : analysis_hour,
+			'dat_insert' : datetime.datetime.now()
+		}
+
+		# HUOM!
+		# SKRIPTI OSAA TOISTAISEKSI LADATA VAIN SELLAISTA PREVIA JOSSA ON YKSI DATASARAKE!
+		
+		for i,col in enumerate(cols):
+			args[col] = value #values[i]
+
 		try:
+			if options.show_sql:
+				PrintQuery(iquery, args)
+
 			if not options.dry_run:
-				icur.execute(None, 
-					{	'previ_id' : dset_id, 
-						'lat' : stationinfo[0], 
-						'lon' : stationinfo[1], 
-						'lltbufr_val' : station_id, 
-						'dat_prevu' : forecast_time, 
-						'dat_run' : initial_time, 
-						'echeance' : echeance,
-						'heure_res_run' : analysis_hour,
-						'dat_insert' : datetime.datetime.now(),
-						'value' : value
-					})
+				icur.execute(None, args)
 				inserts = inserts + 1
 
-		except:
-			ucur.execute(None,
-				{	'previ_id' : dset_id, 
-					'lltbufr_val' : station_id, 
-					'dat_prevu' : forecast_time, 
-					'dat_run' : initial_time, 
-					'dat_insert' : datetime.datetime.now(),
-					'value' : value
-				}
-				)
+		except Exception,e:
+			
+			if options.show_sql:
+				PrintQuery(uquery, args)
+
+			ucur.execute(None, args)
 			updates = updates + 1
+
 	conn.commit()
 	conn.close()
 
