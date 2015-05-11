@@ -94,7 +94,7 @@ def GetTotalSeconds(td):
 def GetStationInfo(station_id):
 
 	# use to_char to prevent floating point inaccuracies
-	query = "SELECT to_char(lat/1e5),to_char(lon/1e5),nom_station FROM station WHERE indicatif_omm = :id_station"
+	query = "SELECT to_char(lat/1e5),to_char(lon/1e5),nom_station FROM station WHERE to_number(indicatif_omm) = :id_station"
 
 	args = {'id_station' : station_id}
 
