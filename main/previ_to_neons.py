@@ -146,24 +146,6 @@ def ReadFile(options, file):
 		print "ERR: station %s not found from neons table 'station'" % (station_id)
 		return
 
-	query = "SELECT previ_id, tbl_name FROM as_previ WHERE ref_prod = :ref_prod AND :initial_time BETWEEN dat_debut_prevu AND dat_fin_prevu"
-
-	args = {'ref_prod' : ref_prod, 'initial_time' : initial_time}
-
-	if options.show_sql:
-		PrintQuery(query, args)
-	
-	cur.execute(query, args)
-
-	row = cur.fetchone()
-
-	if row is None:
-		print "Data set not found from Neons. Is the data too old?"
-		return
-
-	dset_id = row[0]
-	tbl_name = row[1]
-
 	# print "dset_id: %s for table_name: %s" % (dset_id, tbl_name)
 	query = "SELECT col_name FROM previ_col WHERE previ_type = :ref_prod ORDER BY ordre"
 	args = {'ref_prod' : ref_prod}
@@ -181,7 +163,7 @@ def ReadFile(options, file):
 	binds = [':' + x for x in cols]
 
 	iquery = """
-INSERT INTO bdm.%s (previ_id, 
+INSERT INTO bdm.PREVI_TABLE (previ_id, 
   latitude, 
   longitude, 
   lltbufr_val, 
@@ -193,27 +175,23 @@ INSERT INTO bdm.%s (previ_id,
   %s
 ) VALUES (
   :previ_id, 
-  :lat, 
-  :lon, 
+  1e5 * :lat, 
+  1e5 * :lon, 
   :lltbufr_val, 
   to_date(:dat_prevu, 'yyyymmddhh24mi'), 
   to_date(:dat_run, 'yyyymmddhh24mi'),  
   :echeance,
   :heure_res_run,
   :dat_insert,
-  %s)""" % (tbl_name, ','.join(cols), ','.join(binds))
+  %s)""" % (','.join(cols), ','.join(binds))
 
-	icur = conn.cursor()
-
-	icur.prepare(iquery)
-	
-	uquery = """UPDATE %s SET
+	uquery = """UPDATE PREVI_TABLE SET
 dat_insert = :dat_insert,
 echeance = :echeance,
 longitude = :lon,
 latitude = :lat,
 heure_res_run = :heure_res_run,
-""" % (tbl_name)
+"""
 
 	for i, col in enumerate(cols):
 		uquery += col + " = " + binds[i]
@@ -228,9 +206,6 @@ WHERE
   AND
   dat_prevu = to_date(:dat_prevu, 'yyyymmddhh24mi')""" 
 
-	ucur = conn.cursor()
-	ucur.prepare(uquery)
-
 	asquery = """
 UPDATE bdm.as_previ SET
   rec_cnt = rec_cnt+1
@@ -238,16 +213,35 @@ WHERE
   previ_id = :previ_id  
 """
 
-	ascur = conn.cursor()
-	ascur.prepare(asquery)
-
 	totalrows = 0
 	inserts = 0
 	updates = 0
 
 	for line in f:
 		totalrows = totalrows + 1
+
 		(forecast_time, value) = line.strip().split()
+
+		# The handling of previ in neons is a bit strange:
+		# The data is split to day-partitions based on forecast_timem not initial_time !
+
+		query = "SELECT previ_id, tbl_name FROM as_previ WHERE ref_prod = :ref_prod AND :forecast_time BETWEEN dat_debut_prevu AND dat_fin_prevu"
+
+		args = {'ref_prod' : ref_prod, 'forecast_time' : forecast_time}
+
+		if options.show_sql:
+			PrintQuery(query, args)
+
+		cur.execute(query, args)
+
+		row = cur.fetchone()
+
+		if row is None:
+			print "Data set not found from Neons for date %s. Is the data too old?" % (forecast_time)
+			continue
+
+		dset_id = row[0]
+		tbl_name = row[1]
 
 		if value == "32700.0":
 			value = None
@@ -279,11 +273,13 @@ WHERE
 			args[col] = value #values[i]
 
 		try:
+			q = iquery.replace("PREVI_TABLE", tbl_name)
+
 			if options.show_sql:
-				PrintQuery(iquery, args)
+				PrintQuery(q, args)
 
 			if not options.dry_run:
-				icur.execute(None, args)
+				cur.execute(q, args)
 				inserts = inserts + 1
 
 			# Update as_previ
@@ -292,14 +288,18 @@ WHERE
 				PrintQuery(asquery, {"previ_id" : dset_id})
 
 			if not options.dry_run:
-				ascur.execute(None, {"previ_id" : dset_id})
+				cur.execute(asquery, {"previ_id" : dset_id})
 
 		except Exception,e:
-			
-			if options.show_sql:
-				PrintQuery(uquery, args)
 
-			ucur.execute(None, args)
+			print e
+			q  = uquery.replace("PREVI_TABLE", tbl_name)
+		
+			if options.show_sql:
+				PrintQuery(q, args)
+
+
+			cur.execute(q, args)
 			updates = updates + 1
 
 	conn.commit()
