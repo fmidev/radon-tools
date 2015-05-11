@@ -31,7 +31,7 @@ else:
 
 # cuda toolkit path
 
-cuda_toolkit_path = '/usr/local/cuda-6.5'
+cuda_toolkit_path = '/usr/local/cuda-7.0'
 
 if os.environ.get('CUDA_TOOLKIT_PATH') is None:
         print "Environment variable CUDA_TOOLKIT_PATH not set, assuming " + cuda_toolkit_path

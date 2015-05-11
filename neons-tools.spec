@@ -4,8 +4,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.4.16
-Release:        2%{?dist}.fmi
+Version:        15.5.11
+Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -67,6 +67,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon May 11 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.5.11-1.fmi
+- Update as_previ record count
+* Fri May  8 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.5.8-1.fmi
+- Less hardcoding and assumptions in previ_to_neons.py 
+* Fri Apr 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.24-1.fmi
+- Fixing radon support for grid_to_neons when only radon is used
 * Thu Apr 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.16-2.fmi
 - Adding previ_to_neons.py
 * Thu Apr 16 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.4.16-1.fmi
