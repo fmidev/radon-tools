@@ -144,7 +144,7 @@ def ReadFile(options, file):
 
 	if stationinfo == None:
 		print "ERR: station %s not found from neons table 'station'" % (station_id)
-		continue
+		return
 
 	query = "SELECT previ_id, tbl_name FROM as_previ WHERE ref_prod = :ref_prod AND :initial_time BETWEEN dat_debut_prevu AND dat_fin_prevu"
 
@@ -231,6 +231,16 @@ WHERE
 	ucur = conn.cursor()
 	ucur.prepare(uquery)
 
+	asquery = """
+UPDATE bdm.as_previ SET
+  rec_cnt = rec_cnt+1
+WHERE
+  previ_id = :previ_id  
+"""
+
+	ascur = conn.cursor()
+	ascur.prepare(asquery)
+
 	totalrows = 0
 	inserts = 0
 	updates = 0
@@ -244,22 +254,11 @@ WHERE
 		else:
 			value = Decimal(value)
 		
-#		print "%s %f" % (forecast_time, value)
-
-		echeance = int(GetTotalSeconds(datetime.datetime.strptime(forecast_time, '%Y%m%d%H%M%S') - datetime.datetime.strptime(initial_time, '%Y%m%d%H%M%S'))/3600)
+		echeance = int(GetTotalSeconds(datetime.datetime.strptime(forecast_time, '%Y%m%d%H%M%S') - datetime.datetime.strptime(initial_time, '%Y%m%d%H%M%S'))/60) # minutes
 
 		if echeance < 0:
 			print "Logical error in the data: forecast step is negative (%d hours)" % (echeance)
 			continue
-
-#		print dset_id
-#		print stationinfo[0]
-#		print stationinfo[1]
-#		print station_id
-#		print forecast_time
-#		print initial_time
-#		print echeance
-#		print analysis_hour
 
 		args = {
 			'previ_id' : dset_id, 
@@ -286,6 +285,14 @@ WHERE
 			if not options.dry_run:
 				icur.execute(None, args)
 				inserts = inserts + 1
+
+			# Update as_previ
+
+			if options.show_sql:
+				PrintQuery(asquery, {"previ_id" : dset_id})
+
+			if not options.dry_run:
+				ascur.execute(None, {"previ_id" : dset_id})
 
 		except Exception,e:
 			
