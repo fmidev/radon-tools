@@ -1,3 +1,5 @@
+%define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
+
 %if %{defined suse_version}
 %define dist .sles11
 %endif
@@ -31,6 +33,11 @@ Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:       previ_to_neons.py
 %endif
+
+%if %{distnum} == 7
+Requires:	netcdf-cxx
+%endif
+
 Provides:	grid_to_neons
 Provides:	create_grid_tables
 
