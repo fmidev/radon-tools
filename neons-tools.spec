@@ -29,6 +29,7 @@ Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:	python-psycopg2
 Requires:	python-bunch
+Requires:       pytz
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:       previ_to_neons.py
