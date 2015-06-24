@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include <pqxx/except.hxx>
 #include "options.h"
 
 using namespace std;
@@ -528,51 +529,43 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       }
     }
   }
-  catch (int e)
+  catch (const pqxx::unique_violation& e)
   {
-    // http://www.postgresql.org/docs/9.3/static/errcodes-appendix.html
+    query.str("");
 
-    if (e == 23505)
-    {
-      // 23505     unique_violation
+    // PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)
 
-      query.str("");
-
-      // PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)
-
-      query << "UPDATE " << schema << "." << tableName
-            << " SET file_location = '" << info.filename << "', "
-            << " file_server = '" << itsHostname << "', "
-            << " forecast_type_value = " << forecastTypeValue
-            << " WHERE"
-            << " producer_id = " << producer_id
-            << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
-            << " AND geometry_id = " << geometry_id
-            << " AND param_id = " << param_id
-            << " AND level_id = " << level_id
-            << " AND level_value = " << info.lvl1_lvl2
-            << " AND forecast_period = " << info.fcst_per
-            << " AND forecast_type_id = " << info.forecast_type_id
+    query << "UPDATE " << schema << "." << tableName
+          << " SET file_location = '" << info.filename << "', "
+          << " file_server = '" << itsHostname << "', "
+          << " forecast_type_value = " << forecastTypeValue
+          << " WHERE"
+          << " producer_id = " << producer_id
+          << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')"
+          << " AND geometry_id = " << geometry_id
+          << " AND param_id = " << param_id
+          << " AND level_id = " << level_id
+          << " AND level_value = " << info.lvl1_lvl2
+          << " AND forecast_period = " << info.fcst_per
+          << " AND forecast_type_id = " << info.forecast_type_id
         ;
 
-      try
-      {
-        if (!options.dry_run)
-          itsRadonDB->Execute(query.str());
-      }
-      catch (int ee)
-      {
-        // Give up
-        itsRadonDB->Rollback();
-        return false;
-      }
-    }
-    else
+    try
     {
+      itsRadonDB->Execute(query.str());
+    }
+    catch (const pqxx::pqxx_exception& ee)
+    {
+      // Give up
       itsRadonDB->Rollback();
-      cerr << "Load to radon failed with: " << info.filename << ", error code: " << e << endl;
       return false;
     }
+  }
+  catch (const pqxx::pqxx_exception& e)  
+  {
+    itsRadonDB->Rollback();
+    cerr << "Load to radon failed with: " << info.filename << ": " << e.base().what() << endl;
+    return false;
   }
 
   if (options.dry_run)
