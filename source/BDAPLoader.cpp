@@ -507,13 +507,13 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       {
         cout << query.str() << endl;
       }
-    else
-    {
+      else
+      {
         itsRadonDB->Execute(query.str());
       }
-    query.str("");
+      query.str("");
     
-    query << "UPDATE as_grid "
+      query << "UPDATE as_grid "
               << "SET record_count = record_count+1 "
               << "WHERE producer_id = " << producer_id
               << " AND geometry_id = " << geometry_id
@@ -546,7 +546,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
           << " AND param_id = " << param_id
           << " AND level_id = " << level_id
           << " AND level_value = " << info.lvl1_lvl2
-          << " AND forecast_period = " << info.fcst_per
+          << " AND forecast_period = interval '1 hour' * " << info.fcst_per
           << " AND forecast_type_id = " << info.forecast_type_id
         ;
 
@@ -556,6 +556,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     }
     catch (const pqxx::pqxx_exception& ee)
     {
+      cerr << "Failed: " << ee.base().what() << endl;
       // Give up
       itsRadonDB->Rollback();
       return false;
