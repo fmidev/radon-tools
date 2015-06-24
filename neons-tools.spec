@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.5.11
+Version:        15.6.24
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -19,8 +19,10 @@ BuildRequires:  libfmidb-devel >= 15.3.17
 BuildRequires:  grib_api-devel >= 1.13.0
 BuildRequires:  boost-devel >= 1.54
 BuildRequires:  scons
+BuildRequires:  libfmidb-devel
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
+Requires:	libfmidb >= 15.6.24
 %if %{defined suse_version}
 Requires:	libjasper
 Requires:	libnetcdf4 >= 4.0.1
@@ -30,6 +32,7 @@ Requires:       netcdf >= 4.1.1
 Requires:	python-psycopg2
 Requires:	python-bunch
 Requires:       pytz
+Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:       previ_to_neons.py
@@ -75,6 +78,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jun 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.6.24-1.fmi
+- Changed NFmiRadonDB to use NFmiPostgreSQL
 * Mon May 11 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.5.11-1.fmi
 - Update as_previ record count
 * Fri May  8 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.5.8-1.fmi

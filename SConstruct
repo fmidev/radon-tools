@@ -74,6 +74,7 @@ libraries = []
 
 libraries.append('fmidb')
 libraries.append('fminc')
+libraries.append('pqxx')
 libraries.append('odbc')
 libraries.append('clntsh')
 libraries.append('grib_api')
@@ -138,7 +139,7 @@ env.Append(CCFLAGS = cflags_normal)
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-Wl,--warn-unresolved-symbols','-Wl,--as-needed'])
+env.Append(LINKFLAGS = ['-Wl,--as-needed'])
 
 # '-Wl,-rpath,.'
 
