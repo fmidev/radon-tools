@@ -155,8 +155,41 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
 
     g.timeRangeIndicator = 0;
 
-    g.parname = databaseLoader.NeonsDB().GetGridParameterNameForGrib2(g.param, message.ParameterCategory(), message.ParameterDiscipline(), g.process);
-    g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.levtype, g.process);
+    if (options.neons) 
+    {
+        g.parname = databaseLoader.NeonsDB().GetGridParameterNameForGrib2(g.param, message.ParameterCategory(), message.ParameterDiscipline(), g.process);
+        g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.levtype, g.process);
+    }
+    else
+    {
+      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process);
+
+      if (prodinfo.empty())
+      {
+        if (options.verbose)
+        {
+          cerr << "FMI producer id not found for grib producer " << g.centre << " " << g.process << endl;
+        }
+
+        return false;
+      }
+
+      long producerId = boost::lexical_cast<long> (prodinfo["id"]);
+
+      auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(), message.ParameterCategory(), g.param, g.levtype, message.LevelValue());
+      
+      if (!paraminfo.empty())
+      {
+        g.parname = paraminfo["name"];  
+      }
+
+      auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
+
+      if (!levelinfo.empty())
+      {
+        g.levname = levelinfo["name"];
+      }
+    }
 
     g.category = message.ParameterCategory();
     g.discipline = message.ParameterDiscipline();
