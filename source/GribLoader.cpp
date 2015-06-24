@@ -41,7 +41,7 @@ bool GribLoader::Load(const string &theInfile)
 
   // Read all message from file
 
-  string levelString = options.level;
+  string levelString = options.leveltypes;
 
   if (!levelString.empty()) 
   {
