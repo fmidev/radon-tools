@@ -252,14 +252,18 @@ SELECT
 FROM
 	as_previ
 WHERE
-	producer_id = %s
-	AND
-	analysis_time = %s"""
+	producer_id = %s"""
+
+	args = (producer_id,)
+
+	if analysis_time != None:
+		"""AND analysis_time = %s"""
+		args = args + analysis_time
 
 	if options.show_sql:
-		print "%s %s" % (query, (producer_id,analysis_time))
+		print "%s %s" % (query, args)
 
-	cur.execute(query, (producer_id,analysis_time))
+	cur.execute(query, args)
 
 	row = cur.fetchone()
 
@@ -271,7 +275,14 @@ WHERE
 
 	tableInfo.schema_name = row[0]
 	tableInfo.table_name = row[1]
-	tableInfo.partition_name = row[2]
+
+	# If analysis time is not given, use table name as partition name
+	# This will be slower since database has to redirect insert to correct partition
+
+	tableInfo.partition_name = row[1]
+	
+	if analysis_time != None:
+		tableInfo.partition_name = row[2]
 
 	tableCache[key] = tableInfo
 	return tableInfo
@@ -714,7 +725,11 @@ def LoadToDatabase(options, tableInfo, buff, colbuff, insertcure, updatecur):
 
 			cur.execute(query, (options.producer_id, options.analysis_time))
 
-	except Exception,e:
+	except psycopg2.Error as e:
+		
+		if e.pgerror != 23505:
+			print e
+			sys.exit(1)
 
 		ret.copySucceeded = False
 		cur.execute("ROLLBACK TO SAVEPOINT insert")
