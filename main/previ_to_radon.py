@@ -172,7 +172,7 @@ Program must know the values of the following metadata parameters. Values can be
 	# Check requirements
 
 	if not options.format:
-		print "Argument -f must be specified"
+		print "Argument -F must be specified"
 		parser.print_help()
 		sys.exit(2)
 
@@ -191,8 +191,11 @@ Program must know the values of the following metadata parameters. Values can be
 		try:
 			if options_dict[column] == None:
 				if column not in ["latitude","longitude","station_id"]:
-					print "CSV column %s not specified with command line argument or with switch -F" % (column)
-					sys.exit(2)
+					if column == "forecast_type_id":
+						options.forecast_type_id = 1
+					else:
+						print "CSV column %s not specified with command line argument or with switch -F" % (column)
+						sys.exit(2)
 
 		except KeyError:
 				print column 
@@ -200,8 +203,6 @@ Program must know the values of the following metadata parameters. Values can be
 					print "Accessing CSV column %s that has no corresponding command line option" % (column)
 					sys.exit(2)
 		
-		# check that no unknown columns were given with -f
-
 
 	if options.analysis_time != None:
 		try:
@@ -513,7 +514,7 @@ WHERE
 		print "Not using prepared statements for insert and update"
 
 	start_time = datetime.datetime.now()
-	max_commit_chunk = 50000
+	max_commit_chunk = 100000
 	
 	commit_chunk = 200 
 
@@ -533,7 +534,12 @@ WHERE
 		for col in options.format.split(','):
 			if not col in cols or cols[col] is None:
 				if col == "station_id":
-					cols[col] = stations[int(line[i].strip())]
+					stationId = int(line[i].strip())
+					try:
+						cols[col] = stations[stationId]
+					except:
+						print "ERROR: station %s not found from database" % (stationId)
+						continue
 				else:
 					cols[col] = None if line[i].strip() == "" else line[i].strip()
 			i += 1
@@ -556,11 +562,11 @@ WHERE
 				continue
 		
 		if (cols["latitude"] is None and cols["longitude"] is not None) or (cols["latitude"] is not None and cols["longitude"] is None):
-			print "Error, both latitude and longitude must be specified, or neither"
+			print "Error: both latitude and longitude must be specified, or neither"
 			continue
 
 		if cols["station_id"] is None and (cols["latitude"] is None and cols["longitude"] is None):
-			print "Error, either station_id or coordinates or both must be specified"
+			print "Error: either station_id or coordinates or both must be specified"
 			continue
 
 		if options.resolve_coordinates_to_station:
