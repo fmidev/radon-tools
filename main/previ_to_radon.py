@@ -727,8 +727,9 @@ def LoadToDatabase(options, tableInfo, buff, colbuff, insertcure, updatecur):
 
 	except psycopg2.Error as e:
 		
-		if e.pgerror != 23505:
-			print e
+		if e.pgcode != "23505":
+			print e.pgerror
+			print "Error code: %s" % (e.pgcode)
 			sys.exit(1)
 
 		ret.copySucceeded = False
