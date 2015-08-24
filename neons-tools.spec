@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.8.10
+Version:        15.8.24
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -45,6 +45,8 @@ Requires:	netcdf-cxx
 Provides:	grid_to_neons
 Provides:	create_grid_tables
 
+AutoReqProv: no
+
 %description
 Neons-tools includes programs for loading data to neons DB.
 Table creation tools are also included.
@@ -78,6 +80,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.24-1.fmi
+- fmigrib api change
+* Mon Aug 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.10-2.fmi
+- Fix for previ_to_radon.py
 * Mon Aug 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.10-1.fmi
 - Fix for radon_tables.py
 * Wed Jun 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.6.24-1.fmi
