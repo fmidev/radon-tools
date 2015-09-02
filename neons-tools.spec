@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.8.24
+Version:        15.9.2
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,15 +14,17 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 15.3.10
-BuildRequires:  libfmidb-devel >= 15.8.10
-BuildRequires:  grib_api-devel >= 1.13.0
-BuildRequires:  boost-devel >= 1.54
+BuildRequires:  libfmigrib-devel >= 15.8.21
+BuildRequires:  libfmidb-devel >= 15.9.1
+BuildRequires:  grib_api-devel >= 1.14.0
+BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 BuildRequires:  libfmidb-devel
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmidb >= 15.8.10
+Requires:	libfmidb >= 15.9.1
+Requires:	netcdf-cxx
+
 %if %{defined suse_version}
 Requires:	libjasper
 Requires:	libnetcdf4 >= 4.0.1
@@ -36,10 +38,6 @@ Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:       previ_to_neons.py
-%endif
-
-%if %{distnum} == 7
-Requires:	netcdf-cxx
 %endif
 
 Provides:	grid_to_neons
@@ -80,6 +78,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep  2 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.2-1.fmi
+- fmidb api change
+- grib_api 1.14
 * Mon Aug 24 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.24-1.fmi
 - fmigrib api change
 * Mon Aug 10 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.8.10-2.fmi
