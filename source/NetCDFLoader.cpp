@@ -187,21 +187,18 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (pskip.count(ncname) > 0)
         continue;
 
-	  string grid_parameter_name;
-	  map<string,string> parameter;
-	  
-	  if (options.neons) {
+      string grid_parameter_name;
+      map<string,string> parameter;
+    
+      if (options.neons) {
         grid_parameter_name = itsDatabaseLoader.NeonsDB().GetGribParameterNameFromNetCDF(info.process, ncname);
-	  }
-	  else if (options.radon) {
+      }
+      else if (options.radon) {
         parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(info.process, ncname, -1, -1);
-		grid_parameter_name = parameter["name"];
-		
-		// Later on we need univ id
-		
-		auto paramInfo = itsDatabaseLoader.RadonDB().GetParameterFromDatabaseName(info.process, grid_parameter_name);
-	  }
-      if (grid_parameter_name.empty()) 
+        grid_parameter_name = parameter["name"];
+      }
+      
+	  if (grid_parameter_name.empty()) 
       {
 
         if (options.verbose)
@@ -227,9 +224,9 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-	  if (options.neons)
+    if (options.neons)
         parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
-	
+  
       if (parameter.empty()) 
       {
         if (options.verbose)
@@ -254,7 +251,7 @@ bool NetCDFLoader::Load(const string &theInfile)
 
       if (options.level.empty())
       {
-    	// Default
+      // Default
 
         info.levname = "HEIGHT";
         info.levtype = 105;
@@ -289,7 +286,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (!reader.HasDimension(reader.Param(), "z")) 
       {
 
-    	// This parameter has no z dimension --> map to level 0
+      // This parameter has no z dimension --> map to level 0
 
         level = 0;
 
@@ -318,12 +315,12 @@ bool NetCDFLoader::Load(const string &theInfile)
             return false;
           }
         }
-		
+    
         if (options.radon)
         {
           itsDatabaseLoader.WriteToRadon(info);
         }
-		
+    
         if (options.verbose)
         {
           cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
@@ -366,12 +363,12 @@ bool NetCDFLoader::Load(const string &theInfile)
               return false;
             }
           }
-		  
+      
           if (options.radon)
           {
             itsDatabaseLoader.WriteToRadon(info);
           }
-		  
+      
           if (options.verbose)
           {
             cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")" << " to file '" << theFileName << "'" << endl;
@@ -466,7 +463,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
   {
 
     long offset = 631152000; // seconds from 1950-01-01 to 1970-01-01: "select extract(epoch from '1970-01-01'::timestamp - '1950-01-01'::timestamp);"
-	
+  
     try
     {
       e = (3600 * boost::lexical_cast<long> (dateTime)) - offset;
