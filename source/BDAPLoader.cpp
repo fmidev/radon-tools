@@ -352,33 +352,33 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   stringstream query;
   vector<string> row;
 
-  map<string,string> r =itsRadonDB->GetProducerFromGrib(info.centre, info.process);
+  long producer_id = info.process;
 
-  if (r.size() == 0)
-  {
-    cerr << "Producer information not found from radon for centre " << info.centre << ", process " << info.process << endl;
-    return false;
+  if (info.ednum != 3) {
+    map<string,string> prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process);
+
+    if (prodInfo.size() == 0)
+    {
+      cerr << "Producer information not found from radon for centre " << info.centre << ", process " << info.process << endl;
+      return false;
+    }
+    producer_id = boost::lexical_cast<long> (prodInfo["id"]);
+
   }
-
+  
   long geometry_id = 0;
   string geometry_name = "";
 
-  long producer_id = boost::lexical_cast<long> (r["id"]);
+  auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat, info.lon, info.di, info.dj, (info.ednum == 3 ? 1 : info.ednum), info.gridtype);
 
-  if (geometry_id == 0)
+  if (geominfo.empty())
   {
-    auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat, info.lon, info.di, info.dj, info.ednum, info.gridtype);
-
-    if (geominfo.empty())
-    {
-      cerr << "Geometry not found from radon" << endl;
-      return false;
-    }
-
-    geometry_id = boost::lexical_cast<long> (geominfo["id"]);
-    geometry_name = geominfo["name"];
-
+    cerr << "Geometry not found from radon" << endl;
+    return false;
   }
+
+  geometry_id = boost::lexical_cast<long> (geominfo["id"]);
+  geometry_name = geominfo["name"];
 
   map<string,string> l = itsRadonDB->GetLevelFromGrib(producer_id, info.levtype, info.ednum);
 

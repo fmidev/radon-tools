@@ -132,10 +132,11 @@ bool NetCDFLoader::Load(const string &theInfile)
   else if (reader.Projection() == "rotated_latitude_longitude")
     info.grtyp = "rll";
 
+  else if (reader.Projection() == "polar_stereographic")
+    info.grtyp = "ps";
+  
   else
     throw runtime_error("Unsupported projection: " + reader.Projection());
-
-  //float ftime = reader.ValueT(0);
 
   long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
@@ -186,8 +187,20 @@ bool NetCDFLoader::Load(const string &theInfile)
       if (pskip.count(ncname) > 0)
         continue;
 
-      string grid_parameter_name = itsDatabaseLoader.NeonsDB().GetGribParameterNameFromNetCDF(info.process, ncname);
-
+	  string grid_parameter_name;
+	  map<string,string> parameter;
+	  
+	  if (options.neons) {
+        grid_parameter_name = itsDatabaseLoader.NeonsDB().GetGribParameterNameFromNetCDF(info.process, ncname);
+	  }
+	  else if (options.radon) {
+        parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(info.process, ncname, -1, -1);
+		grid_parameter_name = parameter["name"];
+		
+		// Later on we need univ id
+		
+		auto paramInfo = itsDatabaseLoader.RadonDB().GetParameterFromDatabaseName(info.process, grid_parameter_name);
+	  }
       if (grid_parameter_name.empty()) 
       {
 
@@ -214,8 +227,9 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-      map<string, string> parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
-
+	  if (options.neons)
+        parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
+	
       if (parameter.empty()) 
       {
         if (options.verbose)
@@ -225,14 +239,12 @@ bool NetCDFLoader::Load(const string &theInfile)
          continue;
       }
 
-      long univ_id = boost::lexical_cast<long> (parameter["univ_id"]);
       string name = parameter["parm_name"];
 
-      info.param = univ_id;
       info.parname = grid_parameter_name;
 
       if (options.verbose)
-        cout << "Parameter " << ncname << " (" << univ_id << " " << name << ")" << endl;
+        cout << "Parameter " << ncname << " (" << grid_parameter_name << " " << name << ")" << endl;
 
       float level = kFloatMissing;
 
@@ -443,6 +455,21 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
     try
     {
       e = (3600 * boost::lexical_cast<long> (dateTime)) + offset;
+    }
+    catch(boost::bad_lexical_cast&)
+    {
+      cerr << "Date cast failed" << endl;
+      exit(1);
+    }
+  }
+  else if (mask == "hour since 1950-1-1T00:00:00Z")
+  {
+
+    long offset = 631152000; // seconds from 1950-01-01 to 1970-01-01: "select extract(epoch from '1970-01-01'::timestamp - '1950-01-01'::timestamp);"
+	
+    try
+    {
+      e = (3600 * boost::lexical_cast<long> (dateTime)) - offset;
     }
     catch(boost::bad_lexical_cast&)
     {
