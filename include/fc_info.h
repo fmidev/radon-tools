@@ -6,8 +6,8 @@
 struct fc_info 
 {
 	fc_info()
-	: grib_size(0)
-	, ednum(0)
+	// COMMON FOR RADON AND NEONS
+	: ednum(0)
 	, centre(0)
 	, discipline(0)
 	, category(0)
@@ -20,7 +20,6 @@ struct fc_info
 	, stepType(0)
 	, startstep(0)
 	, endstep(0)
-	, gridtype(0)
 	, timeUnit(0)
 	, ni(0)
 	, nj(0)
@@ -44,12 +43,19 @@ struct fc_info
 	, filetype("")
 	, filename("")
 	, ncname("")
+	// RADON ONLY
 	, forecast_type_id(1) // deterministic
 	, forecast_type_value(-1)
+	, gridtype(0)
+	, lat_degrees(kFloatMissing)
+	, lon_degrees(kFloatMissing)
+	, di_degrees(kFloatMissing)
+	, dj_degrees(kFloatMissing)
+	, di_meters(kFloatMissing)
+	, dj_meters(kFloatMissing)
 	{ 
 	};
 
-	long grib_size;
 	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
 	long centre;
@@ -64,7 +70,6 @@ struct fc_info
 	long stepType;
 	long startstep;
 	long endstep;
-	long gridtype;
 	long timeUnit;
 	long ni;
 	long nj;
@@ -90,6 +95,13 @@ struct fc_info
 	std::string ncname;
 	long forecast_type_id; // from table forecast_type
 	double forecast_type_value;
+	long gridtype;
+	double lat_degrees;
+	double lon_degrees;
+	double di_degrees;
+	double dj_degrees;
+	double di_meters;
+	double dj_meters;
 };
 
 #endif

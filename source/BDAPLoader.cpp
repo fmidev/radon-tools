@@ -369,7 +369,15 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   long geometry_id = 0;
   string geometry_name = "";
 
-  auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat, info.lon, info.di, info.dj, (info.ednum == 3 ? 1 : info.ednum), info.gridtype);
+  double di = info.di_degrees;
+  double dj = info.dj_degrees;
+  
+  if (info.grtyp == "ps") {
+    di = info.di_meters;
+    dj = info.dj_meters;
+  }
+  
+  auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj, (info.ednum == 3 ? 1 : info.ednum), info.gridtype);
 
   if (geominfo.empty())
   {

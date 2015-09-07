@@ -118,25 +118,48 @@ bool NetCDFLoader::Load(const string &theInfile)
   info.ni = reader.SizeX();
   info.nj = reader.SizeY();
 
+  info.filetype = "nc";
+
+  if (reader.Projection() == "latitude_longitude") {
+    info.grtyp = "ll";
+    info.gridtype = 0;
+  }
+
+  else if (reader.Projection() == "rotated_latitude_longitude") {
+    info.grtyp = "rll";
+    info.gridtype = 10;
+  }
+
+  else if (reader.Projection() == "polar_stereographic") {
+    info.grtyp = "ps";
+    info.gridtype = 5;
+  }
+  
+  else {
+    throw runtime_error("Unsupported projection: " + reader.Projection());
+  }
+  
   info.lat = static_cast<int> (1000. * reader.Y0());
   info.lon = static_cast<int> (1000. * reader.X0());
 
+  info.lon_degrees = reader.X0();
+  info.lat_degrees = reader.Y0();
+  
+  if (info.lat == static_cast<int> (kFloatMissing * 1000.)) {
+    std::cerr << "Unable to determine first grid point coordinates" << std::endl;
+  }
+
+  if (info.grtyp == "ps") {
+    info.di_meters = reader.XResolution();
+    info.dj_meters = reader.YResolution();
+  }
+  else {
+    info.di_degrees = reader.XResolution();
+    info.dj_degrees = reader.YResolution();
+  }
+ 
   info.di = floor(reader.XResolution() * 1000);
   info.dj = floor(reader.YResolution() * 1000);
-
-  info.filetype = "nc";
-
-  if (reader.Projection() == "latitude_longitude")
-    info.grtyp = "ll";
-
-  else if (reader.Projection() == "rotated_latitude_longitude")
-    info.grtyp = "rll";
-
-  else if (reader.Projection() == "polar_stereographic")
-    info.grtyp = "ps";
-  
-  else
-    throw runtime_error("Unsupported projection: " + reader.Projection());
 
   long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
@@ -178,7 +201,9 @@ bool NetCDFLoader::Load(const string &theInfile)
     do 
     {
 
-      string ncname = reader.Param().Name();
+      string ncname = reader.Param()->name();
+
+      if (ncname == "latitude" || ncname == "longitude" || ncname == "time" || ncname == "x" || ncname == "y") continue;
 
       info.ncname = ncname;
 
@@ -198,7 +223,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         grid_parameter_name = parameter["name"];
       }
       
-	  if (grid_parameter_name.empty()) 
+      if (grid_parameter_name.empty()) 
       {
 
         if (options.verbose)
@@ -224,8 +249,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-    if (options.neons)
-        parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
+      if (options.neons) parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
   
       if (parameter.empty()) 
       {
@@ -251,7 +275,7 @@ bool NetCDFLoader::Load(const string &theInfile)
 
       if (options.level.empty())
       {
-      // Default
+        // Default
 
         info.levname = "HEIGHT";
         info.levtype = 105;
@@ -283,10 +307,10 @@ bool NetCDFLoader::Load(const string &theInfile)
         }
       }
 
-      if (!reader.HasDimension(reader.Param(), "z")) 
+      if (!reader.HasDimension("z")) 
       {
 
-      // This parameter has no z dimension --> map to level 0
+        // This parameter has no z dimension --> map to level 0
 
         level = 0;
 
@@ -411,7 +435,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
     }
 
   } 
-   else if (mask == "hours since 1900-01-01 00:00:00") 
+  else if (mask == "hours since 1900-01-01 00:00:00") 
   {
 
     /*
