@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.9.2
+Version:        15.9.15
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -16,6 +16,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 15.8.21
 BuildRequires:  libfmidb-devel >= 15.9.1
+BuildRequires:  libfminc-devel >= 15.9.15
 BuildRequires:  grib_api-devel >= 1.14.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
@@ -23,6 +24,7 @@ BuildRequires:  libfmidb-devel
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmidb >= 15.9.1
+Requires:	libfminc >= 15.9.15
 Requires:	netcdf-cxx
 
 %if %{defined suse_version}
@@ -78,6 +80,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Sep 15 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.15-1.fmi
+- New fminc
 * Wed Sep  2 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.2-1.fmi
 - fmidb api change
 - grib_api 1.14
