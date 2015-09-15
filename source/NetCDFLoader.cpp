@@ -139,11 +139,11 @@ bool NetCDFLoader::Load(const string &theInfile)
     throw runtime_error("Unsupported projection: " + reader.Projection());
   }
   
-  info.lat = static_cast<int> (1000. * reader.Y0());
-  info.lon = static_cast<int> (1000. * reader.X0());
+  info.lat = static_cast<int> (1000. * reader.Y0<float>());
+  info.lon = static_cast<int> (1000. * reader.X0<float>());
 
-  info.lon_degrees = reader.X0();
-  info.lat_degrees = reader.Y0();
+  info.lon_degrees = reader.X0<float>();
+  info.lat_degrees = reader.Y0<float>();
   
   if (info.lat == static_cast<int> (kFloatMissing * 1000.)) {
     std::cerr << "Unable to determine first grid point coordinates" << std::endl;
@@ -186,12 +186,12 @@ bool NetCDFLoader::Load(const string &theInfile)
   for (reader.ResetTime(); reader.NextTime(); ) 
   {
 
-    long fctimeEpoch = Epoch(boost::lexical_cast<string> (reader.Time()), reader.TimeUnit());
+    long fctimeEpoch = Epoch(boost::lexical_cast<string> (reader.Time<float>()), reader.TimeUnit());
 
     float fctime = (fctimeEpoch - atimeEpoch)/3600;
 
     if (options.verbose)
-      cout << "Time " << static_cast<int> (reader.Time()) << " (" << options.analysistime << " +" << fctime << " hours)" << endl;
+      cout << "Time " << static_cast<int> (reader.Time<float>()) << " (" << options.analysistime << " +" << fctime << " hours)" << endl;
 
     info.fcst_per = static_cast<int> (fctime);
     info.step = static_cast<int> (fctime);
