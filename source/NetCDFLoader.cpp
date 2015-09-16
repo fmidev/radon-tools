@@ -265,7 +265,7 @@ bool NetCDFLoader::Load(const string &theInfile)
       info.parname = grid_parameter_name;
 
       if (options.verbose)
-        cout << "Parameter " << ncname << " (" << grid_parameter_name << " " << name << ")" << endl;
+        cout << "Parameter " << ncname << " (" << grid_parameter_name << ")" << endl;
 
       float level = kFloatMissing;
 
