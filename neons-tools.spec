@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.9.15
+Version:        15.9.22
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -80,6 +80,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 30 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.30-1.fmi
+- Change in fminc
+* Tue Sep 22 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.22-1.fmi
+- previ_to_radon.py fix for mos loading
 * Tue Sep 15 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.15-1.fmi
 - New fminc
 * Wed Sep  2 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.2-1.fmi

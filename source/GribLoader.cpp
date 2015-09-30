@@ -9,12 +9,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include "options.h"
-
-#if defined __GNUC__ && __GNUC_MINOR__ < 5
-#include <cstdatomic>
-#else
 #include <atomic>
-#endif
 
 extern Options options;
 
@@ -27,7 +22,7 @@ vector<string> parameters;
 vector<string> levels;
   
 atomic<int> success(0);
-atomic<int> failed(0);
+atomic<int> failedCount(0);
 
 mutex distMutex, dirCreateMutex;
   
@@ -69,9 +64,9 @@ bool GribLoader::Load(const string &theInfile)
   
   cout << "Loaded " << success << " fields successfully\n";
 
-  if (failed > 0)
+  if (failedCount > 0)
   {
-    cout << "Error occured with " << failed << " fields" << endl;
+    cout << "Error occured with " << failedCount << " fields" << endl;
   }
 
   return true;
@@ -408,7 +403,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!message.Write(theFileName, false))
       {
-        failed++;
+        failedCount++;
         return;
       }
     }
@@ -429,7 +424,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!databaseLoader.WriteAS(g))
       {
-        failed++;
+        failedCount++;
         return;
       }
     }

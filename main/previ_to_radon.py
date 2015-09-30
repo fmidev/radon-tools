@@ -257,8 +257,8 @@ WHERE
 	args = (producer_id,)
 
 	if analysis_time != None:
-		"""AND analysis_time = %s"""
-		args = args + analysis_time
+		query += " AND analysis_time = %s"
+		args = args + (analysis_time,)
 
 	if options.show_sql:
 		print "%s %s" % (query, args)
