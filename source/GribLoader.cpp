@@ -221,6 +221,9 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   g.lat = message.Y0() * 1000;
   g.lon = message.X0() * 1000;
 
+  g.lat_degrees = message.Y0();
+  g.lon_degrees = message.X0();
+
   // This is because we need to find the 
   // correct geometry from GRID_REG_GEOM in neons
   
