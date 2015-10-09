@@ -244,7 +244,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
       g.di_degrees = message.iDirectionIncrement();
       g.dj_degrees = message.jDirectionIncrement();
       g.di = g.di_degrees * 1000.;
-	  g.dj = g.dj_degrees * 1000.;
+      g.dj = g.dj_degrees * 1000.;
       g.grtyp = "ll";
       break;
 
@@ -252,15 +252,15 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
       g.di_degrees = message.iDirectionIncrement();
       g.dj_degrees = message.jDirectionIncrement();
       g.di = g.di_degrees * 1000.;
-	  g.dj = g.dj_degrees * 1000.;
+      g.dj = g.dj_degrees * 1000.;
       g.grtyp = "rll";
       break;
 
     case 5: // ps, ei tarkoita puoluetta
       g.di = message.XLengthInMeters();
       g.dj = message.YLengthInMeters();
-	  g.di_meters = message.XLengthInMeters();
-	  g.dj_meters = message.YLengthInMeters();
+      g.di_meters = message.XLengthInMeters();
+      g.dj_meters = message.YLengthInMeters();
       g.grtyp = "ps";
       break;
 
@@ -434,7 +434,11 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
 
     if (options.radon)
     {
-      databaseLoader.WriteToRadon(g);
+      if (!databaseLoader.WriteToRadon(g) && !options.neons)
+      {
+        failedCount++;
+        return;
+      }
     }
 
     clock_gettime(CLOCK_REALTIME, &stop_ts);
