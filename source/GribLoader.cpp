@@ -295,7 +295,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   // Rewritten EPS logic
 
   g.forecast_type_id = message.ForecastType();
-  g.forecast_type_value = message.ForecastTypeValue();
+  g.forecast_type_value = (message.ForecastTypeValue() == -999) ? -1 : message.ForecastTypeValue();
   
   g.stepType = message.TimeRangeIndicator();
   g.timeUnit = message.UnitOfTimeRange();
