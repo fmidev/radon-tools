@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.9.22
+Version:        15.10.9
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -80,6 +80,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct  9 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.9-1.fmi
+- Minor fixes
+* Tue Oct  6 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.6-1.fmi
+- Bugfix for radon grib loading
 * Wed Sep 30 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.30-1.fmi
 - Change in fminc
 * Tue Sep 22 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.9.22-1.fmi
