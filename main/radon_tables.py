@@ -74,6 +74,11 @@ def ReadCommandLine(argv):
 					  default=False,
 					  help="Drop table instead of creating them",)
 
+	parser.add_option("--unlink", 
+					  action="store_true",
+					  default=False,
+					  help="Physically unlink removed files")
+
 	databasegroup.add_option("--host",
 					action="store",
 					type="string",
@@ -119,6 +124,7 @@ def ReadCommandLine(argv):
 
 	if options.class_id == None and options.producer_id == None:
 		print "Either -c or -r must be specified"
+		parser.print_help()
 		sys.exit(1)
 
 	if options.class_id != None and options.class_id not in [1,3]:
@@ -644,8 +650,8 @@ def DropTables(options, element):
 							print "File %s does not exist" % (file)
 							continue
 
-						print "Not removing file since I'm in testing still"
-						#os.remove(file)
+						if options.unlink:
+							os.remove(file)
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + element.table_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time = %s"
