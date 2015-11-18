@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.10.9
+Version:        15.11.18
 Release:        1%{?dist}.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -16,7 +16,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 15.8.21
 BuildRequires:  libfmidb-devel >= 15.9.1
-BuildRequires:  libfminc-devel >= 15.9.15
+BuildRequires:  libfminc-devel >= 15.11.16
 BuildRequires:  grib_api-devel >= 1.14.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
@@ -80,6 +80,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Nov 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.11.18-1.fmi
+- New release
 * Tue Oct  9 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.9-1.fmi
 - Minor fixes
 * Tue Oct  6 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.6-1.fmi
