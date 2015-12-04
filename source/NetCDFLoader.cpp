@@ -484,6 +484,19 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
       exit(1);
     }
   }
+  else if (mask == "hours since 1950-01-01 00:00:00")
+  {
+    long offset = 631152000; // seconds from 1950-01-01 to 1970-01-01: "select extract(epoch from '1970-01-01'::timestamp - '1950-01-01'::timestamp);"
+    try
+    {
+      e = (3600 * boost::lexical_cast<long> (dateTime)) - offset;
+    }
+    catch(boost::bad_lexical_cast&)
+    {
+      cerr << "Date cast failed" << endl;
+      exit(1);
+    }
+  }
   else if (mask == "hour since 1950-1-1T00:00:00Z")
   {
 
