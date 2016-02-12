@@ -6,24 +6,24 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        15.12.15
-Release:        1%{?dist}.fmi
+Version:        16.2.12
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 15.8.21
-BuildRequires:  libfmidb-devel >= 15.9.1
+BuildRequires:  libfmigrib-devel >= 15.9.14
+BuildRequires:  libfmidb-devel >= 16.2.12
 BuildRequires:  libfminc-devel >= 15.12.15
 BuildRequires:  grib_api-devel >= 1.14.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
-BuildRequires:  libfmidb-devel
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmidb >= 15.9.1
+Requires:	libfmigrib >= 15.9.14
+Requires:	libfmidb >= 16.2.12
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 
@@ -80,6 +80,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Feb 12 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.2.12-1.fmi
+- New fmidb
 * Tue Dec 15 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.12.15-1.fmi
 - Support for copernicus data
 * Thu Dec  3 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.12.3-1.fmi
