@@ -82,8 +82,7 @@ libraries.append('netcdf_c++')
 
 env.Append(LIBS = libraries)
 
-env.Append(LIBS=env.File('/usr/lib64/libfmigrib.a'))
-env.Append(LIBS=['grib_api'])
+env.Append(LIBS=['fmigrib','grib_api'])
 
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
