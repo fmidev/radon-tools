@@ -35,7 +35,10 @@ bool NetCDFLoader::Load(const string &theInfile)
 
   NFmiNetCDF reader;
 
-  reader.Read(theInfile);
+  if (!reader.Read(theInfile)) 
+  {
+    return false;
+  }
 
   if (options.analysistime.empty())
   {
