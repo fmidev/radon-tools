@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.2.12
+Version:        16.4.28
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -22,7 +22,7 @@ BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 15.9.14
+Requires:	libfmigrib >= 16.2.12
 Requires:	libfmidb >= 16.2.12
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
@@ -80,6 +80,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Apr 28 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.4.28-1.fmi
+- Support new radon producer class_id = 4 
 * Fri Feb 12 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.2.12-1.fmi
 - New fmidb
 * Tue Dec 15 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.12.15-1.fmi
