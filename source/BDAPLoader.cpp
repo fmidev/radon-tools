@@ -353,16 +353,21 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   vector<string> row;
 
   long producer_id = info.process;
+  long class_id = 1; // grid forecast
 
+  map<string,string> prodInfo;
+  
   if (info.ednum != 3) {
-    map<string,string> prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process);
+    prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process);
 
     if (prodInfo.size() == 0)
     {
       cerr << "Producer information not found from radon for centre " << info.centre << ", process " << info.process << endl;
       return false;
     }
+
     producer_id = boost::lexical_cast<long> (prodInfo["id"]);
+    class_id = boost::lexical_cast<long> (prodInfo["class_id"]);
 
   }
   
@@ -442,16 +447,33 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   string tableName = "", schema = "";
 
+  
   if (tableName.empty())
   {
+    string as_table = "as_grid";
 
-    query << "SELECT "
+    if (class_id == 4)
+    {
+      query << "SELECT "
+          << "schema_name, table_name "
+          << "FROM as_analysis " 
+          << "WHERE "
+          << "producer_id = " << producer_id
+          << " AND geometry_id = " << geometry_id
+          << " AND to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi') BETWEEN min_analysis_time AND max_analysis_time";
+
+      as_table = "as_analysis";
+    }
+    else 
+    {
+      query << "SELECT "
           << "schema_name, table_name "
           << "FROM as_grid "
           << "WHERE "
           << "producer_id = " << producer_id
           << " AND geometry_id = " << geometry_id
           << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
+    }
 
     itsRadonDB->Query(query.str());
 
@@ -462,7 +484,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
     if (row.empty())
     {
-      cerr << "Destination table definition not found from radon table 'as_grid' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
+      cerr << "Destination table definition not found from radon table '" << as_table << "' for geometry '" << geometry_name << "', base_date " << info.base_date << endl;
       cerr << "The data could be too old" << endl;
       return false;
     }
@@ -491,8 +513,10 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   }
 
   string forecastTypeValue = (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string> (info.forecast_type_value));
-
-  query << "INSERT INTO " << schema << "." << tableName
+std::cout << "CLASSID " << class_id << "\n";
+  if (class_id == 1)
+  {
+    query << "INSERT INTO " << schema << "." << tableName
         << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, file_location, file_server, forecast_type_value) "
         << "VALUES ("
         << producer_id << ", "
@@ -506,6 +530,21 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
         << "'" << info.filename << "', "
         << "'" << itsHostname << "', "
         << forecastTypeValue << ")";
+  }
+  else
+  {
+    query << "INSERT INTO " << schema << "." << tableName
+        << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, file_location, file_server) "
+        << "VALUES ("
+        << producer_id << ", "
+        << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), "
+        << geometry_id << ", "
+        << param_id << ", "
+        << level_id << ", "
+        << info.lvl1_lvl2 << ", "
+        << "'" << info.filename << "', "
+        << "'" << itsHostname << "')";
+  }
 
   try
   {
@@ -553,10 +592,14 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
           << " AND geometry_id = " << geometry_id
           << " AND param_id = " << param_id
           << " AND level_id = " << level_id
-          << " AND level_value = " << info.lvl1_lvl2
-          << " AND forecast_period = interval '1 hour' * " << info.fcst_per
-          << " AND forecast_type_id = " << info.forecast_type_id
+          << " AND level_value = " << info.lvl1_lvl2;
+
+    if (class_id == 1) 
+    {
+      query << " AND forecast_period = interval '1 hour' * " << info.fcst_per
+            << " AND forecast_type_id = " << info.forecast_type_id
         ;
+    }
 
     try
     {
