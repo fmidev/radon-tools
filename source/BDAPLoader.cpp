@@ -135,7 +135,7 @@ string BDAPLoader::REFFileName(const fc_info &info)
      << "_" 
      << info.forecast_type_id;
 
-  if (info.forecast_type_id == 4) 
+  if (info.forecast_type_id == 3) 
   {
     ss << "_" << info.forecast_type_value;
   }
