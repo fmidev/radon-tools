@@ -353,7 +353,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   vector<string> row;
 
   long producer_id = info.process;
-  long class_id = 1; // grid forecast
+  long class_id = 1; // grid data, forecast or observation
 
   map<string,string> prodInfo;
   
@@ -370,7 +370,13 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     class_id = boost::lexical_cast<long> (prodInfo["class_id"]);
 
   }
-  
+ 
+  if (class_id != 1)
+  {
+    cerr << "producer class_id is " << class_id << ", grid_to_neons can only handle gridded data (class_id = 1)" << endl;
+    return false;
+  } 
+
   long geometry_id = 0;
   string geometry_name = "";
 
@@ -451,7 +457,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   if (tableName.empty())
   {
     string as_table = "as_grid";
-
+/*
     if (class_id == 4)
     {
       query << "SELECT "
@@ -464,7 +470,8 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
       as_table = "as_analysis";
     }
-    else 
+    else
+*/ 
     {
       query << "SELECT "
           << "schema_name, table_name "
@@ -513,7 +520,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   }
 
   string forecastTypeValue = (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string> (info.forecast_type_value));
-std::cout << "CLASSID " << class_id << "\n";
+
   if (class_id == 1)
   {
     query << "INSERT INTO " << schema << "." << tableName
@@ -531,6 +538,7 @@ std::cout << "CLASSID " << class_id << "\n";
         << "'" << itsHostname << "', "
         << forecastTypeValue << ")";
   }
+/*
   else
   {
     query << "INSERT INTO " << schema << "." << tableName
@@ -545,7 +553,7 @@ std::cout << "CLASSID " << class_id << "\n";
         << "'" << info.filename << "', "
         << "'" << itsHostname << "')";
   }
-
+*/
   try
   {
     if (itsUseRadon)
