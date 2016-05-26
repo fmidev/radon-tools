@@ -973,7 +973,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 		if producerinfo.class_id == 1:
 			as_table = 'as_grid'
-			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id)" % (element.schema_name, partition_name, partition_name)
+			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, forecast_type_value)" % (element.schema_name, partition_name, partition_name)
 
 		elif producerinfo.class_id == 3:
 			as_table = 'as_previ'
