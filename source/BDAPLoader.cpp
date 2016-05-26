@@ -354,11 +354,20 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   long producer_id = info.process;
   long class_id = 1; // grid data, forecast or observation
+  long type_id = 1; // deterministic forecast
+
+  if (info.forecast_type_id == 2) {
+    type_id = 2; // ANALYSIS
+  }
+  else if (info.forecast_type_id == 3 || info.forecast_type_id == 4)
+  {
+    type_id = 3; // ENSEMBLE
+  }
 
   map<string,string> prodInfo;
   
   if (info.ednum != 3) {
-    prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process);
+    prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process, type_id);
 
     if (prodInfo.size() == 0)
     {

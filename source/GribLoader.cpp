@@ -98,7 +98,10 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   // Default to deterministic forecast
   
   g.forecast_type_id = 1;
-  
+ 
+  g.forecast_type_id = message.ForecastType();
+  g.forecast_type_value = (message.ForecastTypeValue() == -999) ? -1 : message.ForecastTypeValue();
+
   if (g.ednum == 1) 
   {
     g.filetype = "grib";
@@ -113,7 +116,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
     }
     else
     {
-      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process);
+      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, g.forecast_type_id);
 
       if (prodinfo.empty())
       {
@@ -157,7 +160,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
     }
     else
     {
-      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process);
+      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, g.forecast_type_id);
 
       if (prodinfo.empty())
       {
@@ -291,12 +294,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   g.level2 = 0;
 
   g.lvl1_lvl2 = g.level1 + 1000 * g.level2;
-  
-  // Rewritten EPS logic
-
-  g.forecast_type_id = message.ForecastType();
-  g.forecast_type_value = (message.ForecastTypeValue() == -999) ? -1 : message.ForecastTypeValue();
-  
+   
   g.stepType = message.TimeRangeIndicator();
   g.timeUnit = message.UnitOfTimeRange();
 
