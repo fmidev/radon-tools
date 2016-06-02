@@ -102,6 +102,13 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
   g.forecast_type_id = message.ForecastType();
   g.forecast_type_value = (message.ForecastTypeValue() == -999) ? -1 : message.ForecastTypeValue();
 
+  int producer_type = 1; // deterministic
+
+  if (g.forecast_type_id == 3 || g.forecast_type_id == 4)
+  {
+    producer_type = 3; // ens
+  }
+
   if (g.ednum == 1) 
   {
     g.filetype = "grib";
@@ -116,7 +123,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
     }
     else
     {
-      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, g.forecast_type_id);
+      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
 
       if (prodinfo.empty())
       {
@@ -160,7 +167,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
     }
     else
     {
-      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, g.forecast_type_id);
+      auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
 
       if (prodinfo.empty())
       {
