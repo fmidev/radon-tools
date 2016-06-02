@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.4.28
+Version:        16.6.2
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -15,15 +15,15 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 15.9.14
-BuildRequires:  libfmidb-devel >= 16.2.12
+BuildRequires:  libfmidb-devel >= 16.5.26
 BuildRequires:  libfminc-devel >= 15.12.15
-BuildRequires:  grib_api-devel >= 1.14.0
+BuildRequires:  grib_api-devel >= 1.15.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 16.2.12
-Requires:	libfmidb >= 16.2.12
+Requires:	libfmidb >= 16.5.26
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 
@@ -80,6 +80,12 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jun  2 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.2-1.fmi
+- New release
+* Wed Jun  1 2016 Mikko Aalto <mikko.aalto@fmi.fi> - 16.6.1-1.fmi
+- New grib_api 1.15
+* Thu May 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.5.26-1.fmi
+- Changes in fmidb/NFmiRadonDB
 * Thu Apr 28 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.4.28-1.fmi
 - Support new radon producer class_id = 4 
 * Fri Feb 12 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.2.12-1.fmi
