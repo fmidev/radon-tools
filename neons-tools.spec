@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.6.2
+Version:        16.6.13
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,16 +14,16 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 15.9.14
-BuildRequires:  libfmidb-devel >= 16.5.26
+BuildRequires:  libfmigrib-devel >= 16.6.13
+BuildRequires:  libfmidb-devel >= 16.6.6
 BuildRequires:  libfminc-devel >= 15.12.15
 BuildRequires:  grib_api-devel >= 1.15.0
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 16.2.12
-Requires:	libfmidb >= 16.5.26
+Requires:	libfmigrib >= 16.6.13
+Requires:	libfmidb >= 16.6.6
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jun 13 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.13-1.fmi
+- New release
 * Thu Jun  2 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.2-1.fmi
 - New release
 * Wed Jun  1 2016 Mikko Aalto <mikko.aalto@fmi.fi> - 16.6.1-1.fmi
