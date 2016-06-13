@@ -3,6 +3,7 @@
 #include <sstream>
 #include <iomanip>
 #include <boost/lexical_cast.hpp>
+#include <boost/algorithm/string.hpp> 
 #include <pqxx/except.hxx>
 #include "options.h"
 
@@ -117,11 +118,9 @@ string BDAPLoader::REFFileName(const fc_info &info)
      << "/"
      << info.parname
      << "_"
-     << info.levname
+     << boost::algorithm::to_lower_copy(info.levname)
      << "_"
      << info.level1
-     << "_"
-     << info.level2
      << "_"
      << info.grtyp
      << "_"
@@ -131,17 +130,18 @@ string BDAPLoader::REFFileName(const fc_info &info)
      << "_0_"
      << setw(3)
      << setfill('0')
-     << info.fcst_per
-     << "_" 
-     << info.forecast_type_id;
+     << info.fcst_per;
 
-  if (info.forecast_type_id == 3) 
+  if (info.forecast_type_id > 2)
   {
-    ss << "_" << info.forecast_type_value;
+     ss << "_" 
+        << info.forecast_type_id
+        << "_" 
+        << info.forecast_type_value;
   }
-  
+
   ss << "." << info.filetype;
-  
+
   return ss.str();
 
 }
@@ -340,13 +340,6 @@ bool BDAPLoader::WriteAS(const fc_info &info)
 bool BDAPLoader::WriteToRadon(const fc_info &info)
 {
 
-  // Clear cache
-
-  if (!itsUseRadon)
-  {
-    return false;
-  }
-
   Init();
 
   stringstream query;
@@ -392,7 +385,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   double di = info.di_degrees;
   double dj = info.dj_degrees;
   
-  if (info.grtyp == "ps") {
+  if (info.grtyp == "polster") {
     di = info.di_meters;
     dj = info.dj_meters;
   }

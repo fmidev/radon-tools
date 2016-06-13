@@ -134,7 +134,7 @@ bool NetCDFLoader::Load(const string &theInfile)
   }
 
   else if (reader.Projection() == "polar_stereographic") {
-    info.grtyp = "ps";
+    info.grtyp = "polster";
     info.gridtype = 5;
   }
   
@@ -152,7 +152,7 @@ bool NetCDFLoader::Load(const string &theInfile)
     std::cerr << "Unable to determine first grid point coordinates" << std::endl;
   }
 
-  if (info.grtyp == "ps") {
+  if (info.grtyp == "polster") {
     info.di_meters = reader.XResolution();
     info.dj_meters = reader.YResolution();
   }

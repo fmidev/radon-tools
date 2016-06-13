@@ -22,7 +22,8 @@ vector<string> parameters;
 vector<string> levels;
   
 atomic<int> success(0);
-atomic<int> failedCount(0);
+atomic<int> skipped(0);
+atomic<int> failed(0);
 
 mutex distMutex, dirCreateMutex;
   
@@ -62,12 +63,9 @@ bool GribLoader::Load(const string &theInfile)
 	  threadgroup[i].join();
   }
   
-  cout << "Loaded " << success << " fields successfully\n";
-
-  if (failedCount > 0)
-  {
-    cout << "Error occured with " << failedCount << " fields" << endl;
-  }
+  cout << "Success with " << success << " fields, "
+       << "failed with " << failed << " fields, "
+       << "skipped " << skipped << " fields" << std::endl;
 
   return true;
 }
@@ -203,7 +201,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
     {
       if (options.verbose)
       {
-        cerr << "Parameter name not found for category " << message.ParameterCategory() << ", discipline " << message.ParameterDiscipline() << " number " << g.param << endl;
+        cerr << "Parameter name not found for discipline " << message.ParameterDiscipline() << " category " << message.ParameterCategory() << " number " << g.param << endl;
       }
 
     return false;
@@ -271,7 +269,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
       g.dj = message.YLengthInMeters();
       g.di_meters = message.XLengthInMeters();
       g.dj_meters = message.YLengthInMeters();
-      g.grtyp = "ps";
+      g.grtyp = "polster";
       break;
 
     default:
@@ -365,6 +363,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
 
     if (!CopyMetaData(databaseLoader, g, message))
     {
+      skipped++;
       return;
     }
 
@@ -372,10 +371,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (std::find(parameters.begin(), parameters.end(), g.parname) == parameters.end()) 
       {
-
-        if (options.verbose)
-          cout << "Skipping parameter " << g.parname << endl;
-
+        skipped++;
         return;
       }
     }
@@ -384,10 +380,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (std::find(levels.begin(), levels.end(), g.levname) == levels.end()) 
       {
-
-        if (options.verbose)
-          cout << "Skipping level " << g.levname << endl;
-
+        skipped++;
         return;
       }
     }
@@ -411,7 +404,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!message.Write(theFileName, false))
       {
-        failedCount++;
+        failed++;
         return;
       }
     }
@@ -432,7 +425,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!databaseLoader.WriteAS(g))
       {
-        failedCount++;
+        failed++;
         return;
       }
     }
@@ -441,7 +434,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!databaseLoader.WriteToRadon(g) && !options.neons)
       {
-        failedCount++;
+        failed++;
         return;
       }
     }
@@ -461,9 +454,16 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
       size_t messageTime = (stop - start) / 1000 / 1000;
 	  
       size_t otherTime = messageTime - writeTime - databaseTime;
-	  
-      printf("Thread %d: Parameter %s at %s/%ld write time=%ld, database time=%ld, other=%ld, total=%ld ms\n", 
-			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, writeTime, databaseTime, otherTime, messageTime);
+ 
+      string ftype = "";
+
+      if (g.forecast_type_id > 2)
+      {
+        ftype = "forecast type " + boost::lexical_cast<string> (g.forecast_type_id) + "/" + boost::lexical_cast<string> (g.forecast_type_value);
+      }
+
+      printf("Thread %d: Parameter %s at level %s/%ld %s write time=%ld, database time=%ld, other=%ld, total=%ld ms\n", 
+			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, ftype.c_str(), writeTime, databaseTime, otherTime, messageTime);
     }
  	
 }
