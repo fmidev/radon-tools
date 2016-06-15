@@ -44,9 +44,8 @@ private:
     char *base;
     std::string itsHostname;
 
-    bool itsUseRadon;
-	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
-	std::unique_ptr<NFmiRadonDB> itsRadonDB;
+    std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
+    std::unique_ptr<NFmiRadonDB> itsRadonDB;
 
 };
 

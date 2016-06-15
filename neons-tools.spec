@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.6.13
+Version:        16.6.15
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jun 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.15-1.fmi
+- Fix for radon load
 * Mon Jun 13 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.13-1.fmi
 - New release
 * Thu Jun  2 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.2-1.fmi

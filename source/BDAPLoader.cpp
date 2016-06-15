@@ -17,7 +17,6 @@ BDAPLoader::BDAPLoader()
   , itsPassword("3loHRgdio")
   , itsDatabase("neons")
   , base(0)
-  , itsUseRadon(false)
 {
 
   char *dbName;
@@ -54,8 +53,6 @@ void BDAPLoader::InitPool(const string& username, const string& password, const 
     NFmiRadonDBPool::Instance()->Password(password);
     NFmiRadonDBPool::Instance()->Database("radon");
     NFmiRadonDBPool::Instance()->MaxWorkers(8);
-  
-    itsUseRadon = true;
   }
   catch (int e) {
     // nada
@@ -558,8 +555,6 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 */
   try
   {
-    if (itsUseRadon)
-    {
       if (options.dry_run)
       {
         cout << query.str() << endl;
@@ -584,7 +579,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
       {
         itsRadonDB->Execute(query.str());
       }
-    }
+    
   }
   catch (const pqxx::unique_violation& e)
   {
