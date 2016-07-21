@@ -133,7 +133,6 @@ int main(int argc, char ** argv)
   if (!parse_options(argc, argv))
     return 1;
 
-#if 0
   uid_t uid = getuid();
 
   if (uid != 1459) // weto
@@ -141,7 +140,6 @@ int main(int argc, char ** argv)
     std::cerr << "This program must be run as user weto." << std::endl;
     return 1;
   }
-#endif
 
   std::string extension = boost::filesystem::path(options.infile).extension().string();
 
