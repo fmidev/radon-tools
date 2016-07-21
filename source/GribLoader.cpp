@@ -67,16 +67,16 @@ bool GribLoader::Load(const string &theInfile)
        << "failed with " << g_failed << " fields, "
        << "skipped " << g_skipped << " fields" << std::endl;
 
-  // When dealing with options.max_failures and options.max_skipped, we regard 0 as "don't care" and all values > 0
+  // When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
   // as something to be checked against.
   bool retval = true;
 
-  if (options.max_failures != 0 && g_failed > options.max_failures)
+  if (options.max_failures >= 0 && g_failed > options.max_failures)
   {
 	  retval = false;
   }
 
-  if (options.max_skipped != 0 && g_skipped > options.max_skipped)
+  if (options.max_skipped >= 0 && g_skipped > options.max_skipped)
   {
 	  retval = false;
   }
