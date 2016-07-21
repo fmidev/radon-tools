@@ -19,6 +19,8 @@ bool parse_options(int argc, char * argv[])
 
   bool radon_switch = false;
   bool neons_switch = false;
+  int max_failures = 0;
+  int max_skipped = 0;
   
   desc.add_options()
     ("help,h","print out help message")
@@ -35,6 +37,8 @@ bool parse_options(int argc, char * argv[])
     ("leveltypes,l",po::value(&options.leveltypes),"accept these leveltypes, comma separated list")
     ("use-level-value",po::bool_switch(&options.use_level_value),"use level value instead of index")
     ("use-inverse-level-value",po::bool_switch(&options.use_inverse_level_value),"use inverse level value instead of index")
+    ("max-failures", po::value(&max_failures), "maximum number of allowed loading failures (grib)")
+    ("max-skipped", po::value(&max_skipped), "maximum number of allowed skipped messages (grib)")
     ("dry-run", po::bool_switch(&options.dry_run), "dry run (no changes made to database or disk), show all sql statements")
     ("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
     ("neons,N", po::bool_switch(&neons_switch), "use only neons database")
@@ -98,6 +102,26 @@ bool parse_options(int argc, char * argv[])
   else if (neons_switch)
   {
 	  options.radon = false;
+  }
+
+  if (max_failures >= 0)
+  {
+	  options.max_failures = max_failures;
+  }
+  else
+  {
+	  std::cerr << "Please specify maximum failures >= 0" << std::endl;
+	  return false;
+  }
+
+  if (max_skipped >= 0)
+  {
+	  options.max_skipped = max_skipped;
+  }
+  else
+  {
+	  std::cerr << "Please specify maximum skipped >= 0" << std::endl;
+	  return false;
   }
   
   return true;

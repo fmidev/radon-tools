@@ -21,9 +21,9 @@ void CreateDirectory(const string& theFileName);
 vector<string> parameters;
 vector<string> levels;
   
-atomic<int> success(0);
-atomic<int> skipped(0);
-atomic<int> failed(0);
+atomic<int> g_success(0);
+atomic<int> g_skipped(0);
+atomic<int> g_failed(0);
 
 mutex distMutex, dirCreateMutex;
   
@@ -62,12 +62,26 @@ bool GribLoader::Load(const string &theInfile)
   {
 	  threadgroup[i].join();
   }
-  
-  cout << "Success with " << success << " fields, "
-       << "failed with " << failed << " fields, "
-       << "skipped " << skipped << " fields" << std::endl;
 
-  return true;
+  cout << "Success with " << g_success << " fields, "
+       << "failed with " << g_failed << " fields, "
+       << "skipped " << g_skipped << " fields" << std::endl;
+
+  // When dealing with options.max_failures and options.max_skipped, we regard 0 as "don't care" and all values > 0
+  // as something to be checked against.
+  bool retval = true;
+
+  if (options.max_failures != 0 && g_failed > options.max_failures)
+  {
+	  retval = false;
+  }
+
+  if (options.max_skipped != 0 && g_skipped > options.max_skipped)
+  {
+	  retval = false;
+  }
+
+  return retval;
 }
 
 
@@ -363,7 +377,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
 
     if (!CopyMetaData(databaseLoader, g, message))
     {
-      skipped++;
+      g_skipped++;
       return;
     }
 
@@ -371,7 +385,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (std::find(parameters.begin(), parameters.end(), g.parname) == parameters.end()) 
       {
-        skipped++;
+        g_skipped++;
         return;
       }
     }
@@ -380,7 +394,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (std::find(levels.begin(), levels.end(), g.levname) == levels.end()) 
       {
-        skipped++;
+        g_skipped++;
         return;
       }
     }
@@ -404,7 +418,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!message.Write(theFileName, false))
       {
-        failed++;
+        g_failed++;
         return;
       }
     }
@@ -425,7 +439,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!databaseLoader.WriteAS(g))
       {
-        failed++;
+        g_failed++;
         return;
       }
     }
@@ -434,7 +448,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     {
       if (!databaseLoader.WriteToRadon(g) && !options.neons)
       {
-        failed++;
+        g_failed++;
         return;
       }
     }
@@ -444,7 +458,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
     stop =  static_cast<size_t> (stop_ts.tv_sec*1000000000 + stop_ts.tv_nsec);
     size_t databaseTime = (stop - start) / 1000 / 1000;
 	
-    success++;
+    g_success++;
 
     if (options.verbose)
     {

@@ -15,6 +15,8 @@ struct Options
   , level("")
   , use_level_value(false)
   , use_inverse_level_value(false)
+  , max_failures(0)
+  , max_skipped(0)
   , dry_run(false)
   , leveltypes("")
   , threadcount(2)
@@ -33,6 +35,8 @@ struct Options
   std::string level;            // -L
   bool use_level_value;         // --use-level-value
   bool use_inverse_level_value; // --use-inverse-level-value
+  int max_failures;             // --max-failures
+  int max_skipped;              // --max-skipped
   bool dry_run;                 // -d;
   std::string leveltypes;       // -l
   short threadcount;			// -j

@@ -187,7 +187,7 @@ bool BDAPLoader::WriteAS(const fc_info &info)
   
     if (dsetinfo.empty()) 
     {
-      cerr << "Model definition not found" << endl;
+		cerr << "Model definition not found" << " " << info.centre << " " << info.process << " " << itsGeomName << " " << info.base_date << endl;
       return false;
     }
 
@@ -391,7 +391,8 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
   if (geominfo.empty())
   {
-    cerr << "Geometry not found from radon" << endl;
+	  cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " " << info.lon_degrees << " "
+		   << info.di << " " << info.dj << " " << info.gridtype << endl;
     return false;
   }
 
