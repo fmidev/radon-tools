@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.6.15
+Version:        16.8.15
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -22,7 +22,7 @@ BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 16.6.13
+Requires:	libfmigrib >= 16.8.15
 Requires:	libfmidb >= 16.6.6
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.15-1.fmi
+- New fmigrib
 * Wed Jun 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.15-1.fmi
 - Fix for radon load
 * Mon Jun 13 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.6.13-1.fmi
