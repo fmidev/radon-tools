@@ -319,9 +319,6 @@ def GeomIds(producer_id, class_id, partitioning_period = None):
 
 	meta_table = "table_meta_grid"
 
-	if class_id == 4:
-		as_table = "table_meta_analysis"
-
 	query = "SELECT distinct geometry_id FROM " + as_table + " WHERE producer_id = %s"
 	args = (producer_id,)
 
@@ -342,18 +339,6 @@ def GeomIds(producer_id, class_id, partitioning_period = None):
 		ret.append(row[0])
 
 	return ret
-
-def AnalysisPartitionExists(options, producer, geometry, partition):
-	query = "SELECT count(*) FROM as_analysis WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
-
-	if options.show_sql:
-		print "%s %s" % (query, (producer, geometry, partition)) 
-		
-	cur.execute(query, (producer, geometry, partition))
-
-	row = cur.fetchone()
-
-	return (int(row[0]) == 1)
 
 def GridPartitionExists(options, producer, geometry, partition):
 	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
@@ -452,13 +437,10 @@ def GetDefinitions(options):
 	query = ""
 
 	if class_id == 1:
-		query = "SELECT producer_id, table_name, retention_period, analysis_times, schema_name, geometry_id FROM table_meta_grid"
+		query = "SELECT producer_id, table_name, retention_period, partitioning_period, analysis_times, schema_name, geometry_id FROM table_meta_grid"
 
 	elif class_id == 3:
-		query = "SELECT producer_id, table_name, retention_period, analysis_times, schema_name FROM table_meta_previ"
-
-	elif class_id == 4:
-		query = "SELECT producer_id, table_name, retention_period, partitioning_period::text, schema_name, geometry_id FROM table_meta_analysis"
+		query = "SELECT producer_id, table_name, retention_period, partitioning_period, analysis_times, schema_name FROM table_meta_previ"
 	
 	args = ()
 
@@ -495,11 +477,11 @@ def GetDefinitions(options):
 		definition.producer_id = row[0]
 		definition.table_name = row[1]
 		definition.retention_period = row[2]
-		definition.analysis_times = None if class_id in [2,4] else row[3]
-		definition.geometry_id = None if class_id in [2,3] else row[5]
+		definition.analysis_times = None if class_id in [2,4] else row[4]
+		definition.geometry_id = None if class_id in [2,3] else row[6]
 		definition.class_id = class_id
-		definition.schema_name = row[4]
-		definition.partitioning_period = row[3] if class_id == 4 else None
+		definition.schema_name = row[5]
+		definition.partitioning_period = row[3] if class_id == 1 else None
 
 		ret.append(definition)
 	
@@ -511,9 +493,6 @@ def ListPartitions(options, producerinfo, table_name):
 
 	if producerinfo.class_id == 3:
 		as_table = "as_previ"
-
-	elif producerinfo.class_id == 4:
-		as_table = "as_analysis"
 
 	query = "SELECT table_name, partition_name FROM " + as_table + " WHERE table_name = %s ORDER BY partition_name"
 
@@ -540,8 +519,6 @@ def CreateMainTable(options, element, producerinfo):
 
 	if class_id == 3:
 		template_table = "previ_data_template"
-	elif class_id == 4:
-		template_table = "analysis_data_template"
 
 	query = "CREATE TABLE %s.%s (LIKE %s INCLUDING ALL)" % (element.schema_name, element.table_name, template_table)
 
@@ -588,7 +565,7 @@ BEGIN
 	else:
 		first = True
 
-		if producerinfo.class_id in [1,3]:
+		if element.partitioning_period == "ANALYSISTIME":
 			for partition_name in partitions:
 				analysis_time = partition_name[-10:]
 
@@ -602,20 +579,27 @@ BEGIN
 		%s analysistime = '%s' THEN
 			INSERT INTO %s.%s VALUES (NEW.*);""" % (ifelsif, analysis_time, element.schema_name, partition_name)
 
-		elif producerinfo.class_id in [4]:
+		else:
 			for partition_name in partitions:
 				period_start = None
 
-				if element.partitioning_period == '1 mon':
+
+				if element.partitioning_period == 'ANNUAL':
+					period = partition_name[-4:]
+					period_start = datetime.datetime.strptime(period, '%Y')
+					delta = relativedelta(years=+1)
+
+				elif element.partitioning_period == 'MONTHLY':
 					period = partition_name[-6:]
 					period_start = datetime.datetime.strptime(period, '%Y%m')
 					delta = relativedelta(months=+1)
 
 
-				elif element.partitioning_period == '1 day':
+				elif element.partitioning_period == 'DAILY':
 					period = partition_name[-8:]
 					period_start = datetime.datetime.strptime(period, '%Y%m%d')
 					delta = relativedelta(days=+1)
+
 
 				period_stop = period_start + delta
 
@@ -680,13 +664,6 @@ def DropTables(options, element):
 
 		query = "SELECT analysis_time, partition_name, delete_time FROM as_previ WHERE producer_id = %s"
 
-	elif producerinfo.class_id == 4:
-		as_table = 'as_analysis'
-		print "Producer: %d" % (element.producer_id)
-
-		query = "SELECT max_analysis_time, partition_name, delete_time FROM as_analysis WHERE producer_id = %s"
-
-
 	if options.show_sql:
 		print "%s, %s" % (query, args)
 
@@ -719,7 +696,7 @@ def DropTables(options, element):
 			# First delete contents
 			
 			if as_table == 'as_grid' or as_table == 'as_analysis':
-				query = "SELECT file_location FROM %s " % (partition_name,)
+				query = "SELECT file_location FROM %s.%s " % (element.schema_name, partition_name,)
 				query += " WHERE geometry_id = %s AND analysis_time = %s"
 
 				if options.show_sql:
@@ -879,39 +856,6 @@ WHERE
 		AND 
 		m.forecast_type_id = t.id
 		""" % (element.table_name, element.schema_name, element.table_name)
-	elif class_id == 4:
-		query = """
-CREATE OR REPLACE VIEW public.%s_v AS
-SELECT
-		a.producer_id,
-		f.name AS producer_name,
-		a.analysis_time,
-		a.geometry_id,
-		g.name AS geometry_name,
-		a.param_id,
-		p.name AS param_name,
-		a.level_id,
-		l.name AS level_name,
-		a.level_value,
-		a.file_location,
-		a.file_server,
-		a.last_updater,
-		a.last_updated
-FROM
-		%s.%s a,
-		fmi_producer f,
-		level l,
-		param p,
-		geom g
-WHERE
-		a.producer_id = f.id
-		AND
-		a.level_id = l.id
-		AND
-		a.param_id = p.id
-		AND
-		a.geometry_id = g.id
-""" % (element.table_name, element.schema_name, element.table_name)
 
 	if options.show_sql:
 		print query
@@ -925,7 +869,34 @@ WHERE
 def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	delete_time = datetime.datetime.strptime(analysis_time, '%Y%m%d%H') + element.retention_period
 
-	partition_name = "%s_%s" % (element.table_name, analysis_time)
+	# Determine partition length and name
+
+	partition_name = None
+	period_start = None
+	period_stop = None
+	#delta = None
+
+	if element.partitioning_period == "ANALYSISTIME":
+		
+		partition_name = "%s_%s" % (element.table_name, analysis_time)
+
+	elif element.partitioning_period == 'DAILY':
+		period_start = datetime.datetime.strptime(date[0:8], '%Y%m%d')
+		period_stop = period_start + relativedelta(days=+1)
+		
+		partition_name = "%s_%s" % (element.table_name, period_start.strftime('%Y%m%d'))
+
+	elif element.partitioning_period == 'MONTHLY':
+		period_start = datetime.datetime.strptime(date[0:6], '%Y%m')
+		period_stop = period_start + relativedelta(months=+1)
+		
+		partition_name = "%s_%s" % (element.table_name, period_start.strftime('%Y%m'))
+
+	elif element.partitioning_period == 'ANNUAL':
+		period_start = datetime.datetime.strptime(date[0:4], '%Y')
+		period_stop = period_start + relativedelta(years=+1)
+
+		partition_name = "%s_%s" % (element.table_name, period_start.strftime('%Y'))
 
 	# Check if partition exists in as_grid
 	# This is the case when multiple geometries share one table
@@ -954,10 +925,16 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	if row == None or int(row[0]) == 0:
 
-		print "Creating partition %s" % (partition_name)
-
 		analysis_time_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H').strftime('%Y-%m-%d %H:%M:%S')
-		query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, analysis_time_timestamp, element.schema_name, element.table_name)
+		
+		if element.partitioning_period == "ANALYSIS_TIME":
+			print "Creating partition %s" % (partition_name)
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, analysis_time_timestamp, element.schema_name, element.table_name)
+		else:
+			print "Creating %s partition %s" % (element.partitioning_period, partition_name)
+			period_start_timestamp = period_start.strftime('%Y-%m-%d %H:%M:%S')
+			period_stop_timestamp = period_stop.strftime('%Y-%m-%d %H:%M:%S')
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, period_start_timestamp, period_stop_timestamp, element.schema_name, element.table_name)
 
 		if options.show_sql:
 			print query
@@ -1020,123 +997,14 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	return True
 
-def CreateAnalysisPartition(options, element, producerinfo, date):
-
-	delete_time = datetime.datetime.strptime(date, '%Y%m%d') + element.retention_period
-
-	partition_name = None
-	period_start = None
-	delta = None
-	
-	if element.partitioning_period == '1 mon':
-		period_start = datetime.datetime.strptime(date[0:6], '%Y%m')
-		delta = relativedelta(months=+1)
-		partition_name = "%s_%s" % (element.table_name, period_start.strftime('%Y%m'))
-
-	elif element.partitioning_period == '1 day':
-		period_start = datetime.datetime.strptime(date, '%Y%m%d')	
-		delta = relativedelta(days=+1)
-		partition_name = "%s_%s" % (element.table_name, period_start.strftime('%Y%m%d'))
-
-	period_stop = period_start + delta
-	
-	# Check if partition exists in as_grid
-	# This is the case when multiple geometries share one table
-
-	if AnalysisPartitionExists(options, element.producer_id, element.geometry_id, partition_name):
-		print "Table partition %s exists already" % (partition_name,)
-		return False
-
-	# Check that if as_grid did not have information on this partition, does the
-	# table still exist. If so, then we just need to add a row to as_grid.
-
-	query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
-
-	if options.show_sql:
-		print "%s %s" % (query, (element.schema_name, partition_name))
-
-	if not options.dry_run:
-		cur.execute(query, (element.schema_name, partition_name))
-
-	row = cur.fetchone()
-
-	if row == None or int(row[0]) == 0:
-
-		print "Creating %s partition %s" % ("monthly" if element.partitioning_period == '1 mon' else "daily",partition_name)
-
-		period_start_timestamp = period_start.strftime('%Y-%m-%d %H:%M:%S')
-		period_stop_timestamp = period_stop.strftime('%Y-%m-%d %H:%M:%S')
-
-		query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, period_start_timestamp, period_stop_timestamp, element.schema_name, element.table_name)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-			query = "GRANT SELECT ON %s.%s TO radon_ro" % (element.schema_name, partition_name)
-			cur.execute(query)
-			query = "GRANT INSERT,DELETE,UPDATE ON %s.%s TO radon_rw" % (element.schema_name, partition_name)
-			cur.execute(query)
-
-		as_table = 'as_grid'
-
-		query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value)" % (element.schema_name, partition_name, partition_name)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
-		geomids = GeomIds(producerinfo.id, producerinfo.class_id, partitioning_period = element.partitioning_period)
-
-		query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_geom_check CHECK (geometry_id IN (%s))" % (element.schema_name, partition_name, partition_name, ','.join(str(v) for v in geomids))
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
-		query = "CREATE TRIGGER %s_update_as_table_trg AFTER INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
-		query = "CREATE TRIGGER %s_store_last_updated_trg BEFORE UPDATE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE store_last_updated_f()" % (partition_name, element.schema_name, partition_name)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
-
-	args = ()
-	
-	query = "INSERT INTO as_analysis (producer_id, min_analysis_time, max_analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
-	args = (element.producer_id, period_start, period_stop, element.geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name)
-
-	if options.show_sql:
-		print "%s (%s)" % (query, args)
-
-	if not options.dry_run:
-		cur.execute(query, args)
-
-	return True
-
 def CreateTables(options, element, date):
 
 	producerinfo = GetProducer(element.producer_id)
 
 	if producerinfo.class_id == 1:
-		print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id) 
+		print "Producer: %s geometry: %s" % (element.producer_id, element.geometry_id) 
 	else:
-	        print "Producer: %d" % (element.producer_id)
+		print "Producer: %d" % (element.producer_id)
 
 	# Check that main table exists, both physically and in as_grid
 	
@@ -1159,16 +1027,11 @@ def CreateTables(options, element, date):
 
 	partitionAdded = False
 
-	if producerinfo.class_id in [1,3]:
-		for atime in element.analysis_times:
+	for atime in element.analysis_times:
 
-			analysis_time = "%s%02d" % (date,atime)
+		analysis_time = "%s%02d" % (date,atime)
 
-			if CreateForecastPartition(options,element,producerinfo,analysis_time):
-				partitionAdded = True
-			
-	elif producerinfo.class_id in [4]:
-		if CreateAnalysisPartition(options,element,producerinfo, date):
+		if CreateForecastPartition(options,element,producerinfo,analysis_time):
 			partitionAdded = True
 
 	# Update trigger 
