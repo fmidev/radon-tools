@@ -927,7 +927,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 		analysis_time_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H').strftime('%Y-%m-%d %H:%M:%S')
 		
-		if element.partitioning_period == "ANALYSIS_TIME":
+		if element.partitioning_period == "ANALYSISTIME":
 			print "Creating partition %s" % (partition_name)
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element.schema_name, partition_name, analysis_time_timestamp, element.schema_name, element.table_name)
 		else:
