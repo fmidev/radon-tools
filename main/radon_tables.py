@@ -481,7 +481,7 @@ def GetDefinitions(options):
 		definition.geometry_id = None if class_id in [2,3] else row[6]
 		definition.class_id = class_id
 		definition.schema_name = row[5]
-		definition.partitioning_period = row[3] if class_id == 1 else None
+		definition.partitioning_period = row[3]
 
 		ret.append(definition)
 	
@@ -877,7 +877,6 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	#delta = None
 
 	if element.partitioning_period == "ANALYSISTIME":
-		
 		partition_name = "%s_%s" % (element.table_name, analysis_time)
 
 	elif element.partitioning_period == 'DAILY':
@@ -1027,12 +1026,17 @@ def CreateTables(options, element, date):
 
 	partitionAdded = False
 
-	for atime in element.analysis_times:
+	if element.analysis_times is None:
+		if CreateForecastPartition(options,element,producerinfo,date + "00"):
 
-		analysis_time = "%s%02d" % (date,atime)
-
-		if CreateForecastPartition(options,element,producerinfo,analysis_time):
 			partitionAdded = True
+	else:
+		for atime in element.analysis_times:
+
+			analysis_time = "%s%02d" % (date,atime)
+
+			if CreateForecastPartition(options,element,producerinfo,analysis_time):
+				partitionAdded = True
 
 	# Update trigger 
 
