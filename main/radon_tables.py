@@ -656,13 +656,13 @@ def DropTables(options, element):
 	if producerinfo.class_id == 1:
 		print "Producer: %d geometry: %d" % (element.producer_id, element.geometry_id)
 		args = args + (element.geometry_id,)
-		query = "SELECT analysis_time, partition_name, delete_time FROM as_grid WHERE producer_id = %s AND geometry_id = %s"
+		query = "SELECT id, min_analysis_time, max_analysis_time, partition_name, delete_time FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND delete_time < now()"
 		
 	elif producerinfo.class_id == 3:
 		as_table = 'as_previ'
 		print "Producer: %d" % (element.producer_id)
 
-		query = "SELECT analysis_time, partition_name, delete_time FROM as_previ WHERE producer_id = %s"
+		query = "SELECT id, min_analysis_time, max_analysis_time, partition_name, delete_time FROM as_previ WHERE producer_id = %s AND delete_time < now()"
 
 	if options.show_sql:
 		print "%s, %s" % (query, args)
@@ -675,32 +675,29 @@ def DropTables(options, element):
 		print "No tables"
 		return
 
-	current_time_naive = datetime.datetime.now()
-	current_time = timezone('UTC').localize(current_time_naive)
-
-	tablesDropped = False
-	count = 0
+#	current_time_naive = datetime.datetime.now()
+#	current_time = timezone('UTC').localize(current_time_naive)
 
 	for row in rows:
-		analysis_time = row[0]
-		partition_name = row[1]
-		delete_time = row[2]
+		rowid = row[0]
+		min_analysis_time = row[1]
+		max_analysis_time = row[2]
+		partition_name = row[3]
+#		delete_time = row[3]
 
-		diff = delete_time - current_time
+		# strip microseconds off from timedelta
+		print "Deleting partition %s with analysis times %s .. %s" % (partition_name, min_analysis_time, max_analysis_time)
 
-		if diff < datetime.timedelta(seconds=int(0)):
-			# strip microseconds off from timedelta
-			print "Deleting analysis time %s with age %s (partition %s)" % (analysis_time, str(diff).split('.')[0], partition_name)
-			count = count+1
-
-			# First delete contents
+		# First delete contents
 			
-			if as_table == 'as_grid' or as_table == 'as_analysis':
+		if as_table == 'as_grid':
+				
+			if options.unlink:
 				query = "SELECT file_location FROM %s.%s " % (element.schema_name, partition_name,)
-				query += " WHERE geometry_id = %s AND analysis_time = %s"
+				query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
 				if options.show_sql:
-					print "%s %s" % (query, (element.geometry_id, analysis_time))
+					print "%s %s" % (query, (element.geometry_id, min_analysis_time, max_analysis_time))
 
 				rows = cur.execute(query, (element.geometry_id, analysis_time,))
 
@@ -715,14 +712,17 @@ def DropTables(options, element):
 						if options.unlink:
 							os.remove(file)
 
-			elif as_table == 'as_previ':
-				query = "DELETE FROM " + element.table_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time = %s"
+			query = "DELETE FROM " + element.schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
-			args = (element.producer_id, analysis_time)
+			if options.show_sql:
+				print "%s %s" % (query, (element.producer_id, element.geometry_id, min_analysis_time, max_analysis_time))
 
-			if producerinfo.class_id == 1:
-				query += " AND geometry_id = %s"
-				args = args + (element.geometry_id,)
+			if not options.dry_run:
+				cur.execute(query, (element.producer_id, element.geometry_id, min_analysis_time, max_analysis_time))
+
+		elif as_table == 'as_previ':
+			query = "DELETE FROM " + element.schema_name + "." + partition_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time BETWEEN %s AND %s"
+			args = (element.producer_id, min_analysis_time, max_analysis_time)
 
 			if options.show_sql:
 				print "%s, %s" % (query, args)
@@ -730,41 +730,33 @@ def DropTables(options, element):
 			if not options.dry_run:
 				cur.execute(query, args)
 
-			query = "DELETE FROM " + as_table + " WHERE producer_id = %s AND " + ('analysis_time' if as_table != 'as_analysis' else 'max_analysis_time') + " = %s AND table_name = %s"
-			args = (element.producer_id, analysis_time, element.table_name)
+		query = "DELETE FROM " + as_table + " WHERE id = %s"
+		args = (rowid,)
 				
-			if producerinfo.class_id == 1:
-				query += " AND geometry_id = %s"
-				args = args + (element.geometry_id,)
+		if options.show_sql:
+			print "%s, %s" % (query, args)
+
+		if not options.dry_run:
+			cur.execute(query, args)
+
+		# If table partition is empty and it is not referenced in as_{grid|previ} anymore,
+		# we can drop it
+
+		query = "SELECT count(*) FROM " + as_table + " WHERE partition_name = %s"
+
+		cur.execute(query, (partition_name,))
+
+		row = cur.fetchone()
+
+		if int(row[0]) == 0:
+			query = "DROP TABLE %s.%s" % (element.schema_name, partition_name)
 
 			if options.show_sql:
-				print "%s, %s" % (query, args)
+				print query
 
 			if not options.dry_run:
-				cur.execute(query, args)
+				cur.execute(query)
 
-			# If table partition is empty and it is not referenced in as_{grid|previ} anymore,
-			# we can drop it
-
-			query = "SELECT count(*) FROM " + as_table + " WHERE partition_name = %s"
-
-			cur.execute(query, (partition_name,))
-
-			row = cur.fetchone()
-
-			if int(row[0]) == 0:
-				query = "DROP TABLE %s.%s" % (element.schema_name, partition_name)
-
-				if options.show_sql:
-					print query
-
-				if not options.dry_run:
-					cur.execute(query)
-
-		else:
-			print "Partition %s lifetime left %s" % (partition_name, str(diff).split('.')[0])
-
-	if tablesDropped:
 		CreatePartitioningTrigger(options, producerinfo, element)
 
 	if not options.dry_run:
@@ -867,14 +859,11 @@ WHERE
 
 
 def CreateForecastPartition(options, element, producerinfo, analysis_time):
-	delete_time = datetime.datetime.strptime(analysis_time, '%Y%m%d%H') + element.retention_period
-
 	# Determine partition length and name
 
 	partition_name = None
 	period_start = None
 	period_stop = None
-	#delta = None
 
 	if element.partitioning_period == "ANALYSISTIME":
 		partition_name = "%s_%s" % (element.table_name, analysis_time)
@@ -977,16 +966,25 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		if not options.dry_run:
 			cur.execute(query)
 
+	# Delete time type depends on partitioning type; for 'ANALYSISTIME' it's 
+	# analysis_time + retention, for others its now + retention
+
+	delete_time = None
+
+	if element.partitioning_period == "ANALYSISTIME":
+	        delete_time = datetime.datetime.strptime(analysis_time, '%Y%m%d%H') + element.retention_period
+	else:
+		delete_time = datetime.datetime.now() + element.retention_period	
 
 	args = ()
 	
 	if producerinfo.class_id == 1:
-		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s)"
-		args = (element.producer_id, analysis_time, element.geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name)
+		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s, %s, %s)"
+		args = (element.producer_id, analysis_time, element.geometry_id, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name, period_start.strftime('%Y-%m-%d %H:%M:%S'), period_stop.strftime('%Y-%m-%d %H:%M:%S'))
 
 	if producerinfo.class_id == 3:
-		query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s)"
-		args = (element.producer_id, analysis_time, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name)
+		query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s, %s)"
+		args = (element.producer_id, analysis_time, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element.schema_name, element.table_name, partition_name, period_start.strftime('%Y-%m-%d %H:%M:%S'), period_stop.strftime('%Y-%m-%d %H:%M:%S'))
 	
 	if options.show_sql:
 		print "%s (%s)" % (query, args)
