@@ -866,6 +866,9 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	period_stop = None
 
 	if element.partitioning_period == "ANALYSISTIME":
+		period_start = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
+		period_stop = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
+
 		partition_name = "%s_%s" % (element.table_name, analysis_time)
 
 	elif element.partitioning_period == 'DAILY':
