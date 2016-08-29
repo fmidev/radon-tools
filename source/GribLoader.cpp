@@ -81,7 +81,7 @@ bool GribLoader::Load(const string &theInfile)
 	  retval = false;
   }
 
-  if (g_failed == itsReader.MessageCount() || g_success == 0)
+  if (g_success == 0)
   {
           retval = false;
   }
