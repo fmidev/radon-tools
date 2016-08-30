@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <ctime>
 #include <algorithm>
+#include <atomic>
 #include "NFmiNeonsDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -19,6 +20,9 @@ extern Options options;
 using namespace std;
 
 #define kFloatMissing 32700.f
+
+static atomic<int> g_failedParams(0);
+static atomic<int> g_succeededParams(0);
 
 NetCDFLoader::NetCDFLoader() 
 {
@@ -46,7 +50,7 @@ bool NetCDFLoader::Load(const string &theInfile)
     return false;
   }
 
-  //reader.AnalysisTime(options.analysistime);
+  // reader.AnalysisTime(options.analysistime);
 
   if (!reader.IsConvention()) 
   {
@@ -214,7 +218,9 @@ bool NetCDFLoader::Load(const string &theInfile)
       // If this parameter is known not to be supported, skip it
 
       if (pskip.count(ncname) > 0)
+	  {
         continue;
+	  }
 
       string grid_parameter_name;
       map<string,string> parameter;
@@ -233,6 +239,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         if (options.verbose)
           cout << "NetCDF param " << ncname << " not supported" << endl;
 
+		g_failedParams++;
         pskip[ncname] = 1;
         continue;
 
@@ -248,6 +255,7 @@ bool NetCDFLoader::Load(const string &theInfile)
           if (options.verbose)
             cout << "Skipping parameter " << grid_parameter_name << endl;
 
+		  g_failedParams++;
           pskip[ncname] = 1;
           continue;
         }
@@ -260,6 +268,7 @@ bool NetCDFLoader::Load(const string &theInfile)
         if (options.verbose)
           cout << "Param " << grid_parameter_name << " not supported" << endl;
 
+		 g_failedParams++;
          pskip[ncname] = 1;
          continue;
       }
@@ -394,7 +403,10 @@ bool NetCDFLoader::Load(const string &theInfile)
       
           if (options.radon)
           {
-            itsDatabaseLoader.WriteToRadon(info);
+            if (!itsDatabaseLoader.WriteToRadon(info))
+			{
+				return false;
+			}
           }
       
           if (options.verbose)
@@ -403,10 +415,19 @@ bool NetCDFLoader::Load(const string &theInfile)
           }
         }
       }
+	  g_succeededParams++;
     } while (reader.NextParam());
   }
+  
+  cout << "Success with " << g_succeededParams << " params, "
+	   << "failed with " << g_failedParams << " params" << endl;
 
-  return true;
+  if (g_succeededParams == 0)
+  {
+	return false;
+  }
+
+    return true;
 }
 
 /*
