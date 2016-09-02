@@ -7,11 +7,13 @@ struct Options
   : verbose(false)
   , netcdf(false)
   , grib(false)
+  , index(false)
   , center(86)
   , process(0)
   , analysistime("")
   , infile("")
   , parameters("")
+  , keys("")
   , level("")
   , use_level_value(false)
   , use_inverse_level_value(false)
@@ -27,8 +29,10 @@ struct Options
   bool verbose;                 // -v
   bool netcdf;                  // -n
   bool grib;                    // -g
+  bool index;
   unsigned int center;          // -c
   unsigned int process;         // -p
+  std::string keys;
   std::string analysistime;     // -a
   std::string infile;
   std::string parameters;       // -P
