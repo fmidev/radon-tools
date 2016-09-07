@@ -422,9 +422,13 @@ bool NetCDFLoader::Load(const string &theInfile)
   cout << "Success with " << g_succeededParams << " params, "
 	   << "failed with " << g_failedParams << " params" << endl;
 
-  if (g_succeededParams == 0)
+  // We need to check for 'total failure' if the user didn't specify a max_failures value.
+  if (options.max_failures == -1 && options.max_skipped == -1)
   {
-	return false;
+	  if (g_succeededParams == 0)
+	  {
+		return false;
+	  }
   }
 
     return true;

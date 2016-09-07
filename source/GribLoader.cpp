@@ -81,9 +81,13 @@ bool GribLoader::Load(const string &theInfile)
 	  retval = false;
   }
 
-  if (g_success == 0)
+  // We need to check for 'total failure' if the user didn't specify a max_failures value.
+  if (options.max_failures == -1 && options.max_skipped == -1)
   {
-          retval = false;
+	  if (g_success == 0)
+	  {
+			  retval = false;
+	  }
   }
 
   return retval;
