@@ -133,14 +133,6 @@ int main(int argc, char ** argv)
   if (!parse_options(argc, argv))
     return 1;
 
-  uid_t uid = getuid();
-
-  if (uid != 1459) // weto
-  {
-    std::cerr << "This program must be run as user weto." << std::endl;
-    return 1;
-  }
-
   std::string extension = boost::filesystem::path(options.infile).extension().string();
 
   if (extension == ".nc" || options.netcdf)
