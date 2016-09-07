@@ -5,7 +5,7 @@
  */
 
 #include "BDAPLoader.h"
-#include "NFmiGrib.h"
+#include "/home/weto/tack/masala_src/fmigrib/include/NFmiGrib.h"
 #include "NFmiGribMessage.h"
 #include <boost/thread.hpp>
 #include "options.h"

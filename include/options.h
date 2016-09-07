@@ -32,10 +32,10 @@ struct Options
   bool index;
   unsigned int center;          // -c
   unsigned int process;         // -p
-  std::string keys;
   std::string analysistime;     // -a
   std::string infile;
   std::string parameters;       // -P
+  std::string keys;
   std::string level;            // -L
   bool use_level_value;         // --use-level-value
   bool use_inverse_level_value; // --use-inverse-level-value

@@ -420,13 +420,13 @@ string GribIndexLoader::CreateIndex(const string& theFileName)
       if (fs::exists(fs::path(idxFileName)))
       {
         itsReader.Open(idxFileName);
-        itsReader.AddFileToIndex(theFileName)
+        itsReader.AddFileToIndex(theFileName);
       }
       else
       {
         itsReader.BuildIndex(theFileName,options.keys);
       }
-      itsReader.WriteIndex(idxFile);
+      itsReader.WriteIndex(idxFileName);
     }
 
     return idxFileName;

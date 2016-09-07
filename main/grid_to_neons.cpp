@@ -6,6 +6,7 @@
 
 #include "NetCDFLoader.h"
 #include "GribLoader.h"
+#include "GribIndexLoader.h"
 #include "options.h"
 
 Options options;
@@ -182,7 +183,7 @@ int main(int argc, char ** argv)
 
     GribIndexLoader i;
 
-    if (!i.Load(options.infile))
+    if (!i.Load(options.infile,options.keys))
     {
       std::cerr << "Load failed" << std::endl;
       return 1;
