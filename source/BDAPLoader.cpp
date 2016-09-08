@@ -480,7 +480,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
           << "producer_id = " << producer_id
           << " AND geometry_id = " << geometry_id
           << " AND min_analysis_time <= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')"
-          << " AND max_analysis_time > to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
+          << " AND max_analysis_time >= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
     }
 
     itsRadonDB->Query(query.str());
