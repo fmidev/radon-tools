@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.8.24
+Version:        16.9.8
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -81,7 +81,11 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Tue Aug 24 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.24-1.fmi
+* Thu Sep  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.8-1.fmi
+- New release
+* Wed Sep  7 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.7-1.fmi
+- New release
+* Wed Aug 24 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.24-1.fmi
 - New release
 * Tue Aug 23 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.8.23-2.fmi
 - Fixing typo with radon_tables.py
@@ -109,7 +113,7 @@ rm -rf %{buildroot}
 - New fminc
 * Wed Nov 18 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.11.18-1.fmi
 - New release
-* Tue Oct  9 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.9-1.fmi
+* Fri Oct  9 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.9-1.fmi
 - Minor fixes
 * Tue Oct  6 2015 Mikko Partio <mikko.partio@fmi.fi> - 15.10.6-1.fmi
 - Bugfix for radon grib loading
