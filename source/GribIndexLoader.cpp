@@ -56,6 +56,10 @@ void GribIndexLoader::Run(short threadId)
 
 }
 
+/*
+ * Taken from GribLoader
+ */
+
 bool GribIndexLoader::DistributeMessages(NFmiGribMessage& newMessage)
 {
   lock_guard<mutex> lock(distMutex);
@@ -73,6 +77,11 @@ bool GribIndexLoader::DistributeMessages(NFmiGribMessage& newMessage)
 
   return false;
 }
+
+/*
+ * Largely taken from GribLoader
+ * But only meta data is processed, no message copy. File from index file is passed.
+ */
 
 void GribIndexLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
 {
@@ -170,6 +179,11 @@ void GribIndexLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& messa
     }
 
 }
+
+
+/*
+ * This is taken from GribLoader.cpp
+ */
 
 bool GribIndexLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message)
 {
@@ -403,6 +417,11 @@ bool GribIndexLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const
   return true;
 }
 
+/*
+ * Create an index file in the same directory as the grib file.
+ * If index file already exists grib file is added to the index
+ * File name must be given as absolute path.
+ */
 string GribIndexLoader::CreateIndex(const string& theFileName)
 {
     namespace fs = boost::filesystem;
@@ -427,6 +446,10 @@ string GribIndexLoader::CreateIndex(const string& theFileName)
         itsReader.BuildIndex(theFileName,options.keys);
       }
       itsReader.WriteIndex(idxFileName);
+    }
+    else
+    {
+        cout << "Parent path not specified. Absolute path needed." << endl;
     }
 
     return idxFileName;
