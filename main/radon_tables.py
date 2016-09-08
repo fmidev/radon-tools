@@ -404,7 +404,7 @@ def GetProducersFromClass(class_id):
 
 	ret = []
 
-	for row in cur.fetchone():
+	for row in cur.fetchall():
 		prod = Bunch()
 		prod.id = row[0]
 		prod.name = row[1]
@@ -651,7 +651,7 @@ def DropTables(options):
 	if options.producer_id is not None:
 		producers.append(GetProducer(options.producer_id))
 	else:
-		producers = GetProducersFromClassId(options.class_id)
+		producers = GetProducersFromClass(options.class_id)
 
 	for producer in producers:
 
@@ -680,7 +680,7 @@ def DropTables(options):
 
 		if len(rows) == 0:
 			print "Producer %d: No tables expired" % (producer.id)
-			return
+			continue
 
 		print "Producer: %d" % (producer.id)
 
