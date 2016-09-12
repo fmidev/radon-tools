@@ -8,26 +8,12 @@
 #include "NFmiRadonDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
-#include "options.h"
-#include <atomic>
 
 extern Options options;
 
 using namespace std;
 
-void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
-void CreateDirectory(const string& theFileName);
-
-vector<string> parameters;
-vector<string> levels;
-  
-atomic<int> g_success(0);
-atomic<int> g_skipped(0);
-atomic<int> g_failed(0);
-
-mutex distMutex, dirCreateMutex;
-  
-GribLoader::GribLoader() {}
+GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0) {}
 GribLoader::~GribLoader() {}
 
 bool GribLoader::Load(const string &theInfile) 
@@ -98,7 +84,7 @@ bool GribLoader::Load(const string &theInfile)
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
  */
 
-bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message) 
+bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message) 
 {
 
   g.centre = message.Centre();
@@ -366,7 +352,7 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
   return false;
 }
 
-void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
+void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
 {
     fc_info g;
 
@@ -487,7 +473,7 @@ void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadI
  	
 }
 
-void CreateDirectory(const string& theFileName)
+void GribLoader::CreateDirectory(const string& theFileName)
 {	
     namespace fs = boost::filesystem;
 
@@ -506,5 +492,4 @@ void CreateDirectory(const string& theFileName)
       if (!options.dry_run)
         fs::create_directories(pathname.parent_path());
     }
-	
 }
