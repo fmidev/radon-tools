@@ -30,6 +30,8 @@ class GribLoader
     void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
     void CreateDirectory(const std::string& theFileName);
     bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message);
+    std::string GetFileName(BDAPLoader& databaseLoader, const fc_info &g);
+    bool IsGrib(const std::string &theFileName);
 
     NFmiGrib itsReader;
     boost::thread_specific_ptr<BDAPLoader> itsThreadedLoader;

@@ -14,7 +14,7 @@ class GribIndexLoader : public GribLoader
     bool Load(const std::string &theInfile, const std::string &theKeys);
   protected:
     std::string CreateIndex(const std::string& theFileName);
-    void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
+    std::string GetFileName(BDAPLoader& databaseLoader, const fc_info &g);
 
-    std::string itsIndexFilename;
+    std::string itsIndexFileName;
 };

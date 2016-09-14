@@ -390,7 +390,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
       }
     }
 
-    string theFileName = databaseLoader.REFFileName(g);
+    string theFileName = GetFileName(databaseLoader, g);
 
     if (theFileName.empty())
       exit(1);
@@ -405,7 +405,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
      * Write grib msg to disk with unique filename.
      */
 
-    if (!options.dry_run)
+    if (!options.dry_run && IsGrib(theFileName))
     {
       if (!message.Write(theFileName, false))
       {
@@ -471,6 +471,16 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 			  threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, ftype.c_str(), writeTime, databaseTime, otherTime, messageTime);
     }
  	
+}
+
+string GribLoader::GetFileName(BDAPLoader& databaseLoader, const fc_info &g)
+{
+    return databaseLoader.REFFileName(g);
+}
+
+bool GribLoader::IsGrib(const string &theFileName)
+{
+    return theFileName.substr(theFileName.size()-4,4) == "grib" || theFileName.substr(theFileName.size()-5,5) == "grib2";
 }
 
 void GribLoader::CreateDirectory(const string& theFileName)
