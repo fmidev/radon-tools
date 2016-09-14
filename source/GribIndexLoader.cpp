@@ -69,11 +69,15 @@ string GribIndexLoader::CreateIndex(const string& theFileName)
       {
         itsReader.BuildIndex(theFileName,options.keys);
       }
-      itsReader.WriteIndex(idxFileName);
+      if (!options.dry_run)
+      {
+        itsReader.WriteIndex(idxFileName);
+      }
     }
     else
     {
         cout << "Parent path not specified. Absolute path needed." << endl;
+        exit(1);
     }
 
     return idxFileName;
