@@ -6,6 +6,7 @@
 
 #include "NetCDFLoader.h"
 #include "GribLoader.h"
+#include "GribIndexLoader.h"
 #include "options.h"
 
 Options options;
@@ -27,6 +28,8 @@ bool parse_options(int argc, char * argv[])
     ("verbose,v",po::bool_switch(&options.verbose),"set verbose mode on")
     ("netcdf,n",po::bool_switch(&options.netcdf),"force netcdf mode on")
     ("grib,g",po::bool_switch(&options.grib),"force grib mode on")
+    ("index",po::bool_switch(&options.index),"force grib index mode on")
+    ("index-keys",po::value(&options.keys),"define keys for file indexing")
     ("version,V","display version number")
     ("infile,i",po::value(&options.infile),"input file")
     ("center,c",po::value(&options.center),"force center id")
@@ -164,7 +167,22 @@ int main(int argc, char ** argv)
       return 1;
     }
 
-  } else 
+  } 
+  else if (options.index)
+  {
+    if(options.verbose)
+      std::cout << "Treating file '" << options.infile << "' as GRIB" << std::endl;
+
+    GribIndexLoader i;
+
+    if (!i.Load(options.infile,options.keys))
+    {
+      std::cerr << "Load failed" << std::endl;
+      return 1;
+    }
+
+  }
+  else 
   {
     std::cerr << "Unable to determine file type for file '" << options.infile << "'" << std::endl
               << "Use switch -n or -g to force file type" << std::endl;
