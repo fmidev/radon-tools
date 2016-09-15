@@ -53,6 +53,8 @@ string GribIndexLoader::CreateIndex(const string& theFileName)
     namespace fs = boost::filesystem;
 
     fs::path pathname(theFileName);
+    pathname = fs::system_complete(pathname);
+
     string idxFileName;
 
     if (fs::is_directory(pathname.parent_path()))
@@ -78,7 +80,7 @@ string GribIndexLoader::CreateIndex(const string& theFileName)
     }
     else
     {
-        cout << "Parent path not specified. Absolute path needed." << endl;
+        cout << "Parent path not found." << endl;
         exit(1);
     }
 
