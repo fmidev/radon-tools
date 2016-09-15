@@ -402,7 +402,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
     g.filename = theFileName;
 
     clock_gettime(CLOCK_REALTIME, &start_ts);
-	
+
     CreateDirectory(theFileName);
 	
     /*

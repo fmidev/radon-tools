@@ -13,6 +13,8 @@ extern Options options;
 
 using namespace std;
 
+GribIndexLoader::~GribIndexLoader() {}
+
 bool GribIndexLoader::Load(const string &theInfile, const std::string &theKeys)
 {
  

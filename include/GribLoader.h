@@ -21,7 +21,7 @@ class GribLoader
 
   public:
     GribLoader();
-    ~GribLoader();
+    virtual ~GribLoader();
 
     bool Load(const std::string &theInfile);
   protected:
@@ -30,7 +30,7 @@ class GribLoader
     void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
     void CreateDirectory(const std::string& theFileName);
     bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage &message);
-    std::string GetFileName(BDAPLoader& databaseLoader, const fc_info &g);
+    virtual std::string GetFileName(BDAPLoader& databaseLoader, const fc_info &g);
     bool IsGrib(const std::string &theFileName);
 
     NFmiGrib itsReader;
