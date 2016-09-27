@@ -382,7 +382,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   double di = info.di_degrees;
   double dj = info.dj_degrees;
   
-  if (info.grtyp == "polster") {
+  if (info.grtyp == "polster" || info.grtyp == "lambert") {
     di = info.di_meters;
     dj = info.dj_meters;
   }

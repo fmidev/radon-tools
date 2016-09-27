@@ -295,6 +295,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmiGribMessage 
       g.grtyp = "polster";
       break;
 
+    case 3: // lambert
+      g.di_meters = message.XLengthInMeters();
+      g.dj_meters = message.YLengthInMeters();
+      g.grtyp = "lambert";
+      break;
     default:
       cerr << "Invalid geometry for GRIB: " << message.NormalizedGridType() << ", only latlon, rotated latlon and polster are supported" << endl;
       return false;
