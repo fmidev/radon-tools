@@ -27,6 +27,7 @@ Requires:	libfmidb >= 16.6.6
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 Requires:	python-dateutil
+Requires:	libpqxx
 
 %if %{defined suse_version}
 Requires:	libjasper

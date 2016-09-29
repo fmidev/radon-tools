@@ -382,7 +382,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
   double di = info.di_degrees;
   double dj = info.dj_degrees;
   
-  if (info.grtyp == "polster") {
+  if (info.grtyp == "polster" || info.grtyp == "lambert") {
     di = info.di_meters;
     dj = info.dj_meters;
   }
@@ -407,7 +407,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     return false;
   } 
 
-  long level_id = boost::lexical_cast<long> (l["id"]);
+  long level_id = boost::lexical_cast<long> (l["grib1Number"]);
 
   long param_id = 0;
 
@@ -417,7 +417,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
 
     if (info.ednum == 1)
     {
-      p = itsRadonDB->GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = itsRadonDB->GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator, level_id, info.lvl1_lvl2);
 
       if (p.empty())
       {
@@ -428,7 +428,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     }
     else if (info.ednum == 2)
     {
-      p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, boost::lexical_cast<long> (l["id"]), info.lvl1_lvl2);
+      p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, level_id, info.lvl1_lvl2);
 
       if (p.empty())
       {
