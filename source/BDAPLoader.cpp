@@ -402,22 +402,6 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	if (tableName.empty())
 	{
 		string as_table = "as_grid";
-		/*
-		    if (class_id == 4)
-		    {
-		      query << "SELECT "
-		          << "schema_name, table_name "
-		          << "FROM as_analysis "
-		          << "WHERE "
-		          << "producer_id = " << producer_id
-		          << " AND geometry_id = " << geometry_id
-		          << " AND to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi') BETWEEN min_analysis_time AND
-		   max_analysis_time";
-
-		      as_table = "as_analysis";
-		    }
-		    else
-		*/
 		{
 			query << "SELECT "
 			      << "schema_name, table_name "
@@ -479,23 +463,6 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << "'" << info.filename << "', "
 		      << "'" << itsHostname << "', " << forecastTypeValue << ")";
 	}
-	/*
-	  else
-	  {
-	    query << "INSERT INTO " << schema << "." << tableName
-	        << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, file_location, file_server)
-	  "
-	        << "VALUES ("
-	        << producer_id << ", "
-	        << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), "
-	        << geometry_id << ", "
-	        << param_id << ", "
-	        << level_id << ", "
-	        << info.lvl1_lvl2 << ", "
-	        << "'" << info.filename << "', "
-	        << "'" << itsHostname << "')";
-	  }
-	*/
 	try
 	{
 		if (options.dry_run)
