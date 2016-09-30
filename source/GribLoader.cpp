@@ -144,11 +144,19 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info &g, const NFmi
 
       long producerId = boost::lexical_cast<long> (prodinfo["id"]);
 
-      auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, message.LevelValue());
+      auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
+
+      if (levelinfo.empty())
+      {
+        cerr << "Level name not found for grib type " << g.levtype << endl;
+        return false;
+      }
+
+      g.levname = levelinfo["name"];
+
+      auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(producerId, g.novers, g.param, g.timeRangeIndicator, boost::lexical_cast<long> (levelinfo["id"]), message.LevelValue());
       g.parname = paraminfo["name"];
 
-      auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
-      g.levname = levelinfo["name"];
     }
 
     if (g.parname.empty())

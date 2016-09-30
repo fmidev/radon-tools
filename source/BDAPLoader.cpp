@@ -407,7 +407,7 @@ bool BDAPLoader::WriteToRadon(const fc_info &info)
     return false;
   } 
 
-  long level_id = boost::lexical_cast<long> (l["grib1Number"]);
+  long level_id = boost::lexical_cast<long> (l["id"]);
 
   long param_id = 0;
 
