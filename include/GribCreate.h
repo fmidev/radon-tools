@@ -7,32 +7,26 @@
 #ifndef GRIBCREATE_H
 #define GRIBCREATE_H
 
-#include <string>
 #include <map>
+#include <string>
 
-class GribCreate 
+class GribCreate
 {
+   public:
+	GribCreate();
+	~GribCreate();
 
-  public:
-    GribCreate();
-    ~GribCreate();
+	bool Create(const std::string &theDate, const std::string &tache);
+	std::map<std::string, std::string> GetModelType(const std::string &theGroup);
+	void DryRun(bool theDryRun);
+	bool DryRun();
 
-    bool Create(const std::string &theDate, const std::string &tache);
-    std::map<std::string, std::string> GetModelType(const std::string &theGroup); 
-    void DryRun(bool theDryRun);
-    bool DryRun();
+   private:
+	std::string itsUsername;
+	std::string itsPassword;
+	std::string itsDatabase;
 
-
-  private:
-
-    std::string itsUsername;
-    std::string itsPassword;
-    std::string itsDatabase;
-
-    bool itsDryRun;
-
-
+	bool itsDryRun;
 };
 
 #endif /* GRIBCREATE_H */
-

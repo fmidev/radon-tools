@@ -3,58 +3,58 @@
 
 #define kFloatMissing 32700.f
 
-struct fc_info 
+struct fc_info
 {
 	fc_info()
-	// COMMON FOR RADON AND NEONS
-	: ednum(0)
-	, centre(0)
-	, discipline(0)
-	, category(0)
-	, process(0)
-	, year(0)
-	, month(0)
-	, day(0)
-	, hour(0)
-	, minute(0)
-	, stepType(0)
-	, startstep(0)
-	, endstep(0)
-	, timeUnit(0)
-	, ni(0)
-	, nj(0)
-	, lat(kFloatMissing)
-	, lon(kFloatMissing)
-	, di(kFloatMissing)
-	, dj(kFloatMissing)
-	, step(0)
-	, param(0)
-	, novers(0)
-	, levtype(0)
-	, level1(0)
-	, level2(0)
-	, lvl1_lvl2(0)
-	, fcst_per(0)
-	, timeRangeIndicator(0)
-	, base_date("")
-	, parname("")
-	, levname("")
-	, grtyp("")
-	, filetype("")
-	, filename("")
-	, ncname("")
-	// RADON ONLY
-	, forecast_type_id(1) // deterministic
-	, forecast_type_value(-1)
-	, gridtype(0)
-	, lat_degrees(kFloatMissing)
-	, lon_degrees(kFloatMissing)
-	, di_degrees(kFloatMissing)
-	, dj_degrees(kFloatMissing)
-	, di_meters(kFloatMissing)
-	, dj_meters(kFloatMissing)
-	{ 
-	};
+	    // COMMON FOR RADON AND NEONS
+	    : ednum(0),
+	      centre(0),
+	      discipline(0),
+	      category(0),
+	      process(0),
+	      year(0),
+	      month(0),
+	      day(0),
+	      hour(0),
+	      minute(0),
+	      stepType(0),
+	      startstep(0),
+	      endstep(0),
+	      timeUnit(0),
+	      ni(0),
+	      nj(0),
+	      lat(kFloatMissing),
+	      lon(kFloatMissing),
+	      di(kFloatMissing),
+	      dj(kFloatMissing),
+	      step(0),
+	      param(0),
+	      novers(0),
+	      levtype(0),
+	      level1(0),
+	      level2(0),
+	      lvl1_lvl2(0),
+	      fcst_per(0),
+	      timeRangeIndicator(0),
+	      base_date(""),
+	      parname(""),
+	      levname(""),
+	      grtyp(""),
+	      filetype(""),
+	      filename(""),
+	      ncname("")
+	      // RADON ONLY
+	      ,
+	      forecast_type_id(1)  // deterministic
+	      ,
+	      forecast_type_value(-1),
+	      gridtype(0),
+	      lat_degrees(kFloatMissing),
+	      lon_degrees(kFloatMissing),
+	      di_degrees(kFloatMissing),
+	      dj_degrees(kFloatMissing),
+	      di_meters(kFloatMissing),
+	      dj_meters(kFloatMissing){};
 
 	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
@@ -93,7 +93,7 @@ struct fc_info
 	std::string filetype;
 	std::string filename;
 	std::string ncname;
-	long forecast_type_id; // from table forecast_type
+	long forecast_type_id;  // from table forecast_type
 	double forecast_type_value;
 	long gridtype;
 	double lat_degrees;

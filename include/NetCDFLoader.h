@@ -4,20 +4,18 @@
  * Used to load NetCDF data into NEONS.
  */
 
-#include <string>
 #include "BDAPLoader.h"
+#include <string>
 
 class NetCDFLoader
 {
+   public:
+	NetCDFLoader();
+	~NetCDFLoader();
 
-  public:
-    NetCDFLoader();
-    ~NetCDFLoader();
+	bool Load(const std::string &theInfile);
 
-    bool Load(const std::string &theInfile);
-
-  private:
-    long Epoch(const std::string &dateTime, const std::string &mask);
+   private:
+	long Epoch(const std::string &dateTime, const std::string &mask);
 	BDAPLoader itsDatabaseLoader;
-
 };
