@@ -33,6 +33,10 @@ bool GribIndexLoader::Load(const string &theInfile, const std::string &theKeys)
 		threadgroup[i].join();
 	}
 
+	cout << "Success with " << g_success << " fields, "
+	     << "failed with " << g_failed << " fields, "
+	     << "skipped " << g_skipped << " fields" << std::endl;
+
 	return true;
 }
 
