@@ -13,7 +13,7 @@ struct Options
 	      analysistime(""),
 	      infile(""),
 	      parameters(""),
-	      keys(""),
+	      keys("level:i,indicatorOfParameter:i,centre:i,date:i,generatingProcessIdentifier:i,indicatorOfTypeOfLevel:i,step:i,time:i"),
 	      level(""),
 	      use_level_value(false),
 	      use_inverse_level_value(false),
