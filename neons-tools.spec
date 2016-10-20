@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.9.29
+Version:        16.10.20
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -17,7 +17,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 16.9.8
 BuildRequires:  libfmidb-devel >= 16.9.8
 BuildRequires:  libfminc-devel >= 15.12.15
-BuildRequires:  grib_api-devel >= 1.15.0
+BuildRequires:  eccodes-devel
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
@@ -28,6 +28,7 @@ Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 Requires:	python-dateutil
 Requires:	libpqxx
+Requires:	eccodes
 
 %if %{defined suse_version}
 Requires:	libjasper
@@ -82,6 +83,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-1.fmi
+- Replacing grib_api with eccodes
+- Some fixes to index loading
 * Thu Sep 29 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.29-1.fmi
 - Lambert support
 * Thu Sep 15 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.9.15-1.fmi
