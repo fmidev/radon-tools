@@ -77,12 +77,11 @@ libraries.append('fminc')
 libraries.append('pqxx')
 libraries.append('odbc')
 libraries.append('clntsh')
-libraries.append('grib_api')
 libraries.append('netcdf_c++')
 
 env.Append(LIBS = libraries)
 
-env.Append(LIBS=['fmigrib','grib_api'])
+env.Append(LIBS=['fmigrib','eccodes'])
 
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
