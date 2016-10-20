@@ -8,14 +8,14 @@
 
 class GribIndexLoader : public GribLoader
 {
+   public:
+	~GribIndexLoader() override;
 
-  public:
-    ~GribIndexLoader() override;
+	bool Load(const std::string &theInfile, const std::string &theKeys);
 
-    bool Load(const std::string &theInfile, const std::string &theKeys);
-  protected:
-    std::string CreateIndex(const std::string& theFileName);
-    std::string GetFileName(BDAPLoader& databaseLoader, const fc_info &g) override;
+   protected:
+	std::string CreateIndex(const std::string &theFileName);
+	std::string GetFileName(BDAPLoader &databaseLoader, const fc_info &g) override;
 
-    std::string itsIndexFileName;
+	std::string itsIndexFileName;
 };

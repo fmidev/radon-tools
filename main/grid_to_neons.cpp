@@ -29,7 +29,7 @@ bool parse_options(int argc, char * argv[])
     ("netcdf,n",po::bool_switch(&options.netcdf),"force netcdf mode on")
     ("grib,g",po::bool_switch(&options.grib),"force grib mode on")
     ("index",po::bool_switch(&options.index),"force grib index mode on")
-    ("index-keys",po::value(&options.keys),"define keys for file indexing")
+    ("index-keys",po::value(&options.keys),"define keys for file indexing, using grib_api notation")
     ("version,V","display version number")
     ("infile,i",po::value(&options.infile),"input file")
     ("center,c",po::value(&options.center),"force center id")
@@ -127,6 +127,12 @@ bool parse_options(int argc, char * argv[])
 	  return false;
   }
   
+  if (options.grib && options.index)
+  {
+    std::cerr << "Note: option --index implies -g" << std::endl;
+    options.grib = false;
+  }
+
   return true;
 }
 
@@ -153,7 +159,7 @@ int main(int argc, char ** argv)
 
 
   }
-  else if (extension == ".grib" || extension == ".grib2" || options.grib) 
+  else if (extension == ".grib" || extension == ".grib2" || options.grib)
   {
 
     if(options.verbose)
@@ -171,7 +177,7 @@ int main(int argc, char ** argv)
   else if (options.index)
   {
     if(options.verbose)
-      std::cout << "Treating file '" << options.infile << "' as GRIB" << std::endl;
+      std::cout << "Treating file '" << options.infile << "' as GRIB using index" << std::endl;
 
     GribIndexLoader i;
 
