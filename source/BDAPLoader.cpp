@@ -406,8 +406,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << "FROM as_grid "
 		      << "WHERE "
 		      << "producer_id = " << producer_id << " AND geometry_id = " << geometry_id
-		      << " AND min_analysis_time <= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')"
-		      << " AND max_analysis_time >= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
+		      << " AND (min_analysis_time,max_analysis_time) OVERLAPS (to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi'), "
+		      << " to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi'))";
 
 		itsRadonDB->Query(query.str());
 
