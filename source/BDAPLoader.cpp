@@ -397,20 +397,17 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		param_id = boost::lexical_cast<long>(p["id"]);
 	}
 
-	string tableName = "", schema = "";
+	string tableName = "", schema = "", as_id = "";
 
 	if (tableName.empty())
 	{
-		string as_table = "as_grid";
-		{
-			query << "SELECT "
-			      << "schema_name, table_name "
-			      << "FROM as_grid "
-			      << "WHERE "
-			      << "producer_id = " << producer_id << " AND geometry_id = " << geometry_id
-			      << " AND min_analysis_time <= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')"
-			      << " AND max_analysis_time >= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
-		}
+		query << "SELECT "
+		      << "id,schema_name, table_name "
+		      << "FROM as_grid "
+		      << "WHERE "
+		      << "producer_id = " << producer_id << " AND geometry_id = " << geometry_id
+		      << " AND min_analysis_time <= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')"
+		      << " AND max_analysis_time >= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
 
 		itsRadonDB->Query(query.str());
 
@@ -420,14 +417,15 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		if (row.empty())
 		{
-			cerr << "Destination table definition not found from radon table '" << as_table << "' for geometry '"
-			     << geometry_name << "', base_date " << info.base_date << endl;
+			cerr << "Destination table definition not found from radon table 'as_grid' for geometry '" << geometry_name
+			     << "', base_date " << info.base_date << endl;
 			cerr << "The data could be too old" << endl;
 			return false;
 		}
 
-		schema = row[0];
-		tableName = row[1];
+		as_id = row[0];
+		schema = row[1];
+		tableName = row[2];
 
 		query.str("");
 	}
@@ -477,8 +475,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		query << "UPDATE as_grid "
 		      << "SET record_count = record_count+1 "
-		      << "WHERE producer_id = " << producer_id << " AND geometry_id = " << geometry_id
-		      << " AND analysis_time = to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss')";
+		      << "WHERE id = " << as_id;
 
 		if (options.dry_run)
 		{

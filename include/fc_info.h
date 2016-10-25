@@ -1,7 +1,7 @@
 #ifndef _FC_INFO_
 #define _FC_INFO_
 
-#define kFloatMissing 32700.f
+const float kFloatMissing = 32700.f;
 
 struct fc_info
 {

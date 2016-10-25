@@ -44,17 +44,23 @@ string GribIndexLoader::GetFileName(BDAPLoader &databaseLoader, const fc_info &g
 /*
  * Create an index file in the same directory as the grib file.
  * If index file already exists grib file is added to the index
- * File name must be given as absolute path.
  */
-string GribIndexLoader::CreateIndex(const string &theFileName)
+string GribIndexLoader::CreateIndex(const string &inputFileName)
 {
 	namespace fs = boost::filesystem;
 
-	fs::path pathname(theFileName);
+	fs::path pathname(inputFileName);
 	pathname = fs::system_complete(pathname);
 
 	string idxFileName;
 	string dirName = pathname.parent_path().string();
+
+	// Input file name can contain path, or not.
+	// Force full path to the file even if user has not given it,
+	// because most likely they missed it (if path is not written
+	// to index header, the grib file must be in CWD).
+
+	string fullFileName = dirName + "/" + pathname.filename().string();
 
 	if (fs::is_directory(pathname.parent_path()))
 	{
@@ -65,11 +71,11 @@ string GribIndexLoader::CreateIndex(const string &theFileName)
 		if (fs::exists(fs::path(idxFileName)))
 		{
 			itsReader.Open(idxFileName);
-			itsReader.AddFileToIndex(theFileName);
+			itsReader.AddFileToIndex(fullFileName);
 		}
 		else
 		{
-			itsReader.BuildIndex(dirName + "/" + theFileName, options.keys);
+			itsReader.BuildIndex(fullFileName, options.keys);
 		}
 		if (!options.dry_run)
 		{
