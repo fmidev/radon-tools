@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.10.20
-Release:        2.el7.fmi
+Version:        16.10.25
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct 25 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.25-1.fmi
+- SLES compatibility 
 * Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-2.fmi
 - Add full path of grib file to index header
 * Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-1.fmi
