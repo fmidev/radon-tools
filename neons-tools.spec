@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.10.25
+Version:        16.10.26
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Oct 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.26-1.fmi
+- Support level_value2 column in radon database
 * Tue Oct 25 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.25-1.fmi
 - SLES compatibility 
 * Thu Oct 20 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.20-2.fmi
