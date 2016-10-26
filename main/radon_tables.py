@@ -797,6 +797,7 @@ SELECT
 		a.level_id,
 		l.name AS level_name,
 		a.level_value,
+		a.level_value2,
 		a.forecast_period,
 		a.forecast_period + a.analysis_time AS forecast_time,
 		a.file_location,

@@ -310,9 +310,16 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 	g.base_date = ss.str();
 
 	g.level1 = message.LevelValue();
-	g.level2 = 0;
+	g.lvl1_lvl2 = g.level1;
 
-	g.lvl1_lvl2 = g.level1 + 1000 * g.level2;
+	g.level2 = -1;  // "missing"
+
+	if (g.levtype == 106 || g.levtype == 112)
+	{
+		g.level2 = message.LevelValue2();
+
+		if (g.level2 == INT_MAX) g.level2 = -1;
+	}
 
 	g.stepType = message.TimeRangeIndicator();
 	g.timeUnit = message.UnitOfTimeRange();
@@ -474,10 +481,15 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 			        boost::lexical_cast<string>(g.forecast_type_value);
 		}
 
-		printf(
-		    "Thread %d: Parameter %s at level %s/%ld %s write time=%ld, database time=%ld, other=%ld, total=%ld ms\n",
-		    threadId, g.parname.c_str(), g.levname.c_str(), g.lvl1_lvl2, ftype.c_str(), writeTime, databaseTime,
-		    otherTime, messageTime);
+		string lvl = boost::lexical_cast<string>(g.level1);
+		if (g.level2 != -1)
+		{
+			lvl += "-" + boost::lexical_cast<string>(g.level2);
+		}
+
+		printf("Thread %d: Parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, total=%ld ms\n",
+		       threadId, g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime, databaseTime,
+		       otherTime, messageTime);
 	}
 }
 

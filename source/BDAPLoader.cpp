@@ -406,8 +406,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << "FROM as_grid "
 		      << "WHERE "
 		      << "producer_id = " << producer_id << " AND geometry_id = " << geometry_id
-		      << " AND min_analysis_time <= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')"
-		      << " AND max_analysis_time >= to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi')";
+		      << " AND (min_analysis_time,max_analysis_time) OVERLAPS (to_timestamp('" << info.base_date
+		      << "', 'yyyymmddhh24mi'),"
+		      << " to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi'))";
 
 		itsRadonDB->Query(query.str());
 
@@ -449,18 +450,17 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	string forecastTypeValue =
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
 
-	if (class_id == 1)
-	{
-		query << "INSERT INTO " << schema << "." << tableName
-		      << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, "
-		         "forecast_type_id, file_location, file_server, forecast_type_value) "
-		      << "VALUES (" << producer_id << ", "
-		      << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), " << geometry_id << ", " << param_id
-		      << ", " << level_id << ", " << info.lvl1_lvl2 << ", " << info.fcst_per << interval << ", "
-		      << info.forecast_type_id << ", "
-		      << "'" << info.filename << "', "
-		      << "'" << itsHostname << "', " << forecastTypeValue << ")";
-	}
+	query
+	    << "INSERT INTO " << schema << "." << tableName
+	    << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, level_value2, forecast_period, "
+	       "forecast_type_id, file_location, file_server, forecast_type_value) "
+	    << "VALUES (" << producer_id << ", "
+	    << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), " << geometry_id << ", " << param_id << ", "
+	    << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
+	    << info.forecast_type_id << ", "
+	    << "'" << info.filename << "', "
+	    << "'" << itsHostname << "', " << forecastTypeValue << ")";
+
 	try
 	{
 		if (options.dry_run)
@@ -499,13 +499,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << " producer_id = " << producer_id << " AND analysis_time = to_timestamp('" << info.base_date
 		      << "', 'yyyymmddhh24miss')"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
-		      << " AND level_id = " << level_id << " AND level_value = " << info.lvl1_lvl2;
-
-		if (class_id == 1)
-		{
-			query << " AND forecast_period = interval '1 hour' * " << info.fcst_per
-			      << " AND forecast_type_id = " << info.forecast_type_id;
-		}
+		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
+		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
+		      << " AND forecast_type_id = " << info.forecast_type_id;
 
 		try
 		{
