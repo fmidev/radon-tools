@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.10.26
+Version:        16.11.8
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -23,7 +23,7 @@ BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 16.8.15
-Requires:	libfmidb >= 16.6.6
+Requires:	libfmidb >= 16.8.11
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Nov  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.8-1.fmi
+- Changes in fmidb
 * Wed Oct 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.26-1.fmi
 - Support level_value2 column in radon database
 * Tue Oct 25 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.25-1.fmi
