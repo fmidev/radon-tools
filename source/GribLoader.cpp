@@ -150,7 +150,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 			g.levname = levelinfo["name"];
 
 			auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
-			    producerId, g.novers, g.param, g.timeRangeIndicator, boost::lexical_cast<long>(levelinfo["id"]),
+			    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype,
 			    message.LevelValue());
 			g.parname = paraminfo["name"];
 		}

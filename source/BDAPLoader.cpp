@@ -168,8 +168,9 @@ bool BDAPLoader::WriteAS(const fc_info& info)
 
 		if (row.empty())
 		{
-			cerr << "Data set definition not found from NEONS table 'as_grid' for geometry '" << itsGeomName
-			     << "', base_date " << info.base_date << endl;
+			cerr << "Data set definition not found from NEONS table 'as_grid' for "
+			        "geometry '"
+			     << itsGeomName << "', base_date " << info.base_date << endl;
 			cerr << "The data could be too old" << endl;
 			return false;
 		}
@@ -206,8 +207,8 @@ bool BDAPLoader::WriteAS(const fc_info& info)
 		eps_specifier += "_" + boost::lexical_cast<string>(info.forecast_type_value);
 	}
 
-	query << "INSERT INTO " << itsTableName
-	      << " (dset_id, parm_name, lvl_type, lvl1_lvl2, fcst_per, eps_specifier, file_location, file_server) "
+	query << "INSERT INTO " << itsTableName << " (dset_id, parm_name, lvl_type, lvl1_lvl2, fcst_per, "
+	                                           "eps_specifier, file_location, file_server) "
 	      << "VALUES (" << itsDsetId << ", "
 	      << "'" << info.parname << "', "
 	      << "'" << info.levname << "', " << info.lvl1_lvl2 << ", " << info.fcst_per << ", "
@@ -228,7 +229,8 @@ bool BDAPLoader::WriteAS(const fc_info& info)
 			// ORA-00001: unique constraint violated
 
 			/*
-			 * Primary key: DSET_ID, PARM_NAME, LVL_TYPE, LVL1_LVL2, FCST_PER, FILE_LOCATION, FILE_SERVER
+			 * Primary key: DSET_ID, PARM_NAME, LVL_TYPE, LVL1_LVL2, FCST_PER,
+			 * FILE_LOCATION, FILE_SERVER
 			 */
 
 			query.str("");
@@ -359,7 +361,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		if (info.ednum == 1)
 		{
 			p = itsRadonDB->GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator,
-			                                      level_id, info.lvl1_lvl2);
+			                                      info.levtype, info.lvl1_lvl2);
 
 			if (p.empty())
 			{
@@ -371,7 +373,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		}
 		else if (info.ednum == 2)
 		{
-			p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, level_id,
+			p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, info.levtype,
 			                                      info.lvl1_lvl2);
 
 			if (p.empty())
@@ -384,8 +386,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		}
 		else if (info.ednum == 3)
 		{
-			p = itsRadonDB->GetParameterFromNetCDF(producer_id, info.ncname, boost::lexical_cast<long>(l["id"]),
-			                                       info.lvl1_lvl2);
+			p = itsRadonDB->GetParameterFromNetCDF(producer_id, info.ncname, level_id, info.lvl1_lvl2);
 
 			if (p.empty())
 			{
@@ -418,8 +419,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		if (row.empty())
 		{
-			cerr << "Destination table definition not found from radon table 'as_grid' for geometry '" << geometry_name
-			     << "', base_date " << info.base_date << endl;
+			cerr << "Destination table definition not found from radon table "
+			        "'as_grid' for geometry '"
+			     << geometry_name << "', base_date " << info.base_date << endl;
 			cerr << "The data could be too old" << endl;
 			return false;
 		}
@@ -450,16 +452,16 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	string forecastTypeValue =
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
 
-	query
-	    << "INSERT INTO " << schema << "." << tableName
-	    << " (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, level_value2, forecast_period, "
-	       "forecast_type_id, file_location, file_server, forecast_type_value) "
-	    << "VALUES (" << producer_id << ", "
-	    << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), " << geometry_id << ", " << param_id << ", "
-	    << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
-	    << info.forecast_type_id << ", "
-	    << "'" << info.filename << "', "
-	    << "'" << itsHostname << "', " << forecastTypeValue << ")";
+	query << "INSERT INTO " << schema << "." << tableName
+	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
+	         "level_value, level_value2, forecast_period, "
+	         "forecast_type_id, file_location, file_server, forecast_type_value) "
+	      << "VALUES (" << producer_id << ", "
+	      << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), " << geometry_id << ", " << param_id << ", "
+	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
+	      << info.forecast_type_id << ", "
+	      << "'" << info.filename << "', "
+	      << "'" << itsHostname << "', " << forecastTypeValue << ")";
 
 	try
 	{
@@ -490,7 +492,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	{
 		query.str("");
 
-		// PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period,
+		// PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id,
+		// level_value, forecast_period,
 		// forecast_type_id)
 
 		query << "UPDATE " << schema << "." << tableName << " SET file_location = '" << info.filename << "', "
