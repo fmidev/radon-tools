@@ -64,19 +64,24 @@ string GribIndexLoader::CreateIndex(const string &inputFileName)
 
 	if (fs::is_directory(pathname.parent_path()))
 	{
-		idxFileName = dirName + "/" + pathname.stem().string() + ".idx";
-
-		if (options.verbose) cout << "Creating Index file " << idxFileName << endl;
+		idxFileName = dirName + "/" + pathname.filename().string() + ".idx";
 
 		if (fs::exists(fs::path(idxFileName)))
 		{
+			if (options.verbose)
+				cout << "Index file " << idxFileName << " already exists. Adding file " << fullFileName << " to index."
+				     << endl;
+
 			itsReader.Open(idxFileName);
 			itsReader.AddFileToIndex(fullFileName);
 		}
 		else
 		{
+			if (options.verbose) cout << "Creating Index file " << idxFileName << endl;
+
 			itsReader.BuildIndex(fullFileName, options.keys);
 		}
+
 		if (!options.dry_run)
 		{
 			itsReader.WriteIndex(idxFileName);
