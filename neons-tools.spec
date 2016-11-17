@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.11.8
+Version:        16.11.17
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Nov 17 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.17-1.fmi
+- Changes to index loading
 * Tue Nov  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.8-1.fmi
 - Changes in fmidb
 * Wed Oct 26 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.10.26-1.fmi
