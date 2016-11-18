@@ -93,14 +93,6 @@ int main(int argc, char ** argv)
   }
   else 
   {
-      uid_t uid = getuid();
-
-      if (uid != 1459) // weto
-      {
-        std::cerr << "This program must be run as user weto." << std::endl;
-        return 1;
-      }
-
       std::cout << "Creating tables for date: " << options.date << " and hour: " << options.hour << "\n";
       GribCreate g;
       g.DryRun(options.dry_run);
