@@ -483,20 +483,6 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		{
 			itsRadonDB->Execute(query.str());
 		}
-		query.str("");
-
-		query << "UPDATE as_grid "
-		      << "SET record_count = record_count+1 "
-		      << "WHERE id = " << as_id;
-
-		if (options.dry_run)
-		{
-			cout << query.str() << endl;
-		}
-		else
-		{
-			itsRadonDB->Execute(query.str());
-		}
 	}
 	catch (const pqxx::unique_violation& e)
 	{
