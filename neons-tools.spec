@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.11.17
+Version:        16.12.9
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -23,7 +23,7 @@ BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 16.8.15
-Requires:	libfmidb >= 16.8.11
+Requires:	libfmidb >= 16.12.9
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Dec  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.12.9-1.fmi
+- Changes in fmidb
 * Thu Nov 17 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.17-1.fmi
 - Changes to index loading
 * Tue Nov  8 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.8-1.fmi
