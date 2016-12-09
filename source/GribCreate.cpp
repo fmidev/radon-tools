@@ -16,7 +16,7 @@ GribCreate::GribCreate()
 	char *dbName;
 
 	if ((dbName = getenv("NEONS_DB")) != NULL) itsDatabase = static_cast<string>(dbName);
-
+	
 	NFmiNeonsDB::Instance().Connect(itsUsername, itsPassword, itsDatabase);
 }
 

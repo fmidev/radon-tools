@@ -73,6 +73,12 @@ Load previ to neons.
 					default="wetodb",
 					help="Database username")
 
+
+	databasegroup.add_option("--password",
+				action="store",
+				type="string",
+				help="Database password")
+
 	parser.add_option_group(databasegroup)
 
 	(options, arguments) = parser.parse_args()
@@ -316,9 +322,7 @@ if __name__ == '__main__':
 
 	print "Connecting to database %s" % (options.database)
 
-	password = "3loHRgdio"
-
-	conn = cx_Oracle.connect(options.user, password, options.database)
+	conn = cx_Oracle.connect(options.user, options.password, options.database)
 
 	conn.autocommit = 0
 

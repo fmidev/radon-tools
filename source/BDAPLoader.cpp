@@ -12,11 +12,21 @@ using namespace std;
 extern Options options;
 once_flag oflag;
 
-BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsPassword("3loHRgdio"), itsDatabase("neons"), base(0)
+BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0)
 {
 	char* dbName;
 
 	if ((dbName = getenv("NEONS_DB")) != NULL) itsDatabase = static_cast<string>(dbName);
+
+	const auto pw = getenv("RADON_WETODB_PASSWORD");
+	if (pw)
+	{
+		itsPassword = string(pw);
+	}
+	else
+	{
+		throw;
+	}
 
 	call_once(oflag, &BDAPLoader::InitPool, this, itsUsername, itsPassword, itsDatabase);
 
@@ -465,20 +475,6 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 	try
 	{
-		if (options.dry_run)
-		{
-			cout << query.str() << endl;
-		}
-		else
-		{
-			itsRadonDB->Execute(query.str());
-		}
-		query.str("");
-
-		query << "UPDATE as_grid "
-		      << "SET record_count = record_count+1 "
-		      << "WHERE id = " << as_id;
-
 		if (options.dry_run)
 		{
 			cout << query.str() << endl;

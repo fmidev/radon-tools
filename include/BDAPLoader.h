@@ -13,19 +13,19 @@ class BDAPLoader
 	BDAPLoader();
 	~BDAPLoader();
 
-	BDAPLoader(const BDAPLoader& other) = delete;
-	BDAPLoader& operator=(const BDAPLoader& other) = delete;
+	BDAPLoader(const BDAPLoader &other) = delete;
+	BDAPLoader &operator=(const BDAPLoader &other) = delete;
 
-	std::string REFFileName(const fc_info& info);
+	std::string REFFileName(const fc_info &info);
 
-	bool WriteAS(const fc_info& info);
-	bool WriteToRadon(const fc_info& info);
+	bool WriteAS(const fc_info &info);
+	bool WriteToRadon(const fc_info &info);
 
-	NFmiNeonsDB& NeonsDB() const;
-	NFmiRadonDB& RadonDB() const;
+	NFmiNeonsDB &NeonsDB() const;
+	NFmiRadonDB &RadonDB() const;
 
    private:
-	void InitPool(const std::string& username, const std::string& password, const std::string& database);
+	void InitPool(const std::string &username, const std::string &password, const std::string &database);
 
 	std::string itsUsername;
 	std::string itsPassword;
@@ -39,7 +39,7 @@ class BDAPLoader
 	bool ReadREFEnvironment();
 	void Init();
 
-	char* base;
+	char *base;
 	std::string itsHostname;
 
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;

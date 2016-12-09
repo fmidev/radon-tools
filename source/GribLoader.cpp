@@ -150,8 +150,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 			g.levname = levelinfo["name"];
 
 			auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
-			    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype,
-			    message.LevelValue());
+			    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, message.LevelValue());
 			g.parname = paraminfo["name"];
 		}
 
@@ -282,7 +281,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 			g.grtyp = "rll";
 			break;
 
-		case 5:  // ps, ei tarkoita puoluetta
+		case 5:  // ps
 			g.di = message.XLengthInMeters();
 			g.dj = message.YLengthInMeters();
 			g.di_meters = message.XLengthInMeters();
