@@ -48,9 +48,6 @@ bool parse_options(int argc, char * argv[])
     ("radon,R", po::bool_switch(&radon_switch), "use only radon database")
     ;
 
-  // Examples
-  // bdap_load_file_ng -a 2012062600 -p 151 --use-inverse-level-value -L HEIGHT -v file.nc
-
   po::positional_options_description p;
   p.add("infile",1);
 
