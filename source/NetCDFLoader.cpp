@@ -10,6 +10,7 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <ctime>
 #include <iomanip>
 #include <sstream>
@@ -432,6 +433,10 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 	char epoch[40];
 	long e;
 
+	boost::regex r1("seconds since ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}) UTC");
+
+	boost::smatch sm;
+
 	if (mask == "%Y-%m-%d %H:%M:%S" || mask == "%Y%m%d%H%M%S" || mask == "%Y%m%d%H%M")
 	{
 		strptime(dateTime.c_str(), mask.c_str(), &t);
@@ -521,9 +526,20 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 			exit(1);
 		}
 	}
+	else if (boost::regex_match(mask, sm, r1))
+	{
+		std::stringstream ss;
+		ss << sm[1] << "-" << sm[2] << "-" << sm[3] << " " << sm[4] << " " << sm[5] << " " << sm[6];
+
+		tm stime;
+		strptime(ss.str().c_str(), "%Y-%m-%d %H:%M:%S", &stime);
+		long offset = static_cast<long>(timegm(&stime));
+
+		e = offset + boost::lexical_cast<long>(dateTime);
+	}
 	else
 	{
-		cerr << "Invalid time mask: " << mask << endl;
+		cerr << "Invalid time mask: '" << mask << "'" << endl;
 		exit(1);
 	}
 
