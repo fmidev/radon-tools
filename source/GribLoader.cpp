@@ -131,7 +131,8 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 			{
 				if (options.verbose)
 				{
-					cerr << "FMI producer id not found for grib producer " << g.centre << " " << g.process << endl;
+					cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
+					     << " type " << producer_type << endl;
 				}
 
 				return false;
@@ -292,8 +293,14 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 		case 3:  // lambert
 			g.di_meters = message.XLengthInMeters();
 			g.dj_meters = message.YLengthInMeters();
-			g.grtyp = "lambert";
+			g.grtyp = "lcc";
 			break;
+
+		case 4: // reduced gg
+			g.dj_degrees = message.jDirectionIncrement();
+			g.grtyp = "rgg";
+			break;
+
 		default:
 			cerr << "Invalid geometry for GRIB: " << message.NormalizedGridType()
 			     << ", only latlon, rotated latlon and polster are supported" << endl;
