@@ -14,11 +14,8 @@ once_flag oflag;
 
 BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0)
 {
-	char* dbName;
-
-	if ((dbName = getenv("NEONS_DB")) != NULL) itsDatabase = static_cast<string>(dbName);
-
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
+
 	if (pw)
 	{
 		itsPassword = string(pw);
