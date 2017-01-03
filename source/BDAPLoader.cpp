@@ -533,8 +533,11 @@ bool BDAPLoader::ReadREFEnvironment()
 {
 	if ((base = getenv("NEONS_REF_BASE")) == NULL)
 	{
-		cerr << "Environment variable 'NEONS_REF_BASE' not set" << endl;
-		return false;
+		if ((base = getenv("RADON_REF_BASE")) == NULL)
+		{
+			cerr << "Environment variable 'NEONS_REF_BASE' or 'RADON_REF_BASE' not set" << endl;
+			return false;
+		}
 	}
 
 	return true;
