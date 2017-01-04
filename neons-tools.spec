@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        16.12.9
+Version:        17.1.4
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,15 +14,15 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 16.9.8
-BuildRequires:  libfmidb-devel >= 16.9.8
+BuildRequires:  libfmigrib-devel >= 16.11.4
+BuildRequires:  libfmidb-devel >= 16.12.9
 BuildRequires:  libfminc-devel >= 15.12.15
 BuildRequires:  eccodes-devel
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 16.8.15
+Requires:	libfmigrib >= 16.11.4
 Requires:	libfmidb >= 16.12.9
 Requires:	libfminc >= 15.12.15
 Requires:	netcdf-cxx
@@ -46,7 +46,6 @@ Provides:       previ_to_neons.py
 %endif
 
 Provides:	grid_to_neons
-Provides:	create_grid_tables
 
 AutoReqProv: no
 
@@ -74,7 +73,6 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_neons
-%{_bindir}/create_grid_tables
 
 %if %{undefined suse_version}
 %{_bindir}/radon_tables.py
@@ -83,6 +81,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jan  4 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.4-1.fmi
+- New time mask for netcdf data
+- General code cleanup
 * Fri Dec  9 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.12.9-1.fmi
 - Changes in fmidb
 * Thu Nov 17 2016 Mikko Partio <mikko.partio@fmi.fi> - 16.11.17-1.fmi
