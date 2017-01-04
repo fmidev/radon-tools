@@ -14,11 +14,8 @@ once_flag oflag;
 
 BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0)
 {
-	char* dbName;
-
-	if ((dbName = getenv("NEONS_DB")) != NULL) itsDatabase = static_cast<string>(dbName);
-
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
+
 	if (pw)
 	{
 		itsPassword = string(pw);
@@ -312,7 +309,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		if (prodInfo.size() == 0)
 		{
 			cerr << "Producer information not found from radon for centre " << info.centre << ", process "
-			     << info.process << endl;
+			     << info.process << " producer type " << type_id << endl;
 			return false;
 		}
 
@@ -333,7 +330,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	double di = info.di_degrees;
 	double dj = info.dj_degrees;
 
-	if (info.grtyp == "polster" || info.grtyp == "lambert")
+	if (info.grtyp == "polster" || info.grtyp == "lcc")
 	{
 		di = info.di_meters;
 		dj = info.dj_meters;
@@ -533,8 +530,11 @@ bool BDAPLoader::ReadREFEnvironment()
 {
 	if ((base = getenv("NEONS_REF_BASE")) == NULL)
 	{
-		cerr << "Environment variable 'NEONS_REF_BASE' not set" << endl;
-		return false;
+		if ((base = getenv("RADON_REF_BASE")) == NULL)
+		{
+			cerr << "Environment variable 'NEONS_REF_BASE' or 'RADON_REF_BASE' not set" << endl;
+			return false;
+		}
 	}
 
 	return true;

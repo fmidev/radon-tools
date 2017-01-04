@@ -8,7 +8,6 @@ import csv
 import psycopg2
 import bunch
 import StringIO
-import getpass
 import os
 
 from bunch import Bunch
@@ -778,9 +777,10 @@ if __name__ == '__main__':
 	password = None
 
 	try:
-		password = os.environ["RADON_PASSWORD"]
+		password = os.environ["RADON_%s_PASSWORD" % (options.user.upper())]
 	except:
-		password = getpass.getpass()
+		print "password should be given with env variable RADON_%s_PASSWORD" % (options.user.upper())
+		sys.exit(1)
 
 	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options.user, password, options.host, options.database, options.port)
 	conn = psycopg2.connect(dsn)

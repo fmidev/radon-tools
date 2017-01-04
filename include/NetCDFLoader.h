@@ -1,9 +1,3 @@
-/*
- * class NetCDFLoader
- *
- * Used to load NetCDF data into NEONS.
- */
-
 #include "BDAPLoader.h"
 #include <string>
 

@@ -1,9 +1,3 @@
-/*
- * class GribCreate
- *
- * Used to load grib data (edition 1 or 2) into NEONS.
- */
-
 #ifndef GRIBCREATE_H
 #define GRIBCREATE_H
 

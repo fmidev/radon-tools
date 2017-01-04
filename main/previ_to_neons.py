@@ -322,7 +322,16 @@ if __name__ == '__main__':
 
 	print "Connecting to database %s" % (options.database)
 
-	conn = cx_Oracle.connect(options.user, options.password, options.database)
+	password = options.password
+
+	if password is None:
+		try:
+			password = os.environ["NEONS_%s_PASSWORD" %(options.user.upper())]
+		except:
+			print "password should be given with env variable NEONS_%s_PASSWORD" % (options.user.upper())
+			sys.exit(1)
+
+	conn = cx_Oracle.connect(options.user, password, options.database)
 
 	conn.autocommit = 0
 
