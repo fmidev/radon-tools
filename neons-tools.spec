@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.1.4
+Version:        17.1.17
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Jan 17 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.17-1.fmi
+- New time mask for netcdf data
 * Wed Jan  4 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.4-1.fmi
 - New time mask for netcdf data
 - General code cleanup
