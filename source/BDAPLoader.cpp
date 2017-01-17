@@ -51,6 +51,7 @@ void BDAPLoader::InitPool(const string& username, const string& password, const 
 		NFmiRadonDBPool::Instance()->Username(username);
 		NFmiRadonDBPool::Instance()->Password(password);
 		NFmiRadonDBPool::Instance()->Database("radon");
+		NFmiRadonDBPool::Instance()->Hostname("vorlon");
 		NFmiRadonDBPool::Instance()->MaxWorkers(8);
 	}
 	catch (int e)
