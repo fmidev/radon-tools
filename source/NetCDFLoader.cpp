@@ -189,7 +189,31 @@ bool NetCDFLoader::Load(const string &theInfile)
 
 	for (reader.ResetTime(); reader.NextTime();)
 	{
-		long fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<float>()), reader.TimeUnit());
+			long fctimeEpoch;
+
+                        switch (reader.TypeT())
+                        {
+                                case ncFloat:
+					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<float>()), reader.TimeUnit());
+                                        break;
+
+                                case ncDouble:
+					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<double>()), reader.TimeUnit());
+                                        break;
+
+                                case ncShort:
+					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<short>()), reader.TimeUnit());
+                                        break;
+
+                                case ncInt:
+					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<int>()), reader.TimeUnit());
+                                        break;
+                                case ncChar:
+                                case ncByte:
+                                case ncNoType:
+                                default:
+                                        cout << "NcType not supported for time" << endl;
+                        }
 
 		float fctime = (fctimeEpoch - atimeEpoch) / 3600;
 
