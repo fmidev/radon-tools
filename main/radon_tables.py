@@ -701,7 +701,7 @@ def DropTables(options):
 			if as_table == 'as_grid':
 				
 				if options.unlink:
-					query = "SELECT file_location FROM %s.%s " % (element.schema_name, partition_name,)
+					query = "SELECT file_location FROM %s.%s " % (schema_name, partition_name,)
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
 					if options.show_sql:
@@ -725,7 +725,10 @@ def DropTables(options):
 					print "%s %s" % (query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
 
 				if not options.dry_run:
-					cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+					try:
+						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+					except psycopg2.ProgrammingError,e:
+						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time BETWEEN %s AND %s"
