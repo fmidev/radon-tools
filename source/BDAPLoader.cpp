@@ -22,7 +22,7 @@ BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0)
 	}
 	else
 	{
-		throw;
+		throw runtime_error("Password must be specified with environment variable 'RADON_WETODB_PASSWORD'");
 	}
 
 	call_once(oflag, &BDAPLoader::InitPool, this, itsUsername, itsPassword, itsDatabase);

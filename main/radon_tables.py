@@ -593,7 +593,6 @@ BEGIN
 					period_start = datetime.datetime.strptime(period, '%Y%m')
 					delta = relativedelta(months=+1)
 
-
 				elif element.partitioning_period == 'DAILY':
 					period = partition_name[-8:]
 					period_start = datetime.datetime.strptime(period, '%Y%m%d')
@@ -625,6 +624,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 		print query
 	
 	if not options.dry_run:
+		cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
 		cur.execute(query)
 
 	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s.%s" % (table_name, schema_name, table_name)
@@ -701,7 +701,7 @@ def DropTables(options):
 			if as_table == 'as_grid':
 				
 				if options.unlink:
-					query = "SELECT file_location FROM %s.%s " % (element.schema_name, partition_name,)
+					query = "SELECT file_location FROM %s.%s " % (schema_name, partition_name,)
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
 					if options.show_sql:
@@ -725,7 +725,10 @@ def DropTables(options):
 					print "%s %s" % (query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
 
 				if not options.dry_run:
-					cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+					try:
+						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+					except psycopg2.ProgrammingError,e:
+						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time BETWEEN %s AND %s"
@@ -774,6 +777,9 @@ def DropTables(options):
 
 			for definition in defs:
 				CreatePartitioningTrigger(options, producer, definition)
+
+				if not options.dry_run:
+					conn.commit()
 
 		if not options.dry_run:
 			conn.commit()
