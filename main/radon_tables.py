@@ -593,7 +593,6 @@ BEGIN
 					period_start = datetime.datetime.strptime(period, '%Y%m')
 					delta = relativedelta(months=+1)
 
-
 				elif element.partitioning_period == 'DAILY':
 					period = partition_name[-8:]
 					period_start = datetime.datetime.strptime(period, '%Y%m%d')
@@ -625,6 +624,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 		print query
 	
 	if not options.dry_run:
+		cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
 		cur.execute(query)
 
 	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s.%s" % (table_name, schema_name, table_name)
@@ -777,6 +777,9 @@ def DropTables(options):
 
 			for definition in defs:
 				CreatePartitioningTrigger(options, producer, definition)
+
+				if not options.dry_run:
+					conn.commit()
 
 		if not options.dry_run:
 			conn.commit()
