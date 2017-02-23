@@ -213,6 +213,7 @@ bool NetCDFLoader::Load(const string &theInfile)
                                 case ncNoType:
                                 default:
                                         cout << "NcType not supported for time" << endl;
+					exit(1);
                         }
 
 		float fctime = (fctimeEpoch - atimeEpoch) / 3600;
