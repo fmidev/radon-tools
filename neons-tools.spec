@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.2.22
+Version:        17.2.27
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -16,7 +16,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 16.11.4
 BuildRequires:  libfmidb-devel >= 16.12.9
-BuildRequires:  libfminc-devel >= 15.12.15
+BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
@@ -24,7 +24,7 @@ Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 16.11.4
 Requires:	libfmidb >= 16.12.9
-Requires:	libfminc >= 15.12.15
+Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
 Requires:	python-dateutil
 Requires:	libpqxx
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Feb 27 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.27-1.fmi
+- New fminc
 * Wed Feb 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.22-1.fmi
 - Explicit locking for radon_tables.py
 * Tue Jan 17 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.1.17-1.fmi
