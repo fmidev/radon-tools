@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.2.27
+Version:        17.3.9
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -81,6 +81,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Mar  9 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.3.9-1.fmi
+- Fix SQL query for radon update with ensemble members
 * Mon Feb 27 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.27-1.fmi
 - New fminc
 * Wed Feb 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.22-1.fmi
