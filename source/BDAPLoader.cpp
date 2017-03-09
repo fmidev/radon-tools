@@ -498,7 +498,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
-		      << " AND forecast_type_id = " << info.forecast_type_id;
+		      << " AND forecast_type_id = " << info.forecast_type_id
+		      << " AND forecast_type_value = " << info.forecast_type_value;
 
 		try
 		{
