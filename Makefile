@@ -46,6 +46,7 @@ install:
 		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \
 		$(INSTALL_PROG) main/previ_to_radon.py $(bindir) ; \
 		$(INSTALL_PROG) main/previ_to_neons.py $(bindir) ; \
+		$(INSTALL_PROG) main/geom_to_radon.py $(bindir) ; \
 	fi;
 
 test:	debug

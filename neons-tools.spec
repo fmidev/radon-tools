@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.3.9
+Version:        17.4.6
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,16 +14,16 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 16.11.4
-BuildRequires:  libfmidb-devel >= 16.12.9
+BuildRequires:  libfmigrib-devel >= 17.4.6
+BuildRequires:  libfmidb-devel >= 17.4.6
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  boost-devel >= 1.55
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 16.11.4
-Requires:	libfmidb >= 16.12.9
+Requires:	libfmigrib >= 17.4.6
+Requires:	libfmidb >= 17.4.6
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -43,6 +43,7 @@ Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:       previ_to_neons.py
+Provides:	geom_to_radon.py
 %endif
 
 Provides:	grid_to_neons
@@ -78,9 +79,14 @@ rm -rf %{buildroot}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
 %{_bindir}/previ_to_neons.py
+%{_bindir}/geom_to_radon.py
 %endif
 
 %changelog
+* Thu Apr  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.4.6-1.fmi
+- Add geom_to_radon.py
+- New fmigrib
+- New fmidb
 * Thu Mar  9 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.3.9-1.fmi
 - Fix SQL query for radon update with ensemble members
 * Mon Feb 27 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.2.27-1.fmi
