@@ -731,7 +731,7 @@ def DropTables(options):
 						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
 
 			elif as_table == 'as_previ':
-				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE previ_meta_id IN (SELECT id FROM previ_meta WHERE producer_id = %s) AND analysis_time BETWEEN %s AND %s"
+				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
 				args = (producer.id, min_analysis_time, max_analysis_time)
 
 				if options.show_sql:
@@ -834,23 +834,24 @@ WHERE
 		query = """
 CREATE OR REPLACE VIEW public.%s_v AS
 SELECT
-		m.producer_id,
+		a.producer_id,
 		f.name AS producer_name,
 		a.analysis_time,
-		m.station_id,
-		st_x(m.position) AS longitude,
-		st_y(m.position) AS latitude,
-		m.param_id,
+		a.station_id,
+		st_x(s.position) AS longitude,
+		st_y(s.position) AS latitude,
+		a.param_id,
 		p.name AS param_name,
-		m.level_id,
+		a.level_id,
 		l.name AS level_name,
-		m.level_value,
+		a.level_value,
+		a.level_value2,
 		a.forecast_period,
 		a.forecast_period + a.analysis_time AS forecast_time,
-		a.value,
-		m.forecast_type_id,
+		a.forecast_type_id,
 		t.name AS forecast_type_name,
-		m.forecast_type_value,
+		a.forecast_type_value,
+		a.value,
 		a.last_updater,
 		a.last_updated
 FROM
@@ -858,18 +859,18 @@ FROM
 		fmi_producer f,
 		level l,
 		param p,
-		previ_meta m,
-		forecast_type t
+		forecast_type t,
+		station s
 WHERE
-		a.previ_meta_id = m.id
+		a.producer_id = f.id
 		AND
-		m.producer_id = f.id
+		a.level_id = l.id
 		AND
-		m.level_id = l.id
-		AND
-		m.param_id = p.id
+		a.param_id = p.id
 		AND 
-		m.forecast_type_id = t.id
+		a.forecast_type_id = t.id
+		AND
+		s.id = a.station_id
 		""" % (element.table_name, element.schema_name, element.table_name)
 
 	if options.show_sql:
@@ -964,11 +965,11 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 		if producerinfo.class_id == 1:
 			as_table = 'as_grid'
-			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, forecast_period, forecast_type_id, forecast_type_value)" % (element.schema_name, partition_name, partition_name)
+			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, geometry_id, param_id, level_id, level_value, level_value2, forecast_period, forecast_type_id, forecast_type_value)" % (element.schema_name, partition_name, partition_name)
 
 		elif producerinfo.class_id == 3:
 			as_table = 'as_previ'
-			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (previ_meta_id, analysis_time, forecast_period)" % (element.schema_name, partition_name, partition_name)
+			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, station_id, param_id, level_id, level_value, level_value2, forecast_period, forecast_type_id, forecast_type_value)" % (element.schema_name, partition_name, partition_name)
 
 		if options.show_sql:
 			print query
