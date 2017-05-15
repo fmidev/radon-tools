@@ -160,7 +160,7 @@ WHERE
 	row = cur.fetchone()
 
 	if row == None or len(row) == 0:
-		error = "Table not found for producer_id = %s, analysis_time = %s!" % (producer_id,analysis_time)
+		error = "Table not found for producer_id = %s, analysis_time = %s" % (producer_id,analysis_time)
 		raise ValueError(error)
 
 	tableInfo = Bunch()
@@ -188,13 +188,12 @@ SELECT
 FROM 
 	station_network_mapping
 WHERE
-	network_id = %s AND local_station_id = '134254'"""
+	network_id = %s"""
 
 	if options.show_sql:
 		print "%s %s" % (query, network_id)
 
-	if not options.dry_run:
-		cur.execute(query, (network_id,))
+	cur.execute(query, (network_id,))
 
 	rows = cur.fetchall()
 
