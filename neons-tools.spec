@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.4.6
+Version:        17.5.15
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon May 15 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.5.15-1.fmi
+- New CSV format and previ database table layout
 * Thu Apr  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.4.6-1.fmi
 - Add geom_to_radon.py
 - New fmigrib
