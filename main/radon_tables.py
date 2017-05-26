@@ -993,6 +993,20 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		if not options.dry_run:
 			cur.execute(query)
 
+		# By default postgres analyzes tables after 50 tuples have been changed
+		# (https://www.postgresql.org/docs/9.5/static/runtime-config-autovacuum.html)
+
+		# Change it to 1 because we depend on the statistics when determining what is the
+		# latest forecast.
+
+		query = "ALTER TABLE %s.%s SET (autovacuum_analyze_threshold = 1)" % (element.schema_name, partition_name)
+
+		if options.show_sql:
+			print query
+
+		if not options.dry_run:
+			cur.execute(query)
+
 	# Delete time type depends on partitioning type; for 'ANALYSISTIME' it's 
 	# analysis_time + retention, for others its now + retention
 
