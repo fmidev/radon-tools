@@ -42,6 +42,8 @@ class GribLoader
 	std::atomic<int> g_skipped;
 	std::atomic<int> g_failed;
 
-	std::mutex distMutex, dirCreateMutex;
+	std::mutex distMutex, dirCreateMutex, tableMutex;
+
+	std::vector<std::string> analyzeTables;
 };
 #endif /* GRIBLOADER_H */

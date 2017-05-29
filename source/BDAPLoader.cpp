@@ -12,7 +12,7 @@ using namespace std;
 extern Options options;
 once_flag oflag;
 
-BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0)
+BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("neons"), base(0), itsNeedsAnalyze(false)
 {
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
@@ -406,15 +406,15 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		param_id = boost::lexical_cast<long>(p["id"]);
 	}
 
-	string tableName = "", schema = "", as_id = "";
+	string tableName, schema, as_id;
 
 	if (tableName.empty())
 	{
 		query << "SELECT "
-		      << "id,schema_name, table_name "
-		      << "FROM as_grid "
+		      << "id,schema_name, table_name, partition_name, record_count "
+		      << "FROM as_grid_v "
 		      << "WHERE "
-		      << "producer_id = " << producer_id << " AND geometry_id = " << geometry_id
+		      << "producer_id = " << producer_id << " AND geometry_name = '" << geometry_name << "'"
 		      << " AND (min_analysis_time,max_analysis_time) OVERLAPS (to_timestamp('" << info.base_date
 		      << "', 'yyyymmddhh24mi'),"
 		      << " to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi'))";
@@ -436,7 +436,12 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		as_id = row[0];
 		schema = row[1];
-		tableName = row[2];
+		tableName = row[3];
+
+		if (row[4] == "0")
+		{
+			itsNeedsAnalyze = true;
+		}
 
 		query.str("");
 	}
@@ -459,6 +464,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 	string forecastTypeValue =
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
+
+	itsLastInsertedTable = schema + "." + tableName;
 
 	query << "INSERT INTO " << schema << "." << tableName
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
@@ -544,3 +551,5 @@ bool BDAPLoader::ReadREFEnvironment()
 
 NFmiNeonsDB& BDAPLoader::NeonsDB() const { return *itsNeonsDB; }
 NFmiRadonDB& BDAPLoader::RadonDB() const { return *itsRadonDB; }
+bool BDAPLoader::NeedsAnalyze() const { return itsNeedsAnalyze; }
+string BDAPLoader::LastInsertedTable() const { return itsLastInsertedTable; }
