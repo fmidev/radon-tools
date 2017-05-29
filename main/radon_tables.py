@@ -999,7 +999,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		# Change it to 1 because we depend on the statistics when determining what is the
 		# latest forecast.
 
-		query = "ALTER TABLE %s.%s SET (autovacuum_analyze_threshold = 1)" % (element.schema_name, partition_name)
+		query = "ALTER TABLE %s.%s SET (autovacuum_analyze_threshold = 20)" % (element.schema_name, partition_name)
 
 		if options.show_sql:
 			print query
