@@ -53,7 +53,8 @@ bool GribLoader::Load(const string& theInfile)
 
 	if (options.radon && analyzeTables.size() > 0)
 	{
-		NFmiRadonDB::Instance().Connect();
+		BDAPLoader ldr;
+
 		for (const auto& table : analyzeTables)
 		{
 			if (options.verbose)
@@ -63,7 +64,7 @@ bool GribLoader::Load(const string& theInfile)
 
 			if (!options.dry_run)
 			{
-				NFmiRadonDB::Instance().Query("ANALYZE " + table);
+				ldr.RadonDB().Execute("ANALYZE " + table);
 			}
 		}
 	}
