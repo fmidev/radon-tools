@@ -51,6 +51,23 @@ bool GribLoader::Load(const string& theInfile)
 	     << "failed with " << g_failed << " fields, "
 	     << "skipped " << g_skipped << " fields" << std::endl;
 
+	if (options.radon && analyzeTables.size() > 0)
+	{
+		NFmiRadonDB::Instance().Connect();
+		for (const auto& table : analyzeTables)
+		{
+			if (options.verbose)
+			{
+				cout << "Analyzing table " << table << " due to first insert" << endl;
+			}
+
+			if (!options.dry_run)
+			{
+				NFmiRadonDB::Instance().Query("ANALYZE " + table);
+			}
+		}
+	}
+
 	// When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
 	// as something to be checked against.
 	bool retval = true;
@@ -460,6 +477,18 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		{
 			g_failed++;
 			return;
+		}
+
+		if (databaseLoader.NeedsAnalyze())
+		{
+			const auto table = databaseLoader.LastInsertedTable();
+
+			lock_guard<mutex> lock(tableMutex);
+
+			if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
+			{
+				analyzeTables.push_back(table);
+			}
 		}
 	}
 

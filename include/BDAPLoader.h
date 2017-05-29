@@ -24,6 +24,9 @@ class BDAPLoader
 	NFmiNeonsDB &NeonsDB() const;
 	NFmiRadonDB &RadonDB() const;
 
+	bool NeedsAnalyze() const;
+	std::string LastInsertedTable() const;
+
    private:
 	void InitPool(const std::string &username, const std::string &password, const std::string &database);
 
@@ -44,6 +47,9 @@ class BDAPLoader
 
 	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 	std::unique_ptr<NFmiRadonDB> itsRadonDB;
+
+	bool itsNeedsAnalyze;
+	std::string itsLastInsertedTable;
 };
 
 #endif
