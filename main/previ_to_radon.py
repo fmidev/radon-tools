@@ -207,9 +207,23 @@ WHERE
 def Copy(infile, tableInfo):
 
 	with open (infile) as f:
+
+		# check if we have a header in csv
+		pos = f.tell()
+		line = f.readline()
+		f.seek(pos)
+
+		header = True if line[0] == '#' else False
+
 		try:
 			cur.execute("SAVEPOINT copy")
-			cur.copy_from(f, '%s.%s' % (tableInfo.schema_name, tableInfo.partition_name), columns=('producer_id','analysis_time','station_id','param_id','level_id','level_value','level_value2','forecast_period','forecast_type_id','forecast_type_value','value'), sep=",")
+
+			sql = """
+COPY %s.%s
+  (producer_id,analysis_time,station_id,param_id,level_id,level_value,level_value2,forecast_period,forecast_type_id,forecast_type_value,value) 
+FROM STDIN WITH CSV %s DELIMITER AS ','"""
+
+			cur.copy_expert(sql=sql % (tableInfo.schema_name, tableInfo.partition_name, "HEADER" if header else ""), file=f)
 			cur.execute("RELEASE SAVEPOINT copy")
 			conn.commit()
 		except psycopg2.IntegrityError:
