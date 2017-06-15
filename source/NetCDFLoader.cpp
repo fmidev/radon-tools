@@ -33,7 +33,7 @@ NetCDFLoader::NetCDFLoader()
 }
 
 NetCDFLoader::~NetCDFLoader() {}
-bool NetCDFLoader::Load(const string &theInfile)
+bool NetCDFLoader::Load(const string& theInfile)
 {
 	NFmiNetCDF reader;
 
@@ -187,34 +187,36 @@ bool NetCDFLoader::Load(const string &theInfile)
 		boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
 	}
 
+	vector<string> analyzeTables;
+
 	for (reader.ResetTime(); reader.NextTime();)
 	{
-			long fctimeEpoch;
+		long fctimeEpoch;
 
-                        switch (reader.TypeT())
-                        {
-                                case ncFloat:
-					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<float>()), reader.TimeUnit());
-                                        break;
+		switch (reader.TypeT())
+		{
+			case ncFloat:
+				fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<float>()), reader.TimeUnit());
+				break;
 
-                                case ncDouble:
-					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<double>()), reader.TimeUnit());
-                                        break;
+			case ncDouble:
+				fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<double>()), reader.TimeUnit());
+				break;
 
-                                case ncShort:
-					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<short>()), reader.TimeUnit());
-                                        break;
+			case ncShort:
+				fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<short>()), reader.TimeUnit());
+				break;
 
-                                case ncInt:
-					fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<int>()), reader.TimeUnit());
-                                        break;
-                                case ncChar:
-                                case ncByte:
-                                case ncNoType:
-                                default:
-                                        cout << "NcType not supported for time" << endl;
-					exit(1);
-                        }
+			case ncInt:
+				fctimeEpoch = Epoch(boost::lexical_cast<string>(reader.Time<int>()), reader.TimeUnit());
+				break;
+			case ncChar:
+			case ncByte:
+			case ncNoType:
+			default:
+				cout << "NcType not supported for time" << endl;
+				exit(1);
+		}
 
 		float fctime = (fctimeEpoch - atimeEpoch) / 3600;
 
@@ -369,6 +371,16 @@ bool NetCDFLoader::Load(const string &theInfile)
 				if (options.radon)
 				{
 					itsDatabaseLoader.WriteToRadon(info);
+
+					if (itsDatabaseLoader.NeedsAnalyze())
+					{
+						const auto table = itsDatabaseLoader.LastInsertedTable();
+
+						if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
+						{
+							analyzeTables.push_back(table);
+						}
+					}
 				}
 
 				if (options.verbose)
@@ -434,6 +446,22 @@ bool NetCDFLoader::Load(const string &theInfile)
 	cout << "Success with " << g_succeededParams << " params, "
 	     << "failed with " << g_failedParams << " params" << endl;
 
+	if (options.radon && analyzeTables.size() > 0)
+	{
+		for (const auto& table : analyzeTables)
+		{
+			if (options.verbose)
+			{
+				cout << "Analyzing table " << table << " due to first insert" << endl;
+			}
+
+			if (!options.dry_run)
+			{
+				itsDatabaseLoader.RadonDB().Execute("ANALYZE " + table);
+			}
+		}
+	}
+
 	// We need to check for 'total failure' if the user didn't specify a max_failures value.
 	if (options.max_failures == -1 && options.max_skipped == -1)
 	{
@@ -452,7 +480,7 @@ bool NetCDFLoader::Load(const string &theInfile)
  * Convert a time to epoch. Date mask is mandatory.
  */
 
-long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
+long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 {
 	struct tm t = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
 	char epoch[40];
@@ -472,7 +500,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = boost::lexical_cast<long>(epoch);
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
@@ -491,7 +519,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = (3600 * boost::lexical_cast<long>(dateTime)) - offset;
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
@@ -503,24 +531,24 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = (3600 * boost::lexical_cast<long>(dateTime));
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
 		}
 	}
-        else if (mask == "seconds since 1970-01-01 00:00:00")
-        {
-                try
-                {
-                        e = (boost::lexical_cast<long>(dateTime));
-                }
-                catch (boost::bad_lexical_cast &)
-                {
-                        cerr << "Date cast failed" << endl;
-                        exit(1);
-                }
-        }
+	else if (mask == "seconds since 1970-01-01 00:00:00")
+	{
+		try
+		{
+			e = (boost::lexical_cast<long>(dateTime));
+		}
+		catch (boost::bad_lexical_cast&)
+		{
+			cerr << "Date cast failed" << endl;
+			exit(1);
+		}
+	}
 	else if (mask == "hours since 2014-01-01 00:00:00")
 	{
 		long offset = 1388534400;  // seconds from 1970-01-01 to 2014-01-01
@@ -528,7 +556,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = (3600 * boost::lexical_cast<long>(dateTime)) + offset;
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
@@ -542,7 +570,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = (3600 * boost::lexical_cast<long>(dateTime)) - offset;
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
@@ -557,7 +585,7 @@ long NetCDFLoader::Epoch(const string &dateTime, const string &mask)
 		{
 			e = (3600 * boost::lexical_cast<long>(dateTime)) - offset;
 		}
-		catch (boost::bad_lexical_cast &)
+		catch (boost::bad_lexical_cast&)
 		{
 			cerr << "Date cast failed" << endl;
 			exit(1);
