@@ -225,6 +225,14 @@ FROM STDIN WITH CSV %s DELIMITER AS ','"""
 
 			cur.copy_expert(sql=sql % (tableInfo.schema_name, tableInfo.partition_name, "HEADER" if header else ""), file=f)
 			cur.execute("RELEASE SAVEPOINT copy")
+			print "Analyzing table %s.%s" % (tableInfo.schema_name, tableInfo.partition_name)
+
+			if options.show_sql:
+				print "ANALYZE " + tableInfo.schema_name + "." + tableInfo.partition_name
+
+			if not options.dry_run:
+				cur.execute("ANALYZE " + tableInfo.schema_name + "." + tableInfo.partition_name)
+
 			conn.commit()
 		except psycopg2.IntegrityError:
 			cur.execute("ROLLBACK TO SAVEPOINT copy")
@@ -370,9 +378,15 @@ WHERE
 	print "%s cumulative inserts: %d, updates: %d, lines per second: %d" % (datetime.datetime.now(), inserts, updates, commit_chunk/GetTotalSeconds(stop_time-start_time))
 
 	conn.commit()
-	conn.close()
 
 	print "%s did %s inserts, %s updates" % (datetime.datetime.now(), inserts, updates)
+	print "%s Analyzing table %s.%s" % (datetime.datetime.now(), tableInfo.schema_name, tableInfo.partition_name)
+
+	if options.show_sql:
+		print "ANALYZE " + tableInfo.schema_name + "." + tableInfo.partition_name
+
+	if not options.dry_run:
+		cur.execute("ANALYZE " + tableInfo.schema_name + "." + tableInfo.partition_name)
 
 
 # Main body
