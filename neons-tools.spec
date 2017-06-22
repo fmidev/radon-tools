@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.6.8
+Version:        17.6.22
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -83,6 +83,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jun 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.6.22-1.fmi
+- Run manual ANALYZE after insert also with NetCDF and previ data
 * Thu Jun  8 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.6.8-1.fmi
 - previ_to_radon.py discards CSV headers
 * Mon May 29 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.5.29-1.fmi
