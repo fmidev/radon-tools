@@ -109,7 +109,6 @@ cflags_extra.append('-Wcast-qual')
 cflags_extra.append('-Wcast-align')
 cflags_extra.append('-Wwrite-strings')
 cflags_extra.append('-Wconversion')
-cflags_extra.append('-Winline')
 cflags_extra.append('-Wnon-virtual-dtor')
 cflags_extra.append('-Wno-pmf-conversions')
 cflags_extra.append('-Wsign-promo')
@@ -134,6 +133,7 @@ cflags.append('-std=c++11')
 
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
+env.Append(CCFLAGS = cflags_extra)
 
 # Linker flags
 
