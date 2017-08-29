@@ -273,6 +273,58 @@ def ps(grb):
 
 	update_table_meta_grid(grb, geom_id, name)
 
+def lcc(grb):
+	lon,lat = first_point(grb)
+	scmode = scanning_mode(grb)
+	ni,nj = grid_size(grb)
+	di,dj = grid_span_meters(grb)
+
+	orient = grib_get(grb, "orientationOfTheGridInDegrees")
+	latin1 = grib_get(grb, "Latin1InDegrees")
+	latin2 = grib_get(grb, "Latin2InDegrees")
+	splon = grib_get(grb, "longitudeOfSouthernPoleInDegrees")
+	splat = grib_get(grb, "latitudeOfSouthernPoleInDegrees")
+
+	conn = get_conn()
+	cur = conn.cursor()
+
+	query = "SELECT id, name FROM geom_lambert_conformal WHERE st_x(first_point) = %s AND st_y(first_point) = %s AND ni = %s AND nj = %s AND di = %s AND dj = %s AND orientation = %s and latin1 = %s and latin2 = %s and st_x(south_pole) = %s AND st_y(south_pole) = %s "
+
+	cur.execute(query, (lon, lat, ni, nj, di, dj, orient, latin1, latin2, splon, splat))
+	row = cur.fetchone()
+
+	if row is not None:
+		print "Geometry already exists (%s %s)" % (row[0], row[1])
+		return
+
+	print "First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nOrientation: %s\nLatin1: %s\nLatin2: %s\nSouth pole: %s,%s\n" % (lon, lat, ni, nj, di, dj, scmode, orient, latin1, latin2, splon, splat)
+
+	name,desc = ask_for_name_and_desc()
+
+	proceed = raw_input("Proceed [y/n] (return for abort)? ")
+
+	if len(proceed) == 0:
+		sys.exit(1)
+	elif proceed != "y":
+		return
+
+	query = "INSERT INTO geom (id, name, projection_id) VALUES (DEFAULT, %s, 2) RETURNING ID"
+
+	cur.execute(query, (name,))
+
+	geom_id = int(cur.fetchone()[0])
+
+	query = "INSERT INTO geom_stereographic (id, name, ni, nj, first_point, di, dj, scanning_mode, description, orientation) VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s)"
+
+	#print cur.mogrify(query, (geom_id, name, ni, nj, lon, lat, di, dj, scmode, desc))
+	cur.execute(query, (geom_id, name, ni, nj, lon, lat, di, dj, scmode, desc, orient))
+
+	conn.commit()
+
+	print "Geometry inserted: %s %s" % (geom_id, name)
+
+	update_table_meta_grid(grb, geom_id, name)
+
 def main(filename):
 	print "%s" % (filename)
 
@@ -292,6 +344,8 @@ def main(filename):
 			rll(grb)
 		elif grid_type == "polar_stereographic":
 			ps(grb)
+		elif grid_type == "lambert":
+			lcc(grb)
 		else:
 			print "unsupported grid_type: %s" % (grid_type)
 
