@@ -314,10 +314,10 @@ def lcc(grb):
 
 	geom_id = int(cur.fetchone()[0])
 
-	query = "INSERT INTO geom_stereographic (id, name, ni, nj, first_point, di, dj, scanning_mode, description, orientation) VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s)"
+	query = "INSERT INTO geom_lambert_conformal (id, name, ni, nj, first_point, di, dj, scanning_mode, description, orientation, latin1, latin2, south_pole) VALUES (%s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326), %s, %s, %s, %s, %s, %s, %s, ST_SetSRID(ST_MakePoint(%s, %s), 4326))"
 
 	#print cur.mogrify(query, (geom_id, name, ni, nj, lon, lat, di, dj, scmode, desc))
-	cur.execute(query, (geom_id, name, ni, nj, lon, lat, di, dj, scmode, desc, orient))
+	cur.execute(query, (geom_id, name, ni, nj, lon, lat, di, dj, scmode, desc, orient, latin1, latin2, splon, splat))
 
 	conn.commit()
 
