@@ -111,6 +111,12 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 	info.base_date = ss.str();
 
+	ss.str("");
+	ss << info.year << "-" << setw(2) << setfill('0') << info.month << "-" << setw(2) << setfill('0') << info.day << " "
+	   << setw(2) << setfill('0') << info.hour << ":00:00";
+
+	info.base_date_sql = ss.str();
+
 	info.ni = reader.SizeX();
 	info.nj = reader.SizeY();
 
