@@ -314,7 +314,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 			g.grtyp = "lcc";
 			break;
 
-		case 4: // reduced gg
+		case 4:  // reduced gg
 			g.dj_degrees = message.jDirectionIncrement();
 			g.grtyp = "rgg";
 			break;
@@ -332,6 +332,12 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 	   << g.hour << "0000";
 
 	g.base_date = ss.str();
+
+	ss.str("");
+	ss << g.year << "-" << setw(2) << setfill('0') << g.month << "-" << setw(2) << setfill('0') << g.day << " "
+	   << setw(2) << setfill('0') << g.hour << ":00:00";
+
+	g.base_date_sql = ss.str();
 
 	g.level1 = message.LevelValue();
 	g.lvl1_lvl2 = g.level1;
