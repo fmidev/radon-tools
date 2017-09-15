@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.8.29
+Version:        17.9.15
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -15,14 +15,14 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 17.7.31
-BuildRequires:  libfmidb-devel >= 17.8.10
+BuildRequires:  libfmidb-devel >= 17.9.15
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 17.7.31
-Requires:	libfmidb >= 17.8.10
+Requires:	libfmidb >= 17.9.15
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Sep 15 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.9.15-1.fmi
+- Use fmidb function to get target table information
 * Tue Aug 29 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.8.29-1.fmi
 - New boost
 * Thu Jun 22 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.6.22-1.fmi
