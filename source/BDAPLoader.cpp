@@ -406,44 +406,20 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		param_id = boost::lexical_cast<long>(p["id"]);
 	}
 
-	string tableName, schema, as_id;
+	auto tableinfo = itsRadonDB->GetTableName(producer_id, info.base_date_sql, geometry_name);
 
-	if (tableName.empty())
+	if (tableinfo.empty())
 	{
-		query << "SELECT "
-		      << "id,schema_name, table_name, partition_name, record_count "
-		      << "FROM as_grid_v "
-		      << "WHERE "
-		      << "producer_id = " << producer_id << " AND geometry_name = '" << geometry_name << "'"
-		      << " AND (min_analysis_time,max_analysis_time) OVERLAPS (to_timestamp('" << info.base_date
-		      << "', 'yyyymmddhh24mi'),"
-		      << " to_timestamp('" << info.base_date << "', 'yyyymmddhh24mi'))";
+		cerr << "Destination table definition not found from radon table "
+		        "'as_grid' for geometry '"
+		     << geometry_name << "', base_date " << info.base_date << endl
+		     << "The data could be too old" << endl;
+		return false;
+	}
 
-		itsRadonDB->Query(query.str());
-
-		if (options.dry_run) cout << query.str() << endl;
-
-		row = itsRadonDB->FetchRow();
-
-		if (row.empty())
-		{
-			cerr << "Destination table definition not found from radon table "
-			        "'as_grid' for geometry '"
-			     << geometry_name << "', base_date " << info.base_date << endl;
-			cerr << "The data could be too old" << endl;
-			return false;
-		}
-
-		as_id = row[0];
-		schema = row[1];
-		tableName = row[3];
-
-		if (row[4] == "0")
-		{
-			itsNeedsAnalyze = true;
-		}
-
-		query.str("");
+	if (tableinfo["record_count"] == "0")
+	{
+		itsNeedsAnalyze = true;
 	}
 
 	query.str("");
@@ -465,9 +441,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	string forecastTypeValue =
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
 
-	itsLastInsertedTable = schema + "." + tableName;
+	itsLastInsertedTable = tableinfo["schema_name"] + "." + tableinfo["partition_name"];
 
-	query << "INSERT INTO " << schema << "." << tableName
+	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
 	         "forecast_type_id, file_location, file_server, forecast_type_value) "
@@ -497,7 +473,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		// level_value, forecast_period,
 		// forecast_type_id)
 
-		query << "UPDATE " << schema << "." << tableName << " SET file_location = '" << info.filename << "', "
+		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"] << " SET file_location = '"
+		      << info.filename << "', "
 		      << " file_server = '" << itsHostname << "', "
 		      << " forecast_type_value = " << forecastTypeValue << " WHERE"
 		      << " producer_id = " << producer_id << " AND analysis_time = to_timestamp('" << info.base_date
