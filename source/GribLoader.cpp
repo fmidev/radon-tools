@@ -158,6 +158,8 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 
 			long producerId = boost::lexical_cast<long>(prodinfo["id"]);
 
+			databaseLoader.RadonDB().WarmGrib1ParameterCache(producerId);
+
 			auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
 
 			if (levelinfo.empty())
