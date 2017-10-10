@@ -11,7 +11,7 @@ struct Options
 	      center(86),
 	      process(0),
 	      analysistime(""),
-	      infile(""),
+	      infile(),
 	      parameters(""),
 	      keys(
 	          "level:i,indicatorOfParameter:i,centre:i,date:i,generatingProcessIdentifier:i,indicatorOfTypeOfLevel:i,"
@@ -36,7 +36,7 @@ struct Options
 	unsigned int center;       // -c
 	unsigned int process;      // -p
 	std::string analysistime;  // -a
-	std::string infile;
+	std::vector<std::string> infile;
 	std::string parameters;  // -P
 	std::string keys;
 	std::string level;             // -L
