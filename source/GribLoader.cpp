@@ -4,7 +4,6 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <iostream>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -68,20 +67,75 @@ bool GribLoader::Load(const string& theInfile)
 	     << "failed with " << g_failed << " fields, "
 	     << "skipped " << g_skipped << " fields" << std::endl;
 
-	if (analyzeTables.size() > 0)
-	{
-		BDAPLoader ldr;
+	BDAPLoader ldr;
 
-		for (const auto& table : analyzeTables)
+	for (const auto& table : analyzeTables)
+	{
+		if (options.verbose)
 		{
+			cout << "Analyzing table " << table << " due to first insert" << endl;
+		}
+
+		if (!options.dry_run)
+		{
+			ldr.RadonDB().Execute("ANALYZE " + table);
+		}
+		else
+		{
+			cout << "ANALYZE " + table << endl;
+		}
+	}
+
+	if (!options.ss_state_update)
+	{
+		for (const std::string& ssInfo : ssStateInformation)
+		{
+			vector<string> tokens;
+			boost::split(tokens, ssInfo, boost::is_any_of("/"));
+
+			stringstream ss;
+			ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
+			      "forecast_type_value, table_name) VALUES ("
+			   << tokens[0] << ", " << tokens[1] << ", "
+			   << "to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss'), " << tokens[3] << ", " << tokens[4] << ", "
+			   << tokens[5] << ", "
+			   << "'" << tokens[6] << "')";
+
 			if (options.verbose)
 			{
-				cout << "Analyzing table " << table << " due to first insert" << endl;
+				cout << "Updating ss_state for " << ssInfo << endl;
 			}
 
-			if (!options.dry_run)
+			if (options.dry_run)
 			{
-				ldr.RadonDB().Execute("ANALYZE " + table);
+				cout << ss.str() << endl;
+			}
+			else
+			{
+				try
+				{
+					ldr.RadonDB().Execute(ss.str());
+				}
+				catch (const pqxx::unique_violation& e)
+				{
+					try
+					{
+						ss.str("");
+						ss << "UPDATE ss_state SET last_updated = now() WHERE "
+						   << "producer_id = " << tokens[0] << " AND "
+						   << "geometry_id = " << tokens[1] << " AND "
+						   << "analysis_time = to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss') AND "
+						   << "forecast_period = '" << tokens[3] << "' AND "
+						   << "forecast_type_id = " << tokens[4] << " AND "
+						   << "forecast_type_value = " << tokens[5];
+
+						ldr.RadonDB().Execute(ss.str());
+					}
+					catch (const pqxx::pqxx_exception& ee)
+					{
+						cerr << "Updating ss_state information failed" << endl;
+					}
+				}
 			}
 		}
 	}
@@ -163,7 +217,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
-	    (message.ForecastTypeValue() == -999) ? -1. : static_cast<double>(message.ForecastTypeValue());
+	    (message.ForecastTypeValue() == -999) ? -1 : static_cast<double>(message.ForecastTypeValue());
 
 	int producer_type = 1;  // deterministic
 
@@ -499,10 +553,12 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 		lock_guard<mutex> lock(tableMutex);
 
-		if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
-		{
-			analyzeTables.push_back(table);
-		}
+		analyzeTables.insert(table);
+	}
+
+	{
+		lock_guard<mutex> lock(ssMutex);
+		ssStateInformation.insert(databaseLoader.LastSSStateInformation());
 	}
 
 	tmr.stop();

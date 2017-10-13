@@ -254,6 +254,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
 
 	itsLastInsertedTable = tableinfo["schema_name"] + "." + tableinfo["partition_name"];
+	itsLastSSStateInformation = to_string(producer_id) + "/" + to_string(geometry_id) + "/" + info.base_date + "/" +
+	                            to_string(info.fcst_per) + interval + "/" + to_string(info.forecast_type_id) + "/" +
+	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["partition_name"];
 
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
@@ -341,3 +344,4 @@ bool BDAPLoader::ReadREFEnvironment()
 NFmiRadonDB& BDAPLoader::RadonDB() const { return *itsRadonDB; }
 bool BDAPLoader::NeedsAnalyze() const { return itsNeedsAnalyze; }
 string BDAPLoader::LastInsertedTable() const { return itsLastInsertedTable; }
+string BDAPLoader::LastSSStateInformation() const { return itsLastSSStateInformation; }
