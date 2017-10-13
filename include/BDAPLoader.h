@@ -1,7 +1,6 @@
 #ifndef __BDAPLOADER__
 #define __BDAPLOADER__
 
-#include "NFmiNeonsDB.h"
 #include "NFmiRadonDB.h"
 #include "fc_info.h"
 #include <memory>
@@ -21,7 +20,6 @@ class BDAPLoader
 	bool WriteAS(const fc_info &info);
 	bool WriteToRadon(const fc_info &info);
 
-	NFmiNeonsDB &NeonsDB() const;
 	NFmiRadonDB &RadonDB() const;
 
 	bool NeedsAnalyze() const;
@@ -45,7 +43,6 @@ class BDAPLoader
 	char *base;
 	std::string itsHostname;
 
-	std::unique_ptr<NFmiNeonsDB> itsNeonsDB;
 	std::unique_ptr<NFmiRadonDB> itsRadonDB;
 
 	bool itsNeedsAnalyze;

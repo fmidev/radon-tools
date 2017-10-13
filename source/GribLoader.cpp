@@ -1,5 +1,4 @@
 #include "GribLoader.h"
-#include "NFmiNeonsDB.h"
 #include "NFmiRadonDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
@@ -51,7 +50,7 @@ bool GribLoader::Load(const string& theInfile)
 	     << "failed with " << g_failed << " fields, "
 	     << "skipped " << g_skipped << " fields" << std::endl;
 
-	if (options.radon && analyzeTables.size() > 0)
+	if (analyzeTables.size() > 0)
 	{
 		BDAPLoader ldr;
 
@@ -135,45 +134,36 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 		g.novers = message.Table2Version();
 		g.timeRangeIndicator = message.TimeRangeIndicator();
 
-		if (options.neons)
-		{
-			g.parname = databaseLoader.NeonsDB().GetGridParameterName(g.param, g.novers, g.novers, g.timeRangeIndicator,
-			                                                          g.levtype);
-			g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.param, g.levtype, g.novers, g.novers);
-		}
-		else
-		{
-			auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
+		auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
 
-			if (prodinfo.empty())
+		if (prodinfo.empty())
+		{
+			if (options.verbose)
 			{
-				if (options.verbose)
-				{
-					cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
-					     << " type " << producer_type << endl;
-				}
-
-				return false;
+				cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
+				     << " type " << producer_type << endl;
 			}
 
-			long producerId = boost::lexical_cast<long>(prodinfo["id"]);
-
-			databaseLoader.RadonDB().WarmGrib1ParameterCache(producerId);
-
-			auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
-
-			if (levelinfo.empty())
-			{
-				cerr << "Level name not found for grib type " << g.levtype << endl;
-				return false;
-			}
-
-			g.levname = levelinfo["name"];
-
-			auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
-			    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, message.LevelValue());
-			g.parname = paraminfo["name"];
+			return false;
 		}
+
+		long producerId = boost::lexical_cast<long>(prodinfo["id"]);
+
+		databaseLoader.RadonDB().WarmGrib1ParameterCache(producerId);
+
+		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
+
+		if (levelinfo.empty())
+		{
+			cerr << "Level name not found for grib type " << g.levtype << endl;
+			return false;
+		}
+
+		g.levname = levelinfo["name"];
+
+		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
+		    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, message.LevelValue());
+		g.parname = paraminfo["name"];
 
 		if (g.parname.empty())
 		{
@@ -192,43 +182,34 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 
 		g.timeRangeIndicator = 0;
 
-		if (options.neons)
+		auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
+
+		if (prodinfo.empty())
 		{
-			g.parname = databaseLoader.NeonsDB().GetGridParameterNameForGrib2(g.param, message.ParameterCategory(),
-			                                                                  message.ParameterDiscipline(), g.process);
-			g.levname = databaseLoader.NeonsDB().GetGridLevelName(g.levtype, g.process);
+			if (options.verbose)
+			{
+				cerr << "FMI producer id not found for grib producer " << g.centre << " " << g.process << endl;
+			}
+
+			return false;
 		}
-		else
+
+		long producerId = boost::lexical_cast<long>(prodinfo["id"]);
+
+		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(),
+		                                                                message.ParameterCategory(), g.param, g.levtype,
+		                                                                message.LevelValue());
+
+		if (!paraminfo.empty())
 		{
-			auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
+			g.parname = paraminfo["name"];
+		}
 
-			if (prodinfo.empty())
-			{
-				if (options.verbose)
-				{
-					cerr << "FMI producer id not found for grib producer " << g.centre << " " << g.process << endl;
-				}
+		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
 
-				return false;
-			}
-
-			long producerId = boost::lexical_cast<long>(prodinfo["id"]);
-
-			auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(),
-			                                                                message.ParameterCategory(), g.param,
-			                                                                g.levtype, message.LevelValue());
-
-			if (!paraminfo.empty())
-			{
-				g.parname = paraminfo["name"];
-			}
-
-			auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
-
-			if (!levelinfo.empty())
-			{
-				g.levname = levelinfo["name"];
-			}
+		if (!levelinfo.empty())
+		{
+			g.levname = levelinfo["name"];
 		}
 
 		g.category = message.ParameterCategory();
@@ -269,9 +250,6 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 
 	g.lat_degrees = message.Y0();
 	g.lon_degrees = message.X0();
-
-	// This is because we need to find the
-	// correct geometry from GRID_REG_GEOM in neons
 
 	// GRIB2 longitudes --> GRIB1
 	if (g.ednum == 2 && (g.lon > 180000))
@@ -471,33 +449,21 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 	clock_gettime(CLOCK_REALTIME, &start_ts);
 
-	if (options.neons)
+	if (!databaseLoader.WriteToRadon(g))
 	{
-		if (!databaseLoader.WriteAS(g))
-		{
-			g_failed++;
-			return;
-		}
+		g_failed++;
+		return;
 	}
 
-	if (options.radon)
+	if (databaseLoader.NeedsAnalyze())
 	{
-		if (!databaseLoader.WriteToRadon(g) && !options.neons)
+		const auto table = databaseLoader.LastInsertedTable();
+
+		lock_guard<mutex> lock(tableMutex);
+
+		if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
 		{
-			g_failed++;
-			return;
-		}
-
-		if (databaseLoader.NeedsAnalyze())
-		{
-			const auto table = databaseLoader.LastInsertedTable();
-
-			lock_guard<mutex> lock(tableMutex);
-
-			if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
-			{
-				analyzeTables.push_back(table);
-			}
+			analyzeTables.push_back(table);
 		}
 	}
 

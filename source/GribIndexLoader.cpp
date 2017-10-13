@@ -1,5 +1,4 @@
 #include "GribIndexLoader.h"
-#include "NFmiNeonsDB.h"
 #include "NFmiRadonDB.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>

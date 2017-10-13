@@ -23,9 +23,7 @@ struct Options
 	      max_skipped(-1),
 	      dry_run(false),
 	      leveltypes(""),
-	      threadcount(2),
-	      neons(true),
-	      radon(true)
+	      threadcount(2)
 	{
 	}
 
@@ -47,8 +45,6 @@ struct Options
 	bool dry_run;                  // -d;
 	std::string leveltypes;        // -l
 	short threadcount;             // -j
-	bool neons;                    // -N
-	bool radon;                    // -R
 };
 
 #endif

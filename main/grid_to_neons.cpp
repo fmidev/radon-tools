@@ -85,18 +85,14 @@ bool parse_options(int argc, char* argv[])
 		return false;
 	}
 
-	if (radon_switch && neons_switch)
+	if (radon_switch)
 	{
-		std::cerr << "Both neons and radon options cannot be specified" << std::endl;
-		return false;
+		std::cout << "Switch -R is deprecated" << std::endl;
 	}
-	else if (radon_switch)
+
+	if (neons_switch)
 	{
-		options.neons = false;
-	}
-	else if (neons_switch)
-	{
-		options.radon = false;
+		std::cout << "Switch -N is deprecated" << std::endl;
 	}
 
 	if (max_failures >= -1)
