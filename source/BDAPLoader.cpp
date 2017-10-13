@@ -38,7 +38,9 @@ void BDAPLoader::InitPool(const string& username, const string& password, const 
 	NFmiRadonDBPool::Instance()->Hostname("vorlon");
 	NFmiRadonDBPool::Instance()->MaxWorkers(8);
 
-	Init();
+	char host[255];
+	gethostname(host, 100);
+	itsHostname = string(host);
 }
 
 BDAPLoader::~BDAPLoader()
@@ -91,22 +93,8 @@ string BDAPLoader::REFFileName(const fc_info& info)
 	return ss.str();
 }
 
-void BDAPLoader::Init()
-{
-	itsGeomName = "";
-	itsModelType = "";
-	itsDsetId = "";
-	itsTableName = "";
-
-	char host[255];
-	gethostname(host, 100);
-	itsHostname = string(host);
-}
-
 bool BDAPLoader::WriteToRadon(const fc_info& info)
 {
-	Init();
-
 	stringstream query;
 	vector<string> row;
 

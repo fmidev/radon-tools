@@ -32,11 +32,6 @@ class BDAPLoader
 	std::string itsPassword;
 	std::string itsDatabase;
 
-	std::string itsGeomName;
-	std::string itsModelType;
-	std::string itsDsetId;
-	std::string itsTableName;
-
 	bool ReadREFEnvironment();
 	void Init();
 
