@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>
@@ -118,7 +119,8 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 	g.forecast_type_id = 1;
 
 	g.forecast_type_id = message.ForecastType();
-	g.forecast_type_value = (message.ForecastTypeValue() == -999) ? -1 : message.ForecastTypeValue();
+	g.forecast_type_value =
+	    (message.ForecastTypeValue() == -999) ? -1. : static_cast<double>(message.ForecastTypeValue());
 
 	int producer_type = 1;  // deterministic
 
@@ -162,7 +164,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 		g.levname = levelinfo["name"];
 
 		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
-		    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, message.LevelValue());
+		    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, static_cast<double>(message.LevelValue()));
 		g.parname = paraminfo["name"];
 
 		if (g.parname.empty())
@@ -198,7 +200,7 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 
 		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(),
 		                                                                message.ParameterCategory(), g.param, g.levtype,
-		                                                                message.LevelValue());
+		                                                                static_cast<double>(message.LevelValue()));
 
 		if (!paraminfo.empty())
 		{

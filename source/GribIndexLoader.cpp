@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <iostream>
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>
