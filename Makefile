@@ -41,6 +41,7 @@ rpm:    clean
 install:
 	mkdir -p $(bindir)
 	$(INSTALL_PROG) build/release/grid_to_neons $(bindir)
+	$(INSTALL_PROG) build/release/grid_to_neons $(bindir)/grid_to_radon
 
 	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
 		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \

@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.10.10
+Version:        17.10.19
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -75,6 +75,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_neons
+%{_bindir}/grid_to_radon
 
 %if %{undefined suse_version}
 %{_bindir}/radon_tables.py
@@ -84,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Oct 19 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.19-1.fmi
+- Remove oracle support from grid_to_neons
 * Tue Oct 10 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.10-1.fmi
 - Support multiple input files at command line
 * Mon Sep 18 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.9.18-1.fmi
