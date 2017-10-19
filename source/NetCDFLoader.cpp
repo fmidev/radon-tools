@@ -1,5 +1,4 @@
 #include "NetCDFLoader.h"
-#include "NFmiNeonsDB.h"
 #include "NFmiNetCDF.h"
 #include "boost/date_time/gregorian/gregorian.hpp"
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -224,7 +223,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 				exit(1);
 		}
 
-		float fctime = (fctimeEpoch - atimeEpoch) / 3600;
+		float fctime = static_cast<float>(fctimeEpoch - atimeEpoch) / 3600.f;
 
 		if (options.verbose)
 			cout << "Time " << static_cast<int>(reader.Time<float>()) << " (" << options.analysistime << " +" << fctime
@@ -254,15 +253,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 			string grid_parameter_name;
 			map<string, string> parameter;
 
-			if (options.neons)
-			{
-				grid_parameter_name = itsDatabaseLoader.NeonsDB().GetGribParameterNameFromNetCDF(info.process, ncname);
-			}
-			else if (options.radon)
-			{
-				parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(info.process, ncname, -1, -1);
-				grid_parameter_name = parameter["name"];
-			}
+			parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(info.process, ncname, -1, -1);
+			grid_parameter_name = parameter["name"];
 
 			if (grid_parameter_name.empty())
 			{
@@ -286,9 +278,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 					continue;
 				}
 			}
-
-			if (options.neons)
-				parameter = itsDatabaseLoader.NeonsDB().GetParameterDefinition(info.process, grid_parameter_name);
 
 			if (parameter.empty())
 			{
@@ -366,26 +355,18 @@ bool NetCDFLoader::Load(const string& theInfile)
 					}
 				}
 
-				if (options.neons)
+				if (!itsDatabaseLoader.WriteToRadon(info))
 				{
-					if (!itsDatabaseLoader.WriteAS(info))
-					{
-						return false;
-					}
+					return false;
 				}
 
-				if (options.radon)
+				if (itsDatabaseLoader.NeedsAnalyze())
 				{
-					itsDatabaseLoader.WriteToRadon(info);
+					const auto table = itsDatabaseLoader.LastInsertedTable();
 
-					if (itsDatabaseLoader.NeedsAnalyze())
+					if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
 					{
-						const auto table = itsDatabaseLoader.LastInsertedTable();
-
-						if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
-						{
-							analyzeTables.push_back(table);
-						}
+						analyzeTables.push_back(table);
 					}
 				}
 
@@ -399,12 +380,17 @@ bool NetCDFLoader::Load(const string& theInfile)
 				for (reader.ResetLevel(); reader.NextLevel();)
 				{
 					if (options.use_level_value)
+					{
 						level = reader.Level();
+					}
 					else if (options.use_inverse_level_value)
+					{
 						level = reader.Level() * -1;
+					}
 					else
-						level = reader.LevelIndex();  // ordering number
-
+					{
+						level = static_cast<float> (reader.LevelIndex());  // ordering number
+					}
 					info.level1 = static_cast<int>(level);
 					info.lvl1_lvl2 = info.level1 + 1000 * info.level2;
 
@@ -422,20 +408,9 @@ bool NetCDFLoader::Load(const string& theInfile)
 						}
 					}
 
-					if (options.neons)
+					if (!itsDatabaseLoader.WriteToRadon(info))
 					{
-						if (!itsDatabaseLoader.WriteAS(info))
-						{
-							return false;
-						}
-					}
-
-					if (options.radon)
-					{
-						if (!itsDatabaseLoader.WriteToRadon(info))
-						{
-							return false;
-						}
+						return false;
 					}
 
 					if (options.verbose)
@@ -452,7 +427,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 	cout << "Success with " << g_succeededParams << " params, "
 	     << "failed with " << g_failedParams << " params" << endl;
 
-	if (options.radon && analyzeTables.size() > 0)
+	if (analyzeTables.size() > 0)
 	{
 		for (const auto& table : analyzeTables)
 		{

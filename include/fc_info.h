@@ -6,7 +6,6 @@ const float kFloatMissing = 32700.f;
 struct fc_info
 {
 	fc_info()
-	    // COMMON FOR RADON AND NEONS
 	    : ednum(0),
 	      centre(0),
 	      discipline(0),

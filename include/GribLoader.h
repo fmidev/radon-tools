@@ -1,8 +1,4 @@
-/*
- * class GribLoader
- *
- * Used to load grib data (edition 1 or 2) into NEONS.
- */
+#pragma once
 
 #include "BDAPLoader.h"
 #include "NFmiGrib.h"
@@ -11,9 +7,6 @@
 #include <boost/thread.hpp>
 #include <mutex>
 #include <string>
-
-#ifndef GRIBLOADER_H
-#define GRIBLOADER_H
 
 class GribLoader
 {
@@ -46,4 +39,3 @@ class GribLoader
 
 	std::vector<std::string> analyzeTables;
 };
-#endif /* GRIBLOADER_H */
