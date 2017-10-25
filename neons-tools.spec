@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.10.19
+Version:        17.10.25
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,14 +14,14 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 17.7.31
+BuildRequires:  libfmigrib-devel >= 17.10.25
 BuildRequires:  libfmidb-devel >= 17.9.18
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 17.7.31
+Requires:	libfmigrib >= 17.10.25
 Requires:	libfmidb >= 17.9.18
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Oct 25 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.25-1.fmi
+- New fmigrib
 * Thu Oct 19 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.19-1.fmi
 - Remove oracle support from grid_to_neons
 * Tue Oct 10 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.10-1.fmi
