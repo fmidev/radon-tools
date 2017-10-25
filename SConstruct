@@ -64,7 +64,6 @@ env.Append(CPPPATH = includes)
 librarypaths = []
 
 librarypaths.append('/usr/lib64')
-librarypaths.append('/usr/lib64/oracle')
 
 env.Append(LIBPATH = librarypaths)
 
@@ -76,7 +75,6 @@ libraries.append('fmidb')
 libraries.append('fminc')
 libraries.append('pqxx')
 libraries.append('odbc')
-libraries.append('clntsh')
 libraries.append('netcdf_c++')
 
 env.Append(LIBS = libraries)
@@ -137,7 +135,7 @@ env.Append(CCFLAGS = cflags_extra)
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-Wl,--as-needed'])
+env.Append(LINKFLAGS = ['-Wl,--as-needed', '-Wl,--warn-unresolved-symbols'])
 
 # '-Wl,-rpath,.'
 
