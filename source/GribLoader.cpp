@@ -4,8 +4,8 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <stdlib.h>
 
@@ -349,13 +349,13 @@ void GribLoader::Run(short threadId)
 {
 	printf("Thread %d started\n", threadId);
 
-	itsThreadedLoader.reset(new BDAPLoader());
+	BDAPLoader dbLoader;
 
 	NFmiGribMessage myMessage;
 
 	while (DistributeMessages(myMessage))
 	{
-		Process(*itsThreadedLoader, myMessage, threadId);
+		Process(dbLoader, myMessage, threadId);
 	}
 
 	printf("Thread %d stopped\n", threadId);
@@ -370,7 +370,6 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
 		{
 			printf("Message %d\n", itsReader.CurrentMessageIndex());
 		}
-
 		newMessage = NFmiGribMessage(itsReader.Message());
 		return true;
 	}
@@ -518,14 +517,23 @@ void GribLoader::CreateDirectory(const string& theFileName)
 
 	fs::path pathname(theFileName);
 
-	lock_guard<mutex> lock(dirCreateMutex);
-
 	if (!fs::is_directory(pathname.parent_path()))
 	{
-		// Create directory
+		lock_guard<mutex> lock(dirCreateMutex);
 
-		if (options.verbose) cout << "Creating directory " << pathname.parent_path().string() << endl;
+		if (!fs::is_directory(pathname.parent_path()))
+		{
+			// Create directory
 
-		if (!options.dry_run) fs::create_directories(pathname.parent_path());
+			if (options.verbose)
+			{
+				cout << "Creating directory " << pathname.parent_path().string() << endl;
+			}
+
+			if (!options.dry_run)
+			{
+				fs::create_directories(pathname.parent_path());
+			}
+		}
 	}
 }

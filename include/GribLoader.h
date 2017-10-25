@@ -26,7 +26,6 @@ class GribLoader
 	bool IsGrib(const std::string& theFileName);
 
 	NFmiGrib itsReader;
-	boost::thread_specific_ptr<BDAPLoader> itsThreadedLoader;
 
 	std::vector<std::string> parameters;
 	std::vector<std::string> levels;
