@@ -20,8 +20,6 @@ class GribLoader
 	void Run(short threadId);
 	bool DistributeMessages(NFmiGribMessage& newMessage);
 	void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId);
-	void CreateDirectory(const std::string& theFileName);
-	bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message);
 	virtual std::string GetFileName(BDAPLoader& databaseLoader, const fc_info& g);
 	bool IsGrib(const std::string& theFileName);
 
@@ -34,7 +32,7 @@ class GribLoader
 	std::atomic<int> g_skipped;
 	std::atomic<int> g_failed;
 
-	std::mutex distMutex, dirCreateMutex, tableMutex;
+	std::mutex distMutex, tableMutex;
 
 	std::vector<std::string> analyzeTables;
 };

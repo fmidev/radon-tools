@@ -119,8 +119,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 	info.ni = reader.SizeX();
 	info.nj = reader.SizeY();
 
-	info.filetype = "nc";
-
 	if (reader.Projection() == "latitude_longitude")
 	{
 		info.grtyp = "ll";
@@ -389,7 +387,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 					}
 					else
 					{
-						level = static_cast<float> (reader.LevelIndex());  // ordering number
+						level = static_cast<float>(reader.LevelIndex());  // ordering number
 					}
 					info.level1 = static_cast<int>(level);
 					info.lvl1_lvl2 = info.level1 + 1000 * info.level2;

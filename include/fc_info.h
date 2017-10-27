@@ -40,7 +40,6 @@ struct fc_info
 	      parname(""),
 	      levname(""),
 	      grtyp(""),
-	      filetype(""),
 	      filename(""),
 	      ncname("")
 	      // RADON ONLY
@@ -91,7 +90,6 @@ struct fc_info
 	std::string parname;
 	std::string levname;
 	std::string grtyp;
-	std::string filetype;
 	std::string filename;
 	std::string ncname;
 	long forecast_type_id;  // from table forecast_type
