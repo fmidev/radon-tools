@@ -75,7 +75,18 @@ string BDAPLoader::REFFileName(const fc_info& info)
 		ss << "_" << info.forecast_type_id << "_" << info.forecast_type_value;
 	}
 
-	ss << "." << info.filetype;
+	if (info.ednum == 1)
+	{
+		ss << ".grib";
+	}
+	else if (info.ednum == 2)
+	{
+		ss << ".grib2";
+	}
+	else
+	{
+		ss << ".nc";
+	}
 
 	return ss.str();
 }
@@ -149,7 +160,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	}
 
 	auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
-	                                                  (info.ednum == 3 ? 1 : static_cast<int> (info.ednum)), static_cast<int> (info.gridtype));
+	                                                  (info.ednum == 3 ? 1 : static_cast<int>(info.ednum)),
+	                                                  static_cast<int>(info.gridtype));
 
 	if (geominfo.empty())
 	{
@@ -193,7 +205,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		else if (info.ednum == 2)
 		{
 			p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, info.levtype,
-			                                      static_cast<double> (info.lvl1_lvl2));
+			                                      static_cast<double>(info.lvl1_lvl2));
 
 			if (p.empty())
 			{
@@ -205,7 +217,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		}
 		else if (info.ednum == 3)
 		{
-			p = itsRadonDB->GetParameterFromNetCDF(producer_id, info.ncname, level_id, static_cast<double> (info.lvl1_lvl2));
+			p = itsRadonDB->GetParameterFromNetCDF(producer_id, info.ncname, level_id,
+			                                       static_cast<double>(info.lvl1_lvl2));
 
 			if (p.empty())
 			{

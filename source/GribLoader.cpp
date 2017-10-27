@@ -4,14 +4,30 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
-#include <iostream>
 #include <iomanip>
+#include <iostream>
 #include <sstream>
 #include <stdlib.h>
 
 extern Options options;
 
 using namespace std;
+
+mutex dirCreateMutex;
+
+struct timer
+{
+	timespec start_ts, stop_ts;
+
+	void start() { clock_gettime(CLOCK_REALTIME, &start_ts); }
+	void stop() { clock_gettime(CLOCK_REALTIME, &stop_ts); }
+	int get_time_ms()
+	{
+		size_t _start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
+		size_t _stop = static_cast<size_t>(stop_ts.tv_sec * 1000000000 + stop_ts.tv_nsec);
+		return static_cast<int>(static_cast<double>(_stop - _start) / 1000. / 1000.);
+	}
+};
 
 GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0) {}
 GribLoader::~GribLoader() {}
@@ -42,9 +58,9 @@ bool GribLoader::Load(const string& theInfile)
 		threadgroup.push_back(boost::thread(&GribLoader::Run, this, i));
 	}
 
-	for (unsigned short i = 0; i < threadgroup.size(); i++)
+	for (auto& t : threadgroup)
 	{
-		threadgroup[i].join();
+		t.join();
 	}
 
 	cout << "Success with " << g_success << " fields, "
@@ -95,6 +111,32 @@ bool GribLoader::Load(const string& theInfile)
 	return retval;
 }
 
+void CreateDirectory(const string& theFileName)
+{
+	namespace fs = boost::filesystem;
+
+	fs::path pathname(theFileName);
+
+	if (!fs::is_directory(pathname.parent_path()))
+	{
+		lock_guard<mutex> lock(dirCreateMutex);
+
+		if (!fs::is_directory(pathname.parent_path()))
+		{
+			// Create directory
+
+			if (options.verbose)
+			{
+				cout << "Creating directory " << pathname.parent_path().string() << endl;
+			}
+
+			if (!options.dry_run)
+			{
+				fs::create_directories(pathname.parent_path());
+			}
+		}
+	}
+}
 /*
  * CopyMetaData()
  *
@@ -102,7 +144,7 @@ bool GribLoader::Load(const string& theInfile)
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
  */
 
-bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
+bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
 {
 	g.centre = message.Centre();
 	g.ednum = message.Edition();
@@ -131,8 +173,6 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 
 	if (g.ednum == 1)
 	{
-		g.filetype = "grib";
-
 		g.novers = message.Table2Version();
 		g.timeRangeIndicator = message.TimeRangeIndicator();
 
@@ -180,8 +220,6 @@ bool GribLoader::CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmi
 	}
 	else
 	{
-		g.filetype = "grib2";
-
 		g.timeRangeIndicator = 0;
 
 		auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
@@ -349,13 +387,13 @@ void GribLoader::Run(short threadId)
 {
 	printf("Thread %d started\n", threadId);
 
-	itsThreadedLoader.reset(new BDAPLoader());
+	BDAPLoader dbLoader;
 
 	NFmiGribMessage myMessage;
 
 	while (DistributeMessages(myMessage))
 	{
-		Process(*itsThreadedLoader, myMessage, threadId);
+		Process(dbLoader, myMessage, threadId);
 	}
 
 	printf("Thread %d stopped\n", threadId);
@@ -370,7 +408,6 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
 		{
 			printf("Message %d\n", itsReader.CurrentMessageIndex());
 		}
-
 		newMessage = NFmiGribMessage(itsReader.Message());
 		return true;
 	}
@@ -382,11 +419,11 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 {
 	fc_info g;
 
-	timespec start_ms_ts, stop_ms_ts, start_ts, stop_ts;
+	timer msgtimer;
 
 	if (options.verbose)
 	{
-		clock_gettime(CLOCK_REALTIME, &start_ms_ts);
+		msgtimer.start();
 	}
 	/*
 	 * Read metadata from grib msg
@@ -422,7 +459,8 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 	g.filename = theFileName;
 
-	clock_gettime(CLOCK_REALTIME, &start_ts);
+	timer tmr;
+	tmr.start();
 
 	CreateDirectory(theFileName);
 
@@ -439,17 +477,14 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		}
 	}
 
-	clock_gettime(CLOCK_REALTIME, &stop_ts);
-	size_t start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
-	size_t stop = static_cast<size_t>(stop_ts.tv_sec * 1000000000 + stop_ts.tv_nsec);
-
-	size_t writeTime = (stop - start) / 1000 / 1000;
+	tmr.stop();
+	size_t writeTime = tmr.get_time_ms();
 
 	/*
 	 * Update new file information to database
 	 */
 
-	clock_gettime(CLOCK_REALTIME, &start_ts);
+	tmr.start();
 
 	if (!databaseLoader.WriteToRadon(g))
 	{
@@ -469,19 +504,15 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		}
 	}
 
-	clock_gettime(CLOCK_REALTIME, &stop_ts);
-	start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
-	stop = static_cast<size_t>(stop_ts.tv_sec * 1000000000 + stop_ts.tv_nsec);
-	size_t databaseTime = (stop - start) / 1000 / 1000;
+	tmr.stop();
+	size_t databaseTime = tmr.get_time_ms();
 
 	g_success++;
 
 	if (options.verbose)
 	{
-		clock_gettime(CLOCK_REALTIME, &stop_ms_ts);
-		start = static_cast<size_t>(start_ms_ts.tv_sec * 1000000000 + start_ms_ts.tv_nsec);
-		stop = static_cast<size_t>(stop_ms_ts.tv_sec * 1000000000 + stop_ms_ts.tv_nsec);
-		size_t messageTime = (stop - start) / 1000 / 1000;
+		msgtimer.stop();
+		size_t messageTime = msgtimer.get_time_ms();
 
 		size_t otherTime = messageTime - writeTime - databaseTime;
 
@@ -510,22 +541,4 @@ bool GribLoader::IsGrib(const string& theFileName)
 {
 	return theFileName.substr(theFileName.size() - 4, 4) == "grib" ||
 	       theFileName.substr(theFileName.size() - 5, 5) == "grib2";
-}
-
-void GribLoader::CreateDirectory(const string& theFileName)
-{
-	namespace fs = boost::filesystem;
-
-	fs::path pathname(theFileName);
-
-	lock_guard<mutex> lock(dirCreateMutex);
-
-	if (!fs::is_directory(pathname.parent_path()))
-	{
-		// Create directory
-
-		if (options.verbose) cout << "Creating directory " << pathname.parent_path().string() << endl;
-
-		if (!options.dry_run) fs::create_directories(pathname.parent_path());
-	}
 }

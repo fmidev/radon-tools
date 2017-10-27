@@ -214,7 +214,7 @@ filetype FileType(const std::string& theFile)
 
 	std::ifstream f(theFile.c_str(), std::ios::in | std::ios::binary);
 
-	long keywordLength = 4;
+	constexpr long keywordLength = 4;
 
 	char content[keywordLength];
 
