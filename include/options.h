@@ -23,7 +23,8 @@ struct Options
 	      max_skipped(-1),
 	      dry_run(false),
 	      leveltypes(""),
-	      threadcount(2)
+	      threadcount(2),
+	      ss_state_update(true)
 	{
 	}
 
@@ -45,6 +46,7 @@ struct Options
 	bool dry_run;                  // -d;
 	std::string leveltypes;        // -l
 	short threadcount;             // -j
+	bool ss_state_update;          // -X
 };
 
 #endif

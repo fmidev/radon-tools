@@ -29,34 +29,36 @@ bool parse_options(int argc, char* argv[])
 
 	bool radon_switch = false;
 	bool neons_switch = false;
+	bool ss_state_switch = false;
 	int max_failures = -1;
 	int max_skipped = -1;
 
-	desc.add_options()("help,h", "print out help message")("verbose,v", po::bool_switch(&options.verbose),
-	                                                       "set verbose mode on")(
-	    "netcdf,n", po::bool_switch(&options.netcdf), "force netcdf mode on")(
-	    "grib,g", po::bool_switch(&options.grib), "force grib mode on")("index", po::bool_switch(&options.index),
-	                                                                    "force grib index mode on")(
-	    "index-keys", po::value(&options.keys), "define keys for file indexing, using grib_api notation")(
-	    "version,V", "display version number")("infile,i", po::value<std::vector<std::string>>(&options.infile),
-	                                           "input file")("center,c", po::value(&options.center), "force center id")(
-	    "process,p", po::value(&options.process), "force process id")(
-	    "analysistime,a", po::value(&options.analysistime), "force analysis time")(
-	    "parameters,P", po::value(&options.parameters), "accept these parameters, comma separated list")(
-	    "level,L", po::value(&options.level), "force level (only nc)")("leveltypes,l", po::value(&options.leveltypes),
-	                                                                   "accept these leveltypes, comma separated list")(
-	    "use-level-value", po::bool_switch(&options.use_level_value), "use level value instead of index")(
-	    "use-inverse-level-value", po::bool_switch(&options.use_inverse_level_value),
-	    "use inverse level value instead of index")(
-	    "max-failures", po::value(&max_failures),
-	    "maximum number of allowed loading failures (grib) -1 = \"don't care\"")(
-	    "max-skipped", po::value(&max_skipped),
-	    "maximum number of allowed skipped messages (grib) -1 = \"don't care\"")(
-	    "dry-run", po::bool_switch(&options.dry_run),
-	    "dry run (no changes made to database or disk), show all sql statements")(
-	    "threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")(
-	    "neons,N", po::bool_switch(&neons_switch), "use only neons database")("radon,R", po::bool_switch(&radon_switch),
-	                                                                          "use only radon database");
+	// clang-format off
+	desc.add_options()
+		("help,h", "print out help message")
+		("verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")
+		("netcdf,n", po::bool_switch(&options.netcdf), "force netcdf mode on")
+		("grib,g", po::bool_switch(&options.grib), "force grib mode on")
+		("index", po::bool_switch(&options.index), "force grib index mode on")
+		("index-keys", po::value(&options.keys), "define keys for file indexing, using grib_api notation")
+		("version,V", "display version number")
+		("infile,i", po::value<std::vector<std::string>>(&options.infile), "input file(s)")
+		("center,c", po::value(&options.center), "force center id")
+		("process,p", po::value(&options.process), "force process id")
+		("analysistime,a", po::value(&options.analysistime), "force analysis time")
+		("parameters,P", po::value(&options.parameters), "accept these parameters, comma separated list")
+		("level,L", po::value(&options.level), "force level (only nc)")
+		("leveltypes,l", po::value(&options.leveltypes), "accept these leveltypes, comma separated list")
+		("use-level-value", po::bool_switch(&options.use_level_value), "use level value instead of index")
+		("use-inverse-level-value", po::bool_switch(&options.use_inverse_level_value), "use inverse level value instead of index")
+		("max-failures", po::value(&max_failures), "maximum number of allowed loading failures (grib) -1 = \"don't care\"")
+		("max-skipped", po::value(&max_skipped), "maximum number of allowed skipped messages (grib) -1 = \"don't care\"")
+		("dry-run", po::bool_switch(&options.dry_run), "dry run (no changes made to database or disk), show all sql statements")
+		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
+		("neons,N", po::bool_switch(&neons_switch), "use only neons database (DEPRECATED)")
+		("radon,R", po::bool_switch(&radon_switch), "use only radon database (DEPRECATED)")
+		("X", po::bool_switch(&ss_state_switch), "do no update ss_state table information");
+	// clang-format on
 
 	po::positional_options_description p;
 	p.add("infile", -1);
@@ -93,6 +95,11 @@ bool parse_options(int argc, char* argv[])
 	if (neons_switch)
 	{
 		std::cout << "Switch -N is deprecated" << std::endl;
+	}
+
+	if (ss_state_switch)
+	{
+		options.ss_state_update = false;
 	}
 
 	if (max_failures >= -1)
