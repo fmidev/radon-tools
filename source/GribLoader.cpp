@@ -125,7 +125,7 @@ bool GribLoader::Load(const string& theInfile)
 						   << "producer_id = " << tokens[0] << " AND "
 						   << "geometry_id = " << tokens[1] << " AND "
 						   << "analysis_time = to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss') AND "
-						   << "forecast_period = '" << tokens[3] << "' AND "
+						   << "forecast_period = " << tokens[3] << " AND "
 						   << "forecast_type_id = " << tokens[4] << " AND "
 						   << "forecast_type_value = " << tokens[5];
 
