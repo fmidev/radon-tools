@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.10.27
+Version:        17.11.6
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -47,7 +47,7 @@ Provides:       previ_to_neons.py
 Provides:	geom_to_radon.py
 %endif
 
-Provides:	grid_to_neons
+Provides:	grid_to_radon
 
 AutoReqProv: no
 
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Nov  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.11.6-1.fmi
+- Add ss_state table update
 * Fri Oct 27 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.27-1.fmi
 - Code cleanup
 * Wed Oct 25 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.25-1.fmi
