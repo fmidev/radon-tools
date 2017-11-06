@@ -29,7 +29,7 @@ bool parse_options(int argc, char* argv[])
 
 	bool radon_switch = false;
 	bool neons_switch = false;
-	bool ss_state_switch = false;
+	bool ss_state_switch = true;
 	int max_failures = -1;
 	int max_skipped = -1;
 
@@ -57,7 +57,7 @@ bool parse_options(int argc, char* argv[])
 		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
 		("neons,N", po::bool_switch(&neons_switch), "use only neons database (DEPRECATED)")
 		("radon,R", po::bool_switch(&radon_switch), "use only radon database (DEPRECATED)")
-		("X", po::bool_switch(&ss_state_switch), "do no update ss_state table information");
+		("no-ss_state-update,X", po::bool_switch(&ss_state_switch), "do not update ss_state table information");
 	// clang-format on
 
 	po::positional_options_description p;
@@ -97,10 +97,7 @@ bool parse_options(int argc, char* argv[])
 		std::cout << "Switch -N is deprecated" << std::endl;
 	}
 
-	if (ss_state_switch)
-	{
-		options.ss_state_update = false;
-	}
+	options.ss_state_update = ss_state_switch;
 
 	if (max_failures >= -1)
 	{
