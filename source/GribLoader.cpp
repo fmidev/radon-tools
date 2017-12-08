@@ -419,7 +419,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.level2 = -1;  // "missing"
 
-	if (g.levtype == 106 || g.levtype == 112)
+	if (g.levtype == 106 || g.levtype == 108 || g.levtype == 112)
 	{
 		g.level2 = message.LevelValue2();
 
