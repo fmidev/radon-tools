@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.11.6
+Version:        17.12.11
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,14 +14,14 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 17.10.25
+BuildRequires:  libfmigrib-devel >= 17.12.11
 BuildRequires:  libfmidb-devel >= 17.9.18
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 17.10.25
+Requires:	libfmigrib >= 17.12.11
 Requires:	libfmidb >= 17.9.18
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Dec 11 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.12.11-1.fmi
+- New grib level type
 * Mon Nov  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.11.6-1.fmi
 - Add ss_state table update
 * Fri Oct 27 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.10.27-1.fmi
