@@ -12,7 +12,8 @@ using namespace std;
 extern Options options;
 once_flag oflag;
 
-BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("radon"), base(0), itsNeedsAnalyze(false)
+BDAPLoader::BDAPLoader()
+    : itsUsername("wetodb"), itsDatabase("radon"), itsDatabaseHost("vorlon"), base(0), itsNeedsAnalyze(false)
 {
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
@@ -25,22 +26,35 @@ BDAPLoader::BDAPLoader() : itsUsername("wetodb"), itsDatabase("radon"), base(0),
 		throw runtime_error("Password must be specified with environment variable 'RADON_WETODB_PASSWORD'");
 	}
 
-	call_once(oflag, &BDAPLoader::InitPool, this, itsUsername, itsPassword, itsDatabase);
+	const auto host = getenv("RADON_HOSTNAME");
+
+	if (host)
+	{
+		itsDatabaseHost = string(host);
+	}
+
+	const auto database = getenv("RADON_DATABASENAME");
+
+	if (database)
+	{
+		itsDatabase = string(database);
+	}
+
+	call_once(oflag, [&]() {
+		NFmiRadonDBPool::Instance()->Username(itsUsername);
+		NFmiRadonDBPool::Instance()->Password(itsPassword);
+		NFmiRadonDBPool::Instance()->Database(itsDatabase);
+		NFmiRadonDBPool::Instance()->Hostname(itsDatabaseHost);
+		NFmiRadonDBPool::Instance()->MaxWorkers(10);
+
+		char host[255];
+		gethostname(host, 100);
+		itsHostname = string(host);
+
+		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ")" << endl;
+	});
 
 	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());
-}
-
-void BDAPLoader::InitPool(const string& username, const string& password, const string& database)
-{
-	NFmiRadonDBPool::Instance()->Username(username);
-	NFmiRadonDBPool::Instance()->Password(password);
-	NFmiRadonDBPool::Instance()->Database(itsDatabase);
-	NFmiRadonDBPool::Instance()->Hostname("vorlon");
-	NFmiRadonDBPool::Instance()->MaxWorkers(8);
-
-	char host[255];
-	gethostname(host, 100);
-	itsHostname = string(host);
 }
 
 BDAPLoader::~BDAPLoader()
@@ -341,7 +355,19 @@ bool BDAPLoader::ReadREFEnvironment()
 	return true;
 }
 
-NFmiRadonDB& BDAPLoader::RadonDB() const { return *itsRadonDB; }
-bool BDAPLoader::NeedsAnalyze() const { return itsNeedsAnalyze; }
-string BDAPLoader::LastInsertedTable() const { return itsLastInsertedTable; }
-string BDAPLoader::LastSSStateInformation() const { return itsLastSSStateInformation; }
+NFmiRadonDB& BDAPLoader::RadonDB() const
+{
+	return *itsRadonDB;
+}
+bool BDAPLoader::NeedsAnalyze() const
+{
+	return itsNeedsAnalyze;
+}
+string BDAPLoader::LastInsertedTable() const
+{
+	return itsLastInsertedTable;
+}
+string BDAPLoader::LastSSStateInformation() const
+{
+	return itsLastSSStateInformation;
+}

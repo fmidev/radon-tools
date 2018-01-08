@@ -27,11 +27,10 @@ class BDAPLoader
 	std::string LastSSStateInformation() const;
 
    private:
-	void InitPool(const std::string& username, const std::string& password, const std::string& database);
-
 	std::string itsUsername;
 	std::string itsPassword;
 	std::string itsDatabase;
+	std::string itsDatabaseHost;
 
 	bool ReadREFEnvironment();
 	void Init();
