@@ -15,6 +15,10 @@ once_flag oflag;
 BDAPLoader::BDAPLoader()
     : itsUsername("wetodb"), itsDatabase("radon"), itsDatabaseHost("vorlon"), base(0), itsNeedsAnalyze(false)
 {
+	char myhost[255];
+	gethostname(myhost, 100);
+	itsHostname = string(myhost);
+
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
 	if (pw)
@@ -46,10 +50,6 @@ BDAPLoader::BDAPLoader()
 		NFmiRadonDBPool::Instance()->Database(itsDatabase);
 		NFmiRadonDBPool::Instance()->Hostname(itsDatabaseHost);
 		NFmiRadonDBPool::Instance()->MaxWorkers(10);
-
-		char host[255];
-		gethostname(host, 100);
-		itsHostname = string(host);
 
 		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ")" << endl;
 	});
