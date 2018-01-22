@@ -224,8 +224,10 @@ bool NetCDFLoader::Load(const string& theInfile)
 		float fctime = static_cast<float>(fctimeEpoch - atimeEpoch) / 3600.f;
 
 		if (options.verbose)
+		{
 			cout << "Time " << static_cast<int>(reader.Time<float>()) << " (" << options.analysistime << " +" << fctime
 			     << " hours)" << endl;
+		}
 
 		info.fcst_per = static_cast<int>(fctime);
 		info.step = static_cast<int>(fctime);
@@ -572,11 +574,8 @@ long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 	}
 	else if (boost::regex_match(mask, sm, r1))
 	{
-		std::stringstream ss;
-		ss << sm[1] << "-" << sm[2] << "-" << sm[3] << " " << sm[4] << " " << sm[5] << " " << sm[6];
-
 		tm stime;
-		strptime(ss.str().c_str(), "%Y-%m-%d %H:%M:%S", &stime);
+		strptime(mask.c_str(), "seconds since %Y-%m-%d %H:%M:%S UTC", &stime);
 		long offset = static_cast<long>(timegm(&stime));
 
 		e = offset + boost::lexical_cast<long>(dateTime);
