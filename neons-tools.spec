@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        17.12.11
+Version:        18.1.22
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jan 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.22-1.fmi
+- Bugfix for netcdf time read
 * Mon Dec 11 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.12.11-1.fmi
 - New grib level type
 * Mon Nov  6 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.11.6-1.fmi
