@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.1.22
+Version:        18.1.24
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,14 +14,14 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 17.12.11
+BuildRequires:  libfmigrib-devel >= 18.1.24
 BuildRequires:  libfmidb-devel >= 17.9.18
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 17.12.11
+Requires:	libfmigrib >= 18.1.24
 Requires:	libfmidb >= 17.9.18
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
@@ -52,7 +52,7 @@ Provides:	grid_to_radon
 AutoReqProv: no
 
 %description
-Neons-tools includes programs for loading data to neons DB.
+Neons-tools includes programs for loading data to radon DB.
 Table creation tools are also included.
 
 %prep
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jan 24 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.24-1.fmi
+- fmigrib api change
 * Mon Jan 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.22-1.fmi
 - Bugfix for netcdf time read
 * Mon Dec 11 2017 Mikko Partio <mikko.partio@fmi.fi> - 17.12.11-1.fmi
