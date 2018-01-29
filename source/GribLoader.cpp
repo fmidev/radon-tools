@@ -201,15 +201,17 @@ void CreateDirectory(const string& theFileName)
 
 bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
 {
-	g.centre = message.Centre();
 	g.ednum = message.Edition();
 
 	g.param = message.ParameterNumber();
 	g.levtype = message.LevelType();
 
+	// If *centre* or *process* is specified on the command line, force them here.
 	g.process = message.Process();
-
 	if (options.process != 0) g.process = options.process;
+
+	g.centre = message.Centre();
+	if (options.center != 0) g.centre = options.center;
 
 	// Default to deterministic forecast
 
