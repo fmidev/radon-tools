@@ -16,7 +16,6 @@ struct fc_info
 	      day(0),
 	      hour(0),
 	      minute(0),
-	      stepType(0),
 	      startstep(0),
 	      endstep(0),
 	      timeUnit(0),
@@ -36,7 +35,6 @@ struct fc_info
 	      fcst_per(0),
 	      timeRangeIndicator(0),
 	      base_date(""),
-	      base_date_sql(""),
 	      parname(""),
 	      levname(""),
 	      grtyp(""),
@@ -66,7 +64,6 @@ struct fc_info
 	long day;
 	long hour;
 	long minute;
-	long stepType;
 	long startstep;
 	long endstep;
 	long timeUnit;
@@ -86,7 +83,6 @@ struct fc_info
 	long fcst_per;
 	long timeRangeIndicator;
 	std::string base_date;
-	std::string base_date_sql;
 	std::string parname;
 	std::string levname;
 	std::string grtyp;
