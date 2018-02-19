@@ -213,10 +213,6 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	g.centre = message.Centre();
 	if (options.center != 0) g.centre = options.center;
 
-	// Default to deterministic forecast
-
-	g.forecast_type_id = 1;
-
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
 	    (message.ForecastTypeValue() == -999) ? -1 : static_cast<double>(message.ForecastTypeValue());
@@ -226,6 +222,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	if (g.forecast_type_id == 3 || g.forecast_type_id == 4)
 	{
 		producer_type = 3;  // ens
+	}
+
+	if (g.forecast_type_id == 2)
+	{
+		producer_type = 2; // analysis
 	}
 
 	if (g.ednum == 1)
