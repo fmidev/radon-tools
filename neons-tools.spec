@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.1.24
+Version:        18.2.19
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Feb 19 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.19-1.fmi
+- Fix grib2 analysis loading
 * Wed Jan 24 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.24-1.fmi
 - fmigrib api change
 * Mon Jan 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.22-1.fmi
