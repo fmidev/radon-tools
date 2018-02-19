@@ -31,7 +31,9 @@ NetCDFLoader::NetCDFLoader()
 	setenv("TZ", "UTC", 1);
 }
 
-NetCDFLoader::~NetCDFLoader() {}
+NetCDFLoader::~NetCDFLoader()
+{
+}
 bool NetCDFLoader::Load(const string& theInfile)
 {
 	NFmiNetCDF reader;
@@ -105,16 +107,10 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 	stringstream ss;
 
-	ss << info.year << setw(2) << setfill('0') << info.month << setw(2) << setfill('0') << info.day << setw(2)
-	   << setfill('0') << info.hour;
-
-	info.base_date = ss.str();
-
-	ss.str("");
 	ss << info.year << "-" << setw(2) << setfill('0') << info.month << "-" << setw(2) << setfill('0') << info.day << " "
 	   << setw(2) << setfill('0') << info.hour << ":00:00";
 
-	info.base_date_sql = ss.str();
+	info.base_date = ss.str();
 
 	info.ni = reader.SizeX();
 	info.nj = reader.SizeY();
@@ -258,7 +254,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 			if (grid_parameter_name.empty())
 			{
-				if (options.verbose) cout << "NetCDF param " << ncname << " not supported" << endl;
+				if (options.verbose)
+					cout << "NetCDF param " << ncname << " not supported" << endl;
 
 				g_failedParams++;
 				pskip[ncname] = 1;
@@ -271,7 +268,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 			{
 				if (std::find(parameters.begin(), parameters.end(), grid_parameter_name) == parameters.end())
 				{
-					if (options.verbose) cout << "Skipping parameter " << grid_parameter_name << endl;
+					if (options.verbose)
+						cout << "Skipping parameter " << grid_parameter_name << endl;
 
 					g_failedParams++;
 					pskip[ncname] = 1;
@@ -281,7 +279,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 			if (parameter.empty())
 			{
-				if (options.verbose) cout << "Param " << grid_parameter_name << " not supported" << endl;
+				if (options.verbose)
+					cout << "Param " << grid_parameter_name << " not supported" << endl;
 
 				g_failedParams++;
 				pskip[ncname] = 1;
@@ -292,7 +291,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 			info.parname = grid_parameter_name;
 
-			if (options.verbose) cout << "Parameter " << ncname << " (" << grid_parameter_name << ")" << endl;
+			if (options.verbose)
+				cout << "Parameter " << ncname << " (" << grid_parameter_name << ")" << endl;
 
 			float level = kFloatMissing;
 
@@ -326,7 +326,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 			{
 				if (std::find(levels.begin(), levels.end(), info.levname) == levels.end())
 				{
-					if (options.verbose) cout << "Skipping level " << info.levname << endl;
+					if (options.verbose)
+						cout << "Skipping level " << info.levname << endl;
 
 					continue;
 				}
@@ -343,7 +344,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 				string theFileName = itsDatabaseLoader.REFFileName(info);
 
-				if (theFileName.empty()) return false;
+				if (theFileName.empty())
+					return false;
 
 				info.filename = theFileName;
 
@@ -396,7 +398,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 					string theFileName = itsDatabaseLoader.REFFileName(info);
 
-					if (theFileName.empty()) return false;
+					if (theFileName.empty())
+						return false;
 
 					info.filename = theFileName;
 

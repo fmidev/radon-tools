@@ -19,8 +19,14 @@ struct timer
 {
 	timespec start_ts, stop_ts;
 
-	void start() { clock_gettime(CLOCK_REALTIME, &start_ts); }
-	void stop() { clock_gettime(CLOCK_REALTIME, &stop_ts); }
+	void start()
+	{
+		clock_gettime(CLOCK_REALTIME, &start_ts);
+	}
+	void stop()
+	{
+		clock_gettime(CLOCK_REALTIME, &stop_ts);
+	}
 	int get_time_ms()
 	{
 		size_t _start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
@@ -29,8 +35,12 @@ struct timer
 	}
 };
 
-GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0) {}
-GribLoader::~GribLoader() {}
+GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
+{
+}
+GribLoader::~GribLoader()
+{
+}
 bool GribLoader::Load(const string& theInfile)
 {
 	itsReader.Open(theInfile);
@@ -97,8 +107,7 @@ bool GribLoader::Load(const string& theInfile)
 			ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
 			      "forecast_type_value, table_name) VALUES ("
 			   << tokens[0] << ", " << tokens[1] << ", "
-			   << "to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss'), " << tokens[3] << ", " << tokens[4] << ", "
-			   << tokens[5] << ", "
+			   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
 			   << "'" << tokens[6] << "')";
 
 			if (options.verbose)
@@ -124,7 +133,7 @@ bool GribLoader::Load(const string& theInfile)
 						ss << "UPDATE ss_state SET last_updated = now() WHERE "
 						   << "producer_id = " << tokens[0] << " AND "
 						   << "geometry_id = " << tokens[1] << " AND "
-						   << "analysis_time = to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss') AND "
+						   << "analysis_time = '" << tokens[2] << "' AND "
 						   << "forecast_period = " << tokens[3] << " AND "
 						   << "forecast_type_id = " << tokens[4] << " AND "
 						   << "forecast_type_value = " << tokens[5];
@@ -208,10 +217,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	// If *centre* or *process* is specified on the command line, force them here.
 	g.process = message.Process();
-	if (options.process != 0) g.process = options.process;
-
-	g.centre = message.Centre();
-	if (options.center != 0) g.centre = options.center;
+	if (options.process != 0)
+		g.process = options.process;
 
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
@@ -223,31 +230,30 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		producer_type = 3;  // ens
 	}
-
-	if (g.forecast_type_id == 2)
+	else if (g.forecast_type_id == 2)
 	{
-		producer_type = 2; // analysis
+		producer_type = 2;  // analysis
 	}
+
+	auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
+
+	if (prodinfo.empty())
+	{
+		if (options.verbose)
+		{
+			cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
+			     << " type " << producer_type << endl;
+		}
+
+		return false;
+	}
+
+	const long producerId = stol(prodinfo["id"]);
 
 	if (g.ednum == 1)
 	{
 		g.novers = message.Table2Version();
 		g.timeRangeIndicator = message.TimeRangeIndicator();
-
-		auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
-
-		if (prodinfo.empty())
-		{
-			if (options.verbose)
-			{
-				cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
-				     << " type " << producer_type << endl;
-			}
-
-			return false;
-		}
-
-		long producerId = boost::lexical_cast<long>(prodinfo["id"]);
 
 		databaseLoader.RadonDB().WarmGrib1ParameterCache(producerId);
 
@@ -280,19 +286,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		g.timeRangeIndicator = 0;
 
-		auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
-
-		if (prodinfo.empty())
-		{
-			if (options.verbose)
-			{
-				cerr << "FMI producer id not found for grib producer " << g.centre << " " << g.process << endl;
-			}
-
-			return false;
-		}
-
-		long producerId = boost::lexical_cast<long>(prodinfo["id"]);
+		databaseLoader.RadonDB().WarmGrib2ParameterCache(producerId);
 
 		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(),
 		                                                                message.ParameterCategory(), g.param, g.levtype,
@@ -406,16 +400,10 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	stringstream ss;
 
-	ss << g.year << setw(2) << setfill('0') << g.month << setw(2) << setfill('0') << g.day << setw(2) << setfill('0')
-	   << g.hour << "0000";
+	ss << g.year << "-" << setw(2) << setfill('0') << g.month << "-" << setw(2) << setfill('0') << g.day << " "
+	   << setw(2) << setfill('0') << g.hour << ":" << g.minute << ":00";
 
 	g.base_date = ss.str();
-
-	ss.str("");
-	ss << g.year << "-" << setw(2) << setfill('0') << g.month << "-" << setw(2) << setfill('0') << g.day << " "
-	   << setw(2) << setfill('0') << g.hour << ":00:00";
-
-	g.base_date_sql = ss.str();
 
 	g.level1 = message.LevelValue();
 	g.lvl1_lvl2 = g.level1;
@@ -426,10 +414,10 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		g.level2 = message.LevelValue2();
 
-		if (g.level2 == INT_MAX) g.level2 = -1;
+		if (g.level2 == INT_MAX)
+			g.level2 = -1;
 	}
 
-	g.stepType = message.TimeRangeIndicator();
 	g.timeUnit = message.UnitOfTimeRange();
 
 	g.startstep = message.NormalizedStep(false, false);
@@ -513,7 +501,8 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 	string theFileName = GetFileName(databaseLoader, g);
 
-	if (theFileName.empty()) exit(1);
+	if (theFileName.empty())
+		exit(1);
 
 	g.filename = theFileName;
 
@@ -596,7 +585,10 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	}
 }
 
-string GribLoader::GetFileName(BDAPLoader& databaseLoader, const fc_info& g) { return databaseLoader.REFFileName(g); }
+string GribLoader::GetFileName(BDAPLoader& databaseLoader, const fc_info& g)
+{
+	return databaseLoader.REFFileName(g);
+}
 bool GribLoader::IsGrib(const string& theFileName)
 {
 	return theFileName.substr(theFileName.size() - 4, 4) == "grib" ||

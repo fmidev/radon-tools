@@ -15,14 +15,14 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 18.1.24
-BuildRequires:  libfmidb-devel >= 17.9.18
+BuildRequires:  libfmidb-devel >= 18.2.19
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 18.1.24
-Requires:	libfmidb >= 17.9.18
+Requires:	libfmidb >= 18.2.19
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -87,6 +87,7 @@ rm -rf %{buildroot}
 %changelog
 * Mon Feb 19 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.19-1.fmi
 - Fix grib2 analysis loading
+- Add minutes to originTime
 * Wed Jan 24 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.24-1.fmi
 - fmigrib api change
 * Mon Jan 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.1.22-1.fmi

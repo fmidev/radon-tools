@@ -232,7 +232,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		param_id = boost::lexical_cast<long>(p["id"]);
 	}
 
-	auto tableinfo = itsRadonDB->GetTableName(producer_id, info.base_date_sql, geometry_name);
+	auto tableinfo = itsRadonDB->GetTableName(producer_id, info.base_date, geometry_name);
 
 	if (tableinfo.empty())
 	{
@@ -276,8 +276,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
 	         "forecast_type_id, file_location, file_server, forecast_type_value) "
-	      << "VALUES (" << producer_id << ", "
-	      << "to_timestamp('" << info.base_date << "', 'yyyymmddhh24miss'), " << geometry_id << ", " << param_id << ", "
+	      << "VALUES (" << producer_id << ", '"
+	      << info.base_date << "', " << geometry_id << ", " << param_id << ", "
 	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "
@@ -306,8 +306,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << info.filename << "', "
 		      << " file_server = '" << itsHostname << "', "
 		      << " forecast_type_value = " << forecastTypeValue << " WHERE"
-		      << " producer_id = " << producer_id << " AND analysis_time = to_timestamp('" << info.base_date
-		      << "', 'yyyymmddhh24miss')"
+		      << " producer_id = " << producer_id << " AND analysis_time = '" << info.base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
