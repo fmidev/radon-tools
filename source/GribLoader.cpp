@@ -220,6 +220,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	if (options.process != 0)
 		g.process = options.process;
 
+	g.centre = message.Centre();
+
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
 	    (message.ForecastTypeValue() == -999) ? -1 : static_cast<double>(message.ForecastTypeValue());
@@ -401,7 +403,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	stringstream ss;
 
 	ss << g.year << "-" << setw(2) << setfill('0') << g.month << "-" << setw(2) << setfill('0') << g.day << " "
-	   << setw(2) << setfill('0') << g.hour << ":" << g.minute << ":00";
+	   << setw(2) << setfill('0') << g.hour << ":" << setw(2) << setfill('0') << g.minute << ":00";
 
 	g.base_date = ss.str();
 
