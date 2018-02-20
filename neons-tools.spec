@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.2.19
+Version:        18.2.20
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,14 +14,14 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 18.1.24
+BuildRequires:  libfmigrib-devel >= 18.2.12
 BuildRequires:  libfmidb-devel >= 18.2.19
 BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 18.1.24
+Requires:	libfmigrib >= 18.2.12
 Requires:	libfmidb >= 18.2.19
 Requires:	libfminc >= 17.2.27
 Requires:	netcdf-cxx
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Feb 20 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.20-1.fmi
+- fmigrib api change
 * Mon Feb 19 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.19-1.fmi
 - Fix grib2 analysis loading
 - Add minutes to originTime
