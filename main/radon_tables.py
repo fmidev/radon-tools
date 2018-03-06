@@ -884,6 +884,10 @@ SELECT
 		a.forecast_type_id,
 		t.name AS forecast_type_name,
 		a.forecast_type_value,
+		a.file_format_id,
+		ff.name AS file_format_name,
+		a.file_protocol_id,
+		fp.name AS file_protocol_name,
 		a.message_no,
 		a.byte_offset,
 		a.byte_length,
@@ -895,7 +899,9 @@ FROM
 		level l,
 		param p,
 		geom g,
-		forecast_type t
+		forecast_type t,
+		file_format ff,
+		file_protocol fp
 WHERE
 		a.producer_id = f.id
 		AND
@@ -904,7 +910,11 @@ WHERE
 		a.param_id = p.id
 		AND
 		a.geometry_id = g.id
-		AND 
+		AND
+		ff.id = a.file_format_id
+		AND
+		fp.id = a.file_protocol_id
+		AND
 		a.forecast_type_id = t.id
 """ % (element['table_name'], element['schema_name'], element['table_name'])
 	elif class_id == 3:

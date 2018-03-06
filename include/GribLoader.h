@@ -20,6 +20,7 @@ class GribLoader
 	void Run(short threadId);
 	bool DistributeMessages(NFmiGribMessage& newMessage, unsigned int& messageNo);
 	void Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId, unsigned int messageNo);
+
 	virtual std::string GetFileName(BDAPLoader& databaseLoader, const fc_info& g);
 	bool IsGrib(const std::string& theFileName);
 
@@ -37,4 +38,5 @@ class GribLoader
 	std::set<std::string> analyzeTables;
 	std::set<std::string> ssStateInformation;
 	std::string inputFileName;
+	std::string itsHostName;
 };
