@@ -51,7 +51,9 @@ struct fc_info
 	      di_degrees(kFloatMissing),
 	      dj_degrees(kFloatMissing),
 	      di_meters(kFloatMissing),
-	      dj_meters(kFloatMissing){};
+	      dj_meters(kFloatMissing),
+	      geom_id(0),
+	      geom_name(""){};
 
 	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
@@ -97,6 +99,8 @@ struct fc_info
 	double dj_degrees;
 	double di_meters;
 	double dj_meters;
+	long geom_id;
+	std::string geom_name;
 };
 
 #endif

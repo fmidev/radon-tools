@@ -26,6 +26,8 @@ class BDAPLoader
 	std::string LastInsertedTable() const;
 	std::string LastSSStateInformation() const;
 
+	bool GetGeometryInformation(fc_info& info);
+
    private:
 	std::string itsUsername;
 	std::string itsPassword;

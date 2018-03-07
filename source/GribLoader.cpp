@@ -426,6 +426,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.fcst_per = message.NormalizedStep(true, true);
 
+	if (!databaseLoader.GetGeometryInformation(g))
+	{
+		return false;
+	}
+
 	return true;
 }
 
