@@ -82,7 +82,7 @@ string BDAPLoader::REFFileName(const fc_info& info)
 
 	ss << base << "/" << info.centre << "_" << info.process << "/" << info.year << setw(2) << setfill('0') << info.month
 	   << setw(2) << setfill('0') << info.day << setw(2) << setfill('0') << info.hour << setw(2) << setfill('0')
-	   << info.minute << "/" << info.fcst_per << "/" << info.parname << "_"
+	   << info.minute << "/" << info.geom_name << "/" << info.fcst_per << "/" << info.parname << "_"
 	   << boost::algorithm::to_lower_copy(info.levname) << "_" << info.level1 << "_" << info.grtyp << "_" << info.ni
 	   << "_" << info.nj << "_0_" << setw(3) << setfill('0') << info.fcst_per;
 
@@ -105,6 +105,34 @@ string BDAPLoader::REFFileName(const fc_info& info)
 	}
 
 	return ss.str();
+}
+
+bool BDAPLoader::GetGeometryInformation(fc_info& info)
+{
+	double di = info.di_degrees;
+	double dj = info.dj_degrees;
+
+	if (info.grtyp == "polster" || info.grtyp == "lcc")
+	{
+		di = info.di_meters;
+		dj = info.dj_meters;
+	}
+
+	auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
+	                                                  (info.ednum == 3 ? 1 : static_cast<int>(info.ednum)),
+	                                                  static_cast<int>(info.gridtype));
+
+	if (geominfo.empty())
+	{
+		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
+		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
+		return false;
+	}
+
+	info.geom_id = stol(geominfo["id"]);
+	info.geom_name = geominfo["name"];
+
+	return true;
 }
 
 bool BDAPLoader::WriteToRadon(const fc_info& info)
@@ -149,31 +177,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		return false;
 	}
 
-	long geometry_id = 0;
-	string geometry_name = "";
-
-	double di = info.di_degrees;
-	double dj = info.dj_degrees;
-
-	if (info.grtyp == "polster" || info.grtyp == "lcc")
-	{
-		di = info.di_meters;
-		dj = info.dj_meters;
-	}
-
-	auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
-	                                                  (info.ednum == 3 ? 1 : static_cast<int>(info.ednum)),
-	                                                  static_cast<int>(info.gridtype));
-
-	if (geominfo.empty())
-	{
-		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
-		     << info.lon_degrees << " " << info.di << " " << info.dj << " " << info.gridtype << endl;
-		return false;
-	}
-
-	geometry_id = boost::lexical_cast<long>(geominfo["id"]);
-	geometry_name = geominfo["name"];
+	long geometry_id = info.geom_id;
+	string geometry_name = info.geom_name;
 
 	map<string, string> l = itsRadonDB->GetLevelFromGrib(producer_id, info.levtype, info.ednum);
 
@@ -276,8 +281,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
 	         "forecast_type_id, file_location, file_server, forecast_type_value) "
-	      << "VALUES (" << producer_id << ", '"
-	      << info.base_date << "', " << geometry_id << ", " << param_id << ", "
+	      << "VALUES (" << producer_id << ", '" << info.base_date << "', " << geometry_id << ", " << param_id << ", "
 	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "

@@ -164,6 +164,11 @@ bool NetCDFLoader::Load(const string& theInfile)
 	info.di = floor(reader.XResolution() * 1000);
 	info.dj = floor(reader.YResolution() * 1000);
 
+	if (!itsDatabaseLoader.GetGeometryInformation(info))
+	{
+		return false;
+	}
+
 	long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
 	map<string, short> pskip;
