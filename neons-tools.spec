@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.3.7
+Version:        18.4.10
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -34,7 +34,7 @@ BuildRequires:  boost-devel >= 1.53
 Requires:	libjasper
 Requires:	libnetcdf4 >= 4.0.1
 %else
-BuildRequires:  boost-devel >= 1.65
+BuildRequires:  boost-devel >= 1.66
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:	python-psycopg2
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Apr 10 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.4.10-1.fmi
+- New boost
 * Wed Mar  7 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.3.7-1.fmi
 - Geometry name to file path
 * Tue Feb 20 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.2.20-1.fmi
