@@ -191,7 +191,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 		boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
 	}
 
-	vector<string> analyzeTables;
+	set<string> analyzeTables;
 
 	for (reader.ResetTime(); reader.NextTime();)
 	{
@@ -371,10 +371,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 				{
 					const auto table = itsDatabaseLoader.LastInsertedTable();
 
-					if (find(analyzeTables.begin(), analyzeTables.end(), table) == analyzeTables.end())
-					{
-						analyzeTables.push_back(table);
-					}
+					analyzeTables.insert(table);
 				}
 
 				if (options.verbose)
@@ -435,19 +432,38 @@ bool NetCDFLoader::Load(const string& theInfile)
 	cout << "Success with " << g_succeededParams << " params, "
 	     << "failed with " << g_failedParams << " params" << endl;
 
-	if (analyzeTables.size() > 0)
+	for (const auto& table : analyzeTables)
 	{
-		for (const auto& table : analyzeTables)
+		if (options.verbose)
 		{
-			if (options.verbose)
-			{
-				cout << "Analyzing table " << table << " due to first insert" << endl;
-			}
+			cout << "Analyzing table " << table << " due to first insert" << endl;
+		}
 
-			if (!options.dry_run)
-			{
-				itsDatabaseLoader.RadonDB().Execute("ANALYZE " + table);
-			}
+		if (!options.dry_run)
+		{
+			itsDatabaseLoader.RadonDB().Execute("ANALYZE " + table);
+		}
+
+		std::vector<std::string> tokens;
+		boost::split(tokens, table, boost::is_any_of("."));
+
+		assert(tokens.size() == 2);
+
+		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
+		   << tokens[1] << "'";
+
+		if (options.verbose)
+		{
+			cout << "Updating record_count" << endl;
+		}
+
+		if (options.dry_run)
+		{
+			cout << ss.str() << endl;
+		}
+		else
+		{
+			itsDatabaseLoader.RadonDB().Execute(ss.str());
 		}
 	}
 

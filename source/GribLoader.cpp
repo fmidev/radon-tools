@@ -94,6 +94,37 @@ bool GribLoader::Load(const string& theInfile)
 		{
 			cout << "ANALYZE " + table << endl;
 		}
+
+		// update record_count column
+
+		stringstream ss;
+
+		// "table" contains table name with schema, ie schema.tablename.
+		// We have to separate schema and table names; the combinition of
+		// those is unique within a database so it's safe to update as_grid
+		// based on just that information.
+
+		std::vector<std::string> tokens;
+		boost::split(tokens, table, boost::is_any_of("."));
+
+		assert(tokens.size() == 2);
+
+		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
+		   << tokens[1] << "'";
+
+		if (options.verbose)
+		{
+			cout << "Updating record_count" << endl;
+		}
+
+		if (options.dry_run)
+		{
+			cout << ss.str() << endl;
+		}
+		else
+		{
+			ldr.RadonDB().Execute(ss.str());
+		}
 	}
 
 	if (!options.ss_state_update)
