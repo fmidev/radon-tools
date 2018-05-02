@@ -42,7 +42,7 @@ bool parse_options(int argc, char* argv[])
 		("index", po::bool_switch(&options.index), "force grib index mode on")
 		("index-keys", po::value(&options.keys), "define keys for file indexing, using grib_api notation")
 		("version,V", "display version number")
-		("infile,i", po::value<std::vector<std::string>>(&options.infile), "input file(s)")
+		("infile,i", po::value<std::vector<std::string>>(&options.infile), "input file(s), - for stdin")
 		("center,c", po::value(&options.center), "force center id")
 		("process,p", po::value(&options.process), "force process id")
 		("analysistime,a", po::value(&options.analysistime), "force analysis time")
@@ -139,7 +139,7 @@ int main(int argc, char** argv)
 
 	for (const std::string& infile : options.infile)
 	{
-		if (!boost::filesystem::exists(infile))
+		if (infile != "-" && boost::filesystem::exists(infile) == false)
 		{
 			std::cerr << "Input file '" << infile << "' does not exist" << std::endl;
 			continue;
