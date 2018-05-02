@@ -112,7 +112,8 @@ bool BDAPLoader::GetGeometryInformation(fc_info& info)
 	double di = info.di_degrees;
 	double dj = info.dj_degrees;
 
-	if (info.grtyp == "polster" || info.grtyp == "lcc")
+	// METNO Analysis in NetCDF has d{i,j}_degrees.
+	if ((info.grtyp == "polster" || info.grtyp == "lcc") && info.ednum != 3)
 	{
 		di = info.di_meters;
 		dj = info.dj_meters;

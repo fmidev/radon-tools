@@ -43,13 +43,13 @@ bool NetCDFLoader::Load(const string& theInfile)
 		return false;
 	}
 
+	// reader.AnalysisTime(options.analysistime);
+
 	if (options.analysistime.empty())
 	{
 		cerr << "Analysistime not specified" << endl;
 		return false;
 	}
-
-	// reader.AnalysisTime(options.analysistime);
 
 	if (!reader.IsConvention())
 	{
@@ -133,16 +133,36 @@ bool NetCDFLoader::Load(const string& theInfile)
 		info.gridtype = 5;
 	}
 
+	else if (reader.Projection() == "lambert_conformal_conic")
+	{
+		info.grtyp = "lcc";
+		info.gridtype = 3;
+	}
+
 	else
 	{
 		throw runtime_error("Unsupported projection: " + reader.Projection());
 	}
 
-	info.lat = static_cast<int>(1000. * reader.Y0<float>());
-	info.lon = static_cast<int>(1000. * reader.X0<float>());
+	// If the file has both (x,y) and (lon,lat) variables, then choose (lon,lat) here.
+	// (METNO Analysis)
+	float lat = 0.0f;
+	float lon = 0.0f;
+	if (reader.HasVariable("latitude") && reader.HasVariable("longitude"))
+	{
+		lat = reader.Lat0<float>();
+		lon = reader.Lon0<float>();
+	}
+	else
+	{
+		lat = reader.Y0<float>();
+		lon = reader.X0<float>();
+	}
 
-	info.lon_degrees = reader.X0<float>();
-	info.lat_degrees = reader.Y0<float>();
+	info.lat = static_cast<int>(1000.0f * lat);
+	info.lon = static_cast<int>(1000.0f * lon);
+	info.lat_degrees = lat;
+	info.lon_degrees = lon;
 
 	if (info.lat == static_cast<int>(kFloatMissing * 1000.))
 	{
@@ -531,6 +551,18 @@ long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 		}
 	}
 	else if (mask == "hours since 1970-01-01 00:00:00")
+	{
+		try
+		{
+			e = (3600 * boost::lexical_cast<long>(dateTime));
+		}
+		catch (boost::bad_lexical_cast&)
+		{
+			cerr << "Date cast failed" << endl;
+			exit(1);
+		}
+	}
+	else if (mask == "seconds since 1970-01-01 00:00:00 +00:00")
 	{
 		try
 		{
