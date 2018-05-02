@@ -29,20 +29,6 @@ if os.environ.get('CXX') != None:
 else:
 	env['CXX'] = 'g++'
 
-# cuda toolkit path
-
-cuda_toolkit_path = '/usr/local/cuda-7.0'
-
-if os.environ.get('CUDA_TOOLKIT_PATH') is None:
-        print "Environment variable CUDA_TOOLKIT_PATH not set, assuming " + cuda_toolkit_path
-else:
-        cuda_toolkit_path = os.environ['CUDA_TOOLKIT_PATH']
-
-have_cuda = False
-
-if os.path.isfile(cuda_toolkit_path + '/lib64/libcudart.so'):
-        have_cuda = True
-
 # Includes
 
 includes = []
@@ -51,11 +37,6 @@ if os.environ.get('INCLUDE') != None:
         includes.append(os.environ.get('INCLUDE'))
 
 includes.append('include')
-
-if os.environ.get('ORACLE_HOME') is None:
-        includes.append('/usr/include/oracle')
-else:
-        includes.append(os.environ.get('ORACLE_HOME') + '/rdbms/public')
 
 env.Append(CPPPATH = includes)
 
@@ -84,11 +65,8 @@ env.Append(LIBS=['fmigrib','eccodes'])
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
 env.Append(LIBS = boost_libraries)
-
-if have_cuda:
-	env.Append(LIBS=env.File(cuda_toolkit_path + '/lib64/libcudart_static.a'))
-
 env.Append(LIBS = ['dl','rt'])
+
 # CFLAGS
 
 # "Normal" flags
@@ -117,11 +95,11 @@ cflags_extra.append('-Wold-style-cast')
 
 cflags_difficult = []
 cflags_difficult.append('-pedantic')
-# cflags_difficult.append('-Weffc++')
+#cflags_difficult.append('-Weffc++')
 cflags_difficult.append('-Wredundant-decls')
 cflags_difficult.append('-Wshadow')
 cflags_difficult.append('-Woverloaded-virtual')
-#cflags_difficult.append('-Wunreachable-code') will cause errors from boost headers
+cflags_difficult.append('-Wunreachable-code')
 cflags_difficult.append('-Wctor-dtor-privacy')
 
 # Default flags (common for release/debug)
@@ -132,6 +110,7 @@ cflags.append('-std=c++11')
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
 env.Append(CCFLAGS = cflags_extra)
+env.Append(CCFLAGS = cflags_difficult)
 
 # Linker flags
 
