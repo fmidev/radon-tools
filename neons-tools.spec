@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.5.2
+Version:        18.5.3
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -21,9 +21,9 @@ BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
 Requires:       oracle-instantclient-basic
-Requires:	libfmigrib >= 18.2.12
+Requires:	libfmigrib >= 18.5.3
 Requires:	libfmidb >= 18.2.19
-Requires:	libfminc >= 17.2.27
+Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	python-dateutil
 Requires:	libpqxx
@@ -85,6 +85,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu May  3 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.3-1.fmi
+- lcc projection with netcdf
+- Read from stdin
 * Wed May  2 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.2-1.fmi
 - as_grid changes
 * Tue Apr 10 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.4.10-1.fmi
