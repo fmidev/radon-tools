@@ -469,6 +469,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 		assert(tokens.size() == 2);
 
+		ss.str("");
 		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
 		   << tokens[1] << "'";
 
