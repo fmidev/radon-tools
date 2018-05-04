@@ -566,7 +566,7 @@ long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 	{
 		try
 		{
-			e = (3600 * boost::lexical_cast<long>(dateTime));
+			e = boost::lexical_cast<long>(dateTime);
 		}
 		catch (boost::bad_lexical_cast&)
 		{
