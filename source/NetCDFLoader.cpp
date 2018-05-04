@@ -148,15 +148,20 @@ bool NetCDFLoader::Load(const string& theInfile)
 	// (METNO Analysis)
 	float lat = 0.0f;
 	float lon = 0.0f;
-	if (reader.HasVariable("latitude") && reader.HasVariable("longitude"))
+
 	{
-		lat = reader.Lat0<float>();
-		lon = reader.Lon0<float>();
-	}
-	else
-	{
-		lat = reader.Y0<float>();
-		lon = reader.X0<float>();
+		NcError errorState (NcError::silent_nonfatal);
+
+		if (reader.HasVariable("latitude") && reader.HasVariable("longitude"))
+		{
+			lat = reader.Lat0<float>();
+			lon = reader.Lon0<float>();
+		}
+		else
+		{
+			lat = reader.Y0<float>();
+			lon = reader.X0<float>();
+		}
 	}
 
 	info.lat = static_cast<int>(1000.0f * lat);
@@ -567,7 +572,7 @@ long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 	{
 		try
 		{
-			e = (3600 * boost::lexical_cast<long>(dateTime));
+			e = boost::lexical_cast<long>(dateTime);
 		}
 		catch (boost::bad_lexical_cast&)
 		{
