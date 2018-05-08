@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.5.3
+Version:        18.5.8
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -85,6 +85,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue May  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.8-1.fmi
+- Fix to netcdf loading issue
 * Thu May  3 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.3-1.fmi
 - lcc projection with netcdf
 - Read from stdin
