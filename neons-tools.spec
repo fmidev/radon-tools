@@ -20,7 +20,6 @@ BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
-Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 18.5.3
 Requires:	libfmidb >= 18.2.19
 Requires:	libfminc >= 18.5.3
