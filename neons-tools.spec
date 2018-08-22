@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.5.8
+Version:        18.5.14
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -20,7 +20,6 @@ BuildRequires:  libfminc-devel >= 17.2.27
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
-Requires:       oracle-instantclient-basic
 Requires:	libfmigrib >= 18.5.3
 Requires:	libfmidb >= 18.2.19
 Requires:	libfminc >= 18.5.3
@@ -85,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue May 14 2018 Mikko Aalto <mikko.aalto@fmi.fi> - 18.5.14-1.fmi
+- Another Fix to netcdf loading
 * Tue May  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.8-1.fmi
 - Fix to netcdf loading issue
 * Thu May  3 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.3-1.fmi

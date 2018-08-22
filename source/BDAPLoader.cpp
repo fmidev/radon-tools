@@ -119,6 +119,13 @@ bool BDAPLoader::GetGeometryInformation(fc_info& info)
 		dj = info.dj_meters;
 	}
 
+	// MYOCEAN is still in meters
+	if (info.grtyp == "polster" && info.ednum == 3)
+	{
+		di = info.di_meters;
+		dj = info.dj_meters;
+	}
+
 	auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
 	                                                  (info.ednum == 3 ? 1 : static_cast<int>(info.ednum)),
 	                                                  static_cast<int>(info.gridtype));
