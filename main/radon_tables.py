@@ -12,6 +12,8 @@ import psycopg2.extras
 import re
 import bunch
 import os
+import shutil
+
 from dateutil.relativedelta import relativedelta
 
 from pytz import timezone
@@ -701,23 +703,28 @@ def DropTables(options):
 			if as_table == 'as_grid':
 				
 				if options.unlink:
-					query = "SELECT file_location FROM %s.%s " % (schema_name, partition_name,)
-					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s"
+
+					# Fetch file path with the last two directories removed; ie
+					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
+					# -->
+					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/
+					# and then we can remove the whole directory without specifying individual files.
+					# Note! If directory structure is changed on the righternmost end, this logic will fail
+					query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
+					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
+					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
 
 					if options.show_sql:
 						print "%s %s" % (query, (geometry_id, min_analysis_time, max_analysis_time))
 
-					rows = cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
+					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
+					for row in cur.fetchone():
+						print row
 
-					if rows != None:
-						for row in cur.fetchone():
-							file = row[0]
-
-							if not os.path.isfile(file):
-								print "File %s does not exist" % (file)
-								continue
-
-							os.remove(file)
+						if not os.path.isdir(row):
+							print "Directory %s does not exist" % (row)
+							continue
+						shutil.rmtree(row)
 
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
