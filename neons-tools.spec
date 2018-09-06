@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.9.5
+Version:        18.9.6
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep  6 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.6-1.fmi
+- Another change to radon_tables.py
 * Wed Sep  5 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.5-1.fmi
 - Change to radon_tables.py
 * Wed Aug 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.8.22-1.fmi
