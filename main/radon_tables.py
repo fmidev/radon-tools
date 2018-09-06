@@ -645,6 +645,18 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 	if not options.dry_run:
 		cur.execute(query)
 
+def UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time):
+	query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
+
+	if options.show_sql:
+		print "%s %s" % (query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+
+	if not options.dry_run:
+		try:
+			cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+		except psycopg2.ProgrammingError,e:
+			print e
+
 def DropTables(options):
 
 	producers = []
@@ -724,6 +736,7 @@ def DropTables(options):
 						if not os.path.isdir(row):
 							print "Directory %s does not exist" % (row)
 							continue
+
 						shutil.rmtree(row)
 
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
@@ -734,6 +747,7 @@ def DropTables(options):
 				if not options.dry_run:
 					try:
 						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
 					except psycopg2.ProgrammingError,e:
 						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
 
