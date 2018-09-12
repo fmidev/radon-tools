@@ -13,6 +13,7 @@ import re
 import bunch
 import os
 import shutil
+from timeit import default_timer as timer
 
 from dateutil.relativedelta import relativedelta
 
@@ -649,7 +650,7 @@ def UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysi
 	query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
 	if options.show_sql:
-		print "%s %s" % (query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+		print cur.mogrify(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
 
 	if not options.dry_run:
 		try:
@@ -710,10 +711,22 @@ def DropTables(options):
 			# strip microseconds off from timedelta
 			print "Deleting partition %s with analysis times %s .. %s age %s" % (partition_name, min_analysis_time, max_analysis_time, age)
 
-			# First delete contents
-			
 			if as_table == 'as_grid':
-				
+
+				# First delete rows in ss_state, then remove files in disk, finally drop table partition
+
+				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
+
+				if options.show_sql:
+					print cur.mogrify(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+
+				if not options.dry_run:
+					try:
+						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
+						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
+					except psycopg2.ProgrammingError,e:
+						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
+
 				if options.unlink:
 
 					# Fetch file path with the last two directories removed; ie
@@ -727,29 +740,24 @@ def DropTables(options):
 					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
 
 					if options.show_sql:
-						print "%s %s" % (query, (geometry_id, min_analysis_time, max_analysis_time))
+						print cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time))
 
 					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
-					for row in cur.fetchone():
-						print row
 
-						if not os.path.isdir(row):
-							print "Directory %s does not exist" % (row)
+					rows = cur.fetchall()
+					for row in rows:
+						directory = row[0]
+						if not os.path.isdir(directory):
+							print "Directory %s does not exist" % (directory)
 							continue
 
-						shutil.rmtree(row)
+						start = timer()
 
-				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
+						if not options.dry_run:
+							shutil.rmtree(directory)
 
-				if options.show_sql:
-					print "%s %s" % (query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
-
-				if not options.dry_run:
-					try:
-						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
-						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
-					except psycopg2.ProgrammingError,e:
-						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
+						stop = timer()
+						print "Removed directory %s in %.2f seconds" % (directory, (stop-start))
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
