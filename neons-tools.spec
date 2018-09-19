@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.9.12
+Version:        18.9.19
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 19 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.19-1.fmi
+- Ignore errors at file delete
 * Wed Sep 12 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.12-1.fmi
 - Remove rows at ss_state before data
 * Wed Sep  6 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.6-1.fmi
