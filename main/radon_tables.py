@@ -755,7 +755,7 @@ def DropTables(options):
 					start = timer()
 
 					if not options.dry_run:
-						shutil.rmtree(directory)
+						shutil.rmtree(directory, ignore_errors=True)
 
 					stop = timer()
 					print "Removed directory %s in %.2f seconds" % (directory, (stop-start))
