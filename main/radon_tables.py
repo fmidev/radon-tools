@@ -85,7 +85,7 @@ def ReadCommandLine(argv):
 	databasegroup.add_option("--host",
 					action="store",
 					type="string",
-					default="vorlon.fmi.fi",
+					default="radondb.fmi.fi",
 					help="Database hostname")
 
 	databasegroup.add_option("--port",
@@ -627,8 +627,16 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 		print query
 	
 	if not options.dry_run:
-		cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
-		cur.execute(query)
+		try:
+			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
+			cur.execute(query)
+
+		except psycopg2.TransactionRollbackError,e:
+			print e
+			sleep(1)
+
+			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
+			cur.execute(query)
 
 	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s.%s" % (table_name, schema_name, table_name)
 
@@ -743,6 +751,10 @@ def DropTables(options):
 					try:
 						cur.execute(query, (producer.id, geometry_id, min_analysis_time, max_analysis_time))
 						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
+
+						conn.commit() # commit at this point as file delete might take a long
+						              # time sometimes
+
 					except psycopg2.ProgrammingError,e:
 						print "Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table)
 
