@@ -35,6 +35,38 @@ struct timer
 	}
 };
 
+namespace
+{
+bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
+{
+	double di = info.di_degrees;
+	double dj = info.dj_degrees;
+
+	// METNO Analysis in NetCDF has d{i,j}_degrees.
+	if (info.projection == "polster" || info.projection == "lcc")
+	{
+		di = info.di_meters;
+		dj = info.dj_meters;
+	}
+
+	auto geominfo =
+	    databaseLoader.RadonDB().GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
+	                                                   static_cast<int>(info.ednum), static_cast<int>(info.gridtype));
+
+	if (geominfo.empty())
+	{
+		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
+		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
+		return false;
+	}
+
+	info.geom_id = stol(geominfo["id"]);
+	info.geom_name = geominfo["name"];
+
+	return true;
+}
+}
+
 GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
 {
 }
@@ -232,6 +264,7 @@ void CreateDirectory(const string& theFileName)
 		}
 	}
 }
+
 /*
  * CopyMetaData()
  *
@@ -241,112 +274,114 @@ void CreateDirectory(const string& theFileName)
 
 bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
 {
-	g.centre = message.Centre();
+	const auto centre = message.Centre();
+	auto process = message.Process();
+
 	g.ednum = message.Edition();
 
-	g.param = message.ParameterNumber();
-	g.levtype = message.LevelType();
+	const auto levtype = message.LevelType();
 
-	g.process = message.Process();
 	if (options.process != 0)
-		g.process = options.process;
+	{
+		process = options.process;
+	}
+
+	// Find producer_id for this grid
 
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
 	    (message.ForecastTypeValue() == -999) ? -1 : static_cast<double>(message.ForecastTypeValue());
 
-	int producer_type = 1;  // deterministic
+	long producer_type_id = 1;  // deterministic forecast
 
-	if (g.forecast_type_id == 3 || g.forecast_type_id == 4)
+	if (g.forecast_type_id == 2)
 	{
-		producer_type = 3;  // ens
+		producer_type_id = 2;  // ANALYSIS
 	}
-	else if (g.forecast_type_id == 2)
+	else if (g.forecast_type_id == 3 || g.forecast_type_id == 4)
 	{
-		producer_type = 2;  // analysis
+		producer_type_id = 3;  // ENSEMBLE
 	}
 
-	auto prodinfo = databaseLoader.RadonDB().GetProducerFromGrib(g.centre, g.process, producer_type);
+	auto prodInfo = databaseLoader.RadonDB().GetProducerFromGrib(centre, process, producer_type_id);
 
-	if (prodinfo.empty())
+	if (prodInfo.empty())
 	{
-		if (options.verbose)
-		{
-			cerr << "FMI producer id not found for grib producer centre " << g.centre << " ident " << g.process
-			     << " type " << producer_type << endl;
-		}
-
+		cerr << "Producer information not found from radon for centre " << centre << ", process " << process
+		     << " producer type " << producer_type_id << endl;
+		return false;
+	}
+	else if (prodInfo["class_id"] != "1")
+	{
+		cerr << "producer class_id is " << prodInfo["class_id"]
+		     << ", grid_to_neons can only handle gridded data (class_id = 1)" << endl;
 		return false;
 	}
 
-	const long producerId = stol(prodinfo["id"]);
+	g.producer_id = stol(prodInfo["id"]);
 
 	if (g.ednum == 1)
 	{
-		g.novers = message.Table2Version();
-		g.timeRangeIndicator = message.TimeRangeIndicator();
+		databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
 
-		databaseLoader.RadonDB().WarmGrib1ParameterCache(producerId);
-
-		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
+		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(g.producer_id, levtype, g.ednum);
 
 		if (levelinfo.empty())
 		{
-			cerr << "Level name not found for grib type " << g.levtype << endl;
+			cerr << "Level name not found for grib type " << levtype << endl;
 			return false;
 		}
 
 		g.levname = levelinfo["name"];
+		g.levelid = stol(levelinfo["id"]);
 
 		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib1(
-		    producerId, g.novers, g.param, g.timeRangeIndicator, g.levtype, static_cast<double>(message.LevelValue()));
-		g.parname = paraminfo["name"];
+		    g.producer_id, message.Table2Version(), message.ParameterNumber(), message.TimeRangeIndicator(), levtype,
+		    static_cast<double>(message.LevelValue()));
 
-		if (g.parname.empty())
+		if (paraminfo.empty())
 		{
 			if (options.verbose)
 			{
-				cerr << "Parameter name not found for table2Version " << g.novers << ", number " << g.param
-				     << ", time range indicator " << g.timeRangeIndicator << " level type " << g.levtype << endl;
+				cerr << "Parameter name not found for table2Version " << message.Table2Version() << ", number "
+				     << message.ParameterNumber() << ", time range indicator " << message.TimeRangeIndicator()
+				     << " level type " << levtype << endl;
 			}
 
 			return false;
 		}
+
+		g.paramid = stol(paraminfo["id"]);
+		g.parname = paraminfo["name"];
 	}
 	else
 	{
-		g.timeRangeIndicator = 0;
+		databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
 
-		databaseLoader.RadonDB().WarmGrib2ParameterCache(producerId);
+		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(
+		    g.producer_id, message.ParameterDiscipline(), message.ParameterCategory(), message.ParameterNumber(),
+		    levtype, static_cast<double>(message.LevelValue()));
 
-		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(producerId, message.ParameterDiscipline(),
-		                                                                message.ParameterCategory(), g.param, g.levtype,
-		                                                                static_cast<double>(message.LevelValue()));
-
-		if (!paraminfo.empty())
-		{
-			g.parname = paraminfo["name"];
-		}
-
-		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(producerId, g.levtype, g.ednum);
-
-		if (!levelinfo.empty())
-		{
-			g.levname = levelinfo["name"];
-		}
-
-		g.category = message.ParameterCategory();
-		g.discipline = message.ParameterDiscipline();
-
-		if (g.parname.empty())
+		if (paraminfo.empty())
 		{
 			if (options.verbose)
 			{
 				cerr << "Parameter name not found for discipline " << message.ParameterDiscipline() << " category "
-				     << message.ParameterCategory() << " number " << g.param << endl;
+				     << message.ParameterCategory() << " number " << message.ParameterNumber() << endl;
 			}
 
 			return false;
+		}
+
+		g.parname = paraminfo["name"];
+		g.paramid = stol(paraminfo["id"]);
+
+		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(g.producer_id, levtype, g.ednum);
+
+		if (!levelinfo.empty())
+		{
+			g.levname = levelinfo["name"];
+			g.levelid = stol(levelinfo["id"]);
 		}
 	}
 
@@ -354,7 +389,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		if (options.verbose)
 		{
-			cerr << "Level name not found for level " << g.levtype << endl;
+			cerr << "Level name not found for grib level " << levtype << endl;
 		}
 		return false;
 	}
@@ -379,7 +414,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		g.lon -= 360000;
 	}
-	else if (g.ednum == 1 && g.lon == -180000 && g.centre != 86)
+	else if (g.ednum == 1 && g.lon == -180000 && centre != 86)
 	{
 		g.lon += 360000;  // Area is whole globe, ECMWF special case
 	}
@@ -392,7 +427,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			g.dj_degrees = message.jDirectionIncrement();
 			g.di = g.di_degrees * 1000.;
 			g.dj = g.dj_degrees * 1000.;
-			g.grtyp = "ll";
+			g.projection = "ll";
 			break;
 
 		case 10:  // rll
@@ -400,7 +435,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			g.dj_degrees = message.jDirectionIncrement();
 			g.di = g.di_degrees * 1000.;
 			g.dj = g.dj_degrees * 1000.;
-			g.grtyp = "rll";
+			g.projection = "rll";
 			break;
 
 		case 5:  // ps
@@ -408,18 +443,18 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			g.dj = message.YLengthInMeters();
 			g.di_meters = message.XLengthInMeters();
 			g.dj_meters = message.YLengthInMeters();
-			g.grtyp = "polster";
+			g.projection = "polster";
 			break;
 
 		case 3:  // lambert
 			g.di_meters = message.XLengthInMeters();
 			g.dj_meters = message.YLengthInMeters();
-			g.grtyp = "lcc";
+			g.projection = "lcc";
 			break;
 
 		case 4:  // reduced gg
 			g.dj_degrees = message.jDirectionIncrement();
-			g.grtyp = "rgg";
+			g.projection = "rgg";
 			break;
 
 		default:
@@ -429,19 +464,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			break;
 	}
 
-	stringstream ss;
-
-	ss << g.year << "-" << setw(2) << setfill('0') << g.month << "-" << setw(2) << setfill('0') << g.day << " "
-	   << setw(2) << setfill('0') << g.hour << ":" << g.minute << ":00";
-
-	g.base_date = ss.str();
-
 	g.level1 = message.LevelValue();
-	g.lvl1_lvl2 = g.level1;
 
 	g.level2 = -1;  // "missing"
 
-	if (g.levtype == 106 || g.levtype == 108 || g.levtype == 112)
+	if (levtype == 106 || levtype == 108 || levtype == 112)
 	{
 		g.level2 = message.LevelValue2();
 
@@ -451,13 +478,9 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.timeUnit = message.UnitOfTimeRange();
 
-	g.startstep = message.NormalizedStep(false, false);
-	g.endstep = message.NormalizedStep(true, false);
-	g.step = g.endstep;
-
 	g.fcst_per = message.NormalizedStep(true, true);
 
-	if (!databaseLoader.GetGeometryInformation(g))
+	if (GetGeometryInformation(databaseLoader, g) == false)
 	{
 		return false;
 	}

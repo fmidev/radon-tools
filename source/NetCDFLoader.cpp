@@ -24,6 +24,37 @@ using namespace std;
 static atomic<int> g_failedParams(0);
 static atomic<int> g_succeededParams(0);
 
+namespace
+{
+bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
+{
+	double di = info.di_degrees;
+	double dj = info.dj_degrees;
+
+	// MYOCEAN is still in meters
+	if (info.projection == "polster")
+	{
+		di = info.di_meters;
+		dj = info.dj_meters;
+	}
+
+	auto geominfo = databaseLoader.RadonDB().GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees,
+	                                                               di, dj, 1, static_cast<int>(info.gridtype));
+
+	if (geominfo.empty())
+	{
+		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
+		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
+		return false;
+	}
+
+	info.geom_id = stol(geominfo["id"]);
+	info.geom_name = geominfo["name"];
+
+	return true;
+}
+}
+
 NetCDFLoader::NetCDFLoader()
 {
 	// Epoch() function handles UTC only
@@ -70,15 +101,15 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 	fc_info info;
 
-	info.centre = options.center;
-
 	if (options.process == 0)
 	{
 		cerr << "process value not found" << endl;
 		return false;
 	}
 
-	info.process = options.process;
+	auto process = options.process;
+
+	info.producer_id = options.process;
 
 	if (options.analysistime.size() < 10)
 	{
@@ -102,40 +133,32 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 	info.ednum = 3;
 	info.level2 = 0;
-	info.timeRangeIndicator = 0;
 	info.timeUnit = 1;  // hour
-
-	stringstream ss;
-
-	ss << info.year << "-" << setw(2) << setfill('0') << info.month << "-" << setw(2) << setfill('0') << info.day << " "
-	   << setw(2) << setfill('0') << info.hour << ":00:00";
-
-	info.base_date = ss.str();
 
 	info.ni = reader.SizeX();
 	info.nj = reader.SizeY();
 
 	if (reader.Projection() == "latitude_longitude")
 	{
-		info.grtyp = "ll";
+		info.projection = "ll";
 		info.gridtype = 0;
 	}
 
 	else if (reader.Projection() == "rotated_latitude_longitude")
 	{
-		info.grtyp = "rll";
+		info.projection = "rll";
 		info.gridtype = 10;
 	}
 
 	else if (reader.Projection() == "polar_stereographic")
 	{
-		info.grtyp = "polster";
+		info.projection = "polster";
 		info.gridtype = 5;
 	}
 
 	else if (reader.Projection() == "lambert_conformal_conic")
 	{
-		info.grtyp = "lcc";
+		info.projection = "lcc";
 		info.gridtype = 3;
 	}
 
@@ -150,7 +173,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 	float lon = 0.0f;
 
 	{
-		NcError errorState (NcError::silent_nonfatal);
+		NcError errorState(NcError::silent_nonfatal);
 
 		if (reader.HasVariable("latitude") && reader.HasVariable("longitude"))
 		{
@@ -174,7 +197,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 		std::cerr << "Unable to determine first grid point coordinates" << std::endl;
 	}
 
-	if (info.grtyp == "polster")
+	if (info.projection == "polster")
 	{
 		info.di_meters = reader.XResolution();
 		info.dj_meters = reader.YResolution();
@@ -188,11 +211,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 	// we might consider to use round here, since floor can give unexpected results due to floating point precision
 	info.di = floor(reader.XResolution() * 1000);
 	info.dj = floor(reader.YResolution() * 1000);
-
-	if (!itsDatabaseLoader.GetGeometryInformation(info))
-	{
-		return false;
-	}
 
 	long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
@@ -256,8 +274,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 		}
 
 		info.fcst_per = static_cast<int>(fctime);
-		info.step = static_cast<int>(fctime);
-
 		reader.FirstParam();
 
 		do
@@ -266,8 +282,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 			if (ncname == "latitude" || ncname == "longitude" || ncname == "time" || ncname == "x" || ncname == "y")
 				continue;
-
-			info.ncname = ncname;
 
 			// If this parameter is known not to be supported, skip it
 
@@ -279,7 +293,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 			string grid_parameter_name;
 			map<string, string> parameter;
 
-			parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(info.process, ncname, -1, -1);
+			parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(process, ncname, -1, -1);
 			grid_parameter_name = parameter["name"];
 
 			if (grid_parameter_name.empty())
@@ -335,19 +349,19 @@ bool NetCDFLoader::Load(const string& theInfile)
 				// Default
 
 				info.levname = "HEIGHT";
-				info.levtype = 105;
+				info.levelid = 6;
 			}
 			else
 			{
 				info.levname = boost::to_upper_copy(options.level);
 				if (info.levname == "MEANSEA")
-					info.levtype = 102;
+					info.levelid = 7;
 				else if (info.levname == "DEPTH")
-					info.levtype = 160;
+					info.levelid = 10;
 				else if (info.levname == "HEIGHT")
-					info.levtype = 105;
+					info.levelid = 6;
 				else if (info.levname == "PRESSURE")
-					info.levtype = 100;
+					info.levelid = 2;
 				else
 					throw std::runtime_error("Invalid level type: " + info.levname);
 			}
@@ -363,6 +377,11 @@ bool NetCDFLoader::Load(const string& theInfile)
 				}
 			}
 
+			if (GetGeometryInformation(itsDatabaseLoader, info) == false)
+			{
+				return false;
+			}
+
 			if (!reader.HasDimension("z"))
 			{
 				// This parameter has no z dimension --> map to level 0
@@ -370,18 +389,12 @@ bool NetCDFLoader::Load(const string& theInfile)
 				level = 0;
 
 				info.level1 = static_cast<int>(level);
-				info.lvl1_lvl2 = info.level1 + 1000 * info.level2;
 
-				string theFileName = itsDatabaseLoader.REFFileName(info);
-
-				if (theFileName.empty())
-					return false;
-
-				info.filename = theFileName;
+				info.filename = itsDatabaseLoader.REFFileName(info);
 
 				if (!options.dry_run)
 				{
-					if (!reader.WriteSlice(theFileName))
+					if (!reader.WriteSlice(info.filename))
 					{
 						return false;
 					}
@@ -401,7 +414,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 				if (options.verbose)
 				{
-					cout << "Wrote z-dimensionless data to file '" << theFileName << "'" << endl;
+					cout << "Wrote z-dimensionless data to file '" << info.filename << "'" << endl;
 				}
 			}
 			else
@@ -421,18 +434,12 @@ bool NetCDFLoader::Load(const string& theInfile)
 						level = static_cast<float>(reader.LevelIndex());  // ordering number
 					}
 					info.level1 = static_cast<int>(level);
-					info.lvl1_lvl2 = info.level1 + 1000 * info.level2;
 
-					string theFileName = itsDatabaseLoader.REFFileName(info);
-
-					if (theFileName.empty())
-						return false;
-
-					info.filename = theFileName;
+					info.filename = itsDatabaseLoader.REFFileName(info);
 
 					if (!options.dry_run)
 					{
-						if (!reader.WriteSlice(theFileName))
+						if (!reader.WriteSlice(info.filename))
 						{
 							return false;
 						}
@@ -446,7 +453,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 					if (options.verbose)
 					{
 						cout << "Wrote level " << reader.LevelIndex() << " (" << level << ")"
-						     << " to file '" << theFileName << "'" << endl;
+						     << " to file '" << info.filename << "'" << endl;
 					}
 				}
 			}
@@ -456,6 +463,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 	cout << "Success with " << g_succeededParams << " params, "
 	     << "failed with " << g_failedParams << " params" << endl;
+
+	stringstream ss;
 
 	for (const auto& table : analyzeTables)
 	{
