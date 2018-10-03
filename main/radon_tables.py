@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python -u
 #
 # Create or drop tables to radon database based on the metadata in the database
 #
