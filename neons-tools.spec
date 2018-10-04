@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.10.2
+Version:        18.10.4
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-1.fmi
+- Remove empty directories
 * Tue Oct  2 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.2-1.fmi
 - Retry trigger creation if deadlock occurs
 * Wed Sep 19 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.19-1.fmi
