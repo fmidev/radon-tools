@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        18.10.4
-Release:        1.el7.fmi
+Release:        2.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-2.fmi
+- Remove switch -u
 * Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-1.fmi
 - Remove empty directories
 * Tue Oct  2 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.2-1.fmi
