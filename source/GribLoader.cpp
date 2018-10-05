@@ -358,9 +358,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
 
+		const long tosp = (message.TypeOfStatisticalProcessing() == -999) ? -1 : message.TypeOfStatisticalProcessing();
+
 		auto paraminfo = databaseLoader.RadonDB().GetParameterFromGrib2(
 		    g.producer_id, message.ParameterDiscipline(), message.ParameterCategory(), message.ParameterNumber(),
-		    levtype, static_cast<double>(message.LevelValue()));
+		    levtype, static_cast<double>(message.LevelValue()), tosp);
 
 		if (paraminfo.empty())
 		{
