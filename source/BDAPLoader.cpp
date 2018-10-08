@@ -80,11 +80,11 @@ string BDAPLoader::REFFileName(const fc_info& info)
 
 	stringstream ss;
 
-	ss << base << "/" << info.centre << "_" << info.process << "/" << info.year << setw(2) << setfill('0') << info.month
-	   << setw(2) << setfill('0') << info.day << setw(2) << setfill('0') << info.hour << setw(2) << setfill('0')
-	   << info.minute << "/" << info.geom_name << "/" << info.fcst_per << "/" << info.parname << "_"
-	   << boost::algorithm::to_lower_copy(info.levname) << "_" << info.level1 << "_" << info.grtyp << "_" << info.ni
-	   << "_" << info.nj << "_0_" << setw(3) << setfill('0') << info.fcst_per;
+	ss << base << "/" << info.producer_id << "/" << info.year << setw(2) << setfill('0') << info.month << setw(2)
+	   << setfill('0') << info.day << setw(2) << setfill('0') << info.hour << setw(2) << setfill('0') << info.minute
+	   << "/" << info.geom_name << "/" << info.fcst_per << "/" << info.parname << "_"
+	   << boost::algorithm::to_lower_copy(info.levname) << "_" << info.level1 << "_" << info.projection << "_"
+	   << info.ni << "_" << info.nj << "_0_" << setw(3) << setfill('0') << info.fcst_per;
 
 	if (info.forecast_type_id > 2)
 	{
@@ -107,151 +107,31 @@ string BDAPLoader::REFFileName(const fc_info& info)
 	return ss.str();
 }
 
-bool BDAPLoader::GetGeometryInformation(fc_info& info)
-{
-	double di = info.di_degrees;
-	double dj = info.dj_degrees;
-
-	// METNO Analysis in NetCDF has d{i,j}_degrees.
-	if ((info.grtyp == "polster" || info.grtyp == "lcc") && info.ednum != 3)
-	{
-		di = info.di_meters;
-		dj = info.dj_meters;
-	}
-
-	// MYOCEAN is still in meters
-	if (info.grtyp == "polster" && info.ednum == 3)
-	{
-		di = info.di_meters;
-		dj = info.dj_meters;
-	}
-
-	auto geominfo = itsRadonDB->GetGeometryDefinition(info.ni, info.nj, info.lat_degrees, info.lon_degrees, di, dj,
-	                                                  (info.ednum == 3 ? 1 : static_cast<int>(info.ednum)),
-	                                                  static_cast<int>(info.gridtype));
-
-	if (geominfo.empty())
-	{
-		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
-		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
-		return false;
-	}
-
-	info.geom_id = stol(geominfo["id"]);
-	info.geom_name = geominfo["name"];
-
-	return true;
-}
-
 bool BDAPLoader::WriteToRadon(const fc_info& info)
 {
 	stringstream query;
 	vector<string> row;
 
-	long producer_id = info.process;
-	long class_id = 1;  // grid data, forecast or observation
-	long type_id = 1;   // deterministic forecast
+	const auto geometry_id = info.geom_id;
+	const auto geometry_name = info.geom_name;
 
-	if (info.forecast_type_id == 2)
-	{
-		type_id = 2;  // ANALYSIS
-	}
-	else if (info.forecast_type_id == 3 || info.forecast_type_id == 4)
-	{
-		type_id = 3;  // ENSEMBLE
-	}
+	const long level_id = info.levelid;
+	const long param_id = info.paramid;
 
-	map<string, string> prodInfo;
+	query << info.year << "-" << setw(2) << setfill('0') << info.month << "-" << setw(2) << setfill('0') << info.day
+	      << " " << setw(2) << setfill('0') << info.hour << ":" << setw(2) << setfill('0') << info.minute << ":00";
 
-	if (info.ednum != 3)
-	{
-		prodInfo = itsRadonDB->GetProducerFromGrib(info.centre, info.process, type_id);
+	const auto base_date = query.str();
 
-		if (prodInfo.size() == 0)
-		{
-			cerr << "Producer information not found from radon for centre " << info.centre << ", process "
-			     << info.process << " producer type " << type_id << endl;
-			return false;
-		}
+	query.str("");
 
-		producer_id = boost::lexical_cast<long>(prodInfo["id"]);
-		class_id = boost::lexical_cast<long>(prodInfo["class_id"]);
-	}
-
-	if (class_id != 1)
-	{
-		cerr << "producer class_id is " << class_id << ", grid_to_neons can only handle gridded data (class_id = 1)"
-		     << endl;
-		return false;
-	}
-
-	long geometry_id = info.geom_id;
-	string geometry_name = info.geom_name;
-
-	map<string, string> l = itsRadonDB->GetLevelFromGrib(producer_id, info.levtype, info.ednum);
-
-	if (l.empty())
-	{
-		cerr << "Level " << info.levtype << " not found from radon for producer " << producer_id << "\n";
-		return false;
-	}
-
-	long level_id = boost::lexical_cast<long>(l["id"]);
-
-	long param_id = 0;
-
-	if (param_id == 0)
-	{
-		map<string, string> p;
-
-		if (info.ednum == 1)
-		{
-			p = itsRadonDB->GetParameterFromGrib1(producer_id, info.novers, info.param, info.timeRangeIndicator,
-			                                      info.levtype, static_cast<double>(info.lvl1_lvl2));
-
-			if (p.empty())
-			{
-				cerr << "Parameter not found from radon\n";
-				cerr << "Table version: " << info.novers << " param " << info.param << " tri "
-				     << info.timeRangeIndicator << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-				return false;
-			}
-		}
-		else if (info.ednum == 2)
-		{
-			p = itsRadonDB->GetParameterFromGrib2(producer_id, info.discipline, info.category, info.param, info.levtype,
-			                                      static_cast<double>(info.lvl1_lvl2));
-
-			if (p.empty())
-			{
-				cerr << "Parameter not found from radon\n";
-				cerr << "Discipline: " << info.discipline << " category " << info.category << " param " << info.param
-				     << " level " << info.levtype << "/" << info.lvl1_lvl2 << endl;
-				return false;
-			}
-		}
-		else if (info.ednum == 3)
-		{
-			p = itsRadonDB->GetParameterFromNetCDF(producer_id, info.ncname, level_id,
-			                                       static_cast<double>(info.lvl1_lvl2));
-
-			if (p.empty())
-			{
-				cerr << "Parameter not found from radon\n";
-				cerr << "NetCDF name: " << info.ncname << endl;
-				return false;
-			}
-		}
-		param_id = boost::lexical_cast<long>(p["id"]);
-	}
-
-	auto tableinfo = itsRadonDB->GetTableName(producer_id, info.base_date, geometry_name);
+	auto tableinfo = itsRadonDB->GetTableName(info.producer_id, base_date, geometry_name);
 
 	if (tableinfo.empty())
 	{
 		cerr << "Destination table definition not found from radon table "
-		        "'as_grid' for geometry '"
-		     << geometry_name << "', base_date " << info.base_date << endl
+		     << "'as_grid' for producer_id " << info.producer_id << ", geometry '" << geometry_name
+		     << "', analysis_time " << base_date << endl
 		     << "The data could be too old" << endl;
 		return false;
 	}
@@ -277,11 +157,11 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 			break;
 	}
 
-	string forecastTypeValue =
+	const string forecastTypeValue =
 	    (info.forecast_type_value == kFloatMissing ? "-1" : boost::lexical_cast<string>(info.forecast_type_value));
 
 	itsLastInsertedTable = tableinfo["schema_name"] + "." + tableinfo["partition_name"];
-	itsLastSSStateInformation = to_string(producer_id) + "/" + to_string(geometry_id) + "/" + info.base_date + "/" +
+	itsLastSSStateInformation = to_string(info.producer_id) + "/" + to_string(geometry_id) + "/" + base_date + "/" +
 	                            to_string(info.fcst_per) + interval + "/" + to_string(info.forecast_type_id) + "/" +
 	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["partition_name"];
 
@@ -289,7 +169,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
 	         "forecast_type_id, file_location, file_server, forecast_type_value) "
-	      << "VALUES (" << producer_id << ", '" << info.base_date << "', " << geometry_id << ", " << param_id << ", "
+	      << "VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
 	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "
@@ -318,7 +198,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << info.filename << "', "
 		      << " file_server = '" << itsHostname << "', "
 		      << " forecast_type_value = " << forecastTypeValue << " WHERE"
-		      << " producer_id = " << producer_id << " AND analysis_time = '" << info.base_date << "'"
+		      << " producer_id = " << info.producer_id << " AND analysis_time = '" << base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
