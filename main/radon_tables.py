@@ -1029,29 +1029,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		if not options.dry_run:
 			cur.execute(query)
 					
-		query = "CREATE TRIGGER %s_update_as_table_trg AFTER INSERT OR DELETE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE update_record_count_f('%s')" % (partition_name, element.schema_name, partition_name, as_table)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
 		query = "CREATE TRIGGER %s_store_last_updated_trg BEFORE UPDATE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE store_last_updated_f()" % (partition_name, element.schema_name, partition_name)
-
-		if options.show_sql:
-			print query
-
-		if not options.dry_run:
-			cur.execute(query)
-
-		# By default postgres analyzes tables after 50 tuples have been changed
-		# (https://www.postgresql.org/docs/9.5/static/runtime-config-autovacuum.html)
-
-		# Change it to 1 because we depend on the statistics when determining what is the
-		# latest forecast.
-
-		query = "ALTER TABLE %s.%s SET (autovacuum_analyze_threshold = 20)" % (element.schema_name, partition_name)
 
 		if options.show_sql:
 			print query
