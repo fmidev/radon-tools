@@ -20,8 +20,8 @@ BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
-Requires:	libfmigrib >= 18.10.5
-Requires:	libfmidb >= 18.2.19
+Requires:	libfmigrib >= 18.5.3
+Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	python-dateutil
@@ -86,9 +86,9 @@ rm -rf %{buildroot}
 %changelog
 * Mon Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.8-1.fmi
 - Use typeOfStatisticalProcessing to determine param_id in GRIB2
-* Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-2.fmi
+* Thu Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-2.fmi
 - Remove switch -u
-* Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-1.fmi
+* Thu Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-1.fmi
 - Remove empty directories
 * Tue Oct  2 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.2-1.fmi
 - Retry trigger creation if deadlock occurs
@@ -96,13 +96,13 @@ rm -rf %{buildroot}
 - Ignore errors at file delete
 * Wed Sep 12 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.12-1.fmi
 - Remove rows at ss_state before data
-* Wed Sep  6 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.6-1.fmi
+* Thu Sep  6 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.6-1.fmi
 - Another change to radon_tables.py
 * Wed Sep  5 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.9.5-1.fmi
 - Change to radon_tables.py
 * Wed Aug 22 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.8.22-1.fmi
 - fminc changes
-* Tue May 14 2018 Mikko Aalto <mikko.aalto@fmi.fi> - 18.5.14-1.fmi
+* Mon May 14 2018 Mikko Aalto <mikko.aalto@fmi.fi> - 18.5.14-1.fmi
 - Another Fix to netcdf loading
 * Tue May  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.5.8-1.fmi
 - Fix to netcdf loading issue
