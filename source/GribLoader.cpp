@@ -369,7 +369,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			if (options.verbose)
 			{
 				cerr << "Parameter name not found for discipline " << message.ParameterDiscipline() << " category "
-				     << message.ParameterCategory() << " number " << message.ParameterNumber() << endl;
+				     << message.ParameterCategory() << " number " << message.ParameterNumber()
+				     << " statistical processing " << tosp << endl;
 			}
 
 			return false;
