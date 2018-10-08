@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        18.10.8
-Release:        1.el7.fmi
+Release:        2.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -84,6 +84,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.8-2.fmi
+- Code cleanup
+- grib file path changed to have producer id instead of centre_ident
 * Mon Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.8-1.fmi
 - Use typeOfStatisticalProcessing to determine param_id in GRIB2
 * Thu Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-2.fmi

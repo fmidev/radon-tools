@@ -288,8 +288,6 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	// Find producer_id for this grid
 
-	g.centre = message.Centre();
-
 	g.forecast_type_id = message.ForecastType();
 	g.forecast_type_value =
 	    (message.ForecastTypeValue() == -999) ? -1 : static_cast<double>(message.ForecastTypeValue());
