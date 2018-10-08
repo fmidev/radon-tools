@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.10.4
-Release:        2.el7.fmi
+Version:        18.10.8
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -15,12 +15,12 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 18.2.12
-BuildRequires:  libfmidb-devel >= 18.2.19
+BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
-Requires:	libfmigrib >= 18.5.3
+Requires:	libfmigrib >= 18.10.5
 Requires:	libfmidb >= 18.2.19
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.8-1.fmi
+- Use typeOfStatisticalProcessing to determine param_id in GRIB2
 * Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-2.fmi
 - Remove switch -u
 * Tue Oct  4 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.4-1.fmi
