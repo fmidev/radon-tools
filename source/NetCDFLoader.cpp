@@ -290,11 +290,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 				continue;
 			}
 
-			string grid_parameter_name;
-			map<string, string> parameter;
-
-			parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(process, ncname, -1, -1);
-			grid_parameter_name = parameter["name"];
+			map<string, string> parameter = itsDatabaseLoader.RadonDB().GetParameterFromNetCDF(process, ncname, -1, -1);
+			auto grid_parameter_name = parameter["name"];
 
 			if (grid_parameter_name.empty())
 			{
@@ -305,6 +302,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 				pskip[ncname] = 1;
 				continue;
 			}
+
+			info.paramid = stol(parameter["id"]);
 
 			// If parameter list is specified, check that parameter belongs to it
 
