@@ -631,7 +631,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
 			cur.execute(query)
 
-		except psycopg2.TransactionRollbackError,e:
+		except psycopg2.extensions.TransactionRollbackError,e:
 			print e
 			sleep(1)
 
