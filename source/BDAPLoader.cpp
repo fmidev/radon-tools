@@ -163,7 +163,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	itsLastInsertedTable = tableinfo["schema_name"] + "." + tableinfo["partition_name"];
 	itsLastSSStateInformation = to_string(info.producer_id) + "/" + to_string(geometry_id) + "/" + base_date + "/" +
 	                            to_string(info.fcst_per) + interval + "/" + to_string(info.forecast_type_id) + "/" +
-	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["partition_name"];
+	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["table_name"];
 
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
