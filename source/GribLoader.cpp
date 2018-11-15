@@ -406,21 +406,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	g.ni = message.SizeX();
 	g.nj = message.SizeY();
 
-	g.lat = message.Y0() * 1000;
-	g.lon = message.X0() * 1000;
-
 	g.lat_degrees = message.Y0();
 	g.lon_degrees = message.X0();
-
-	// GRIB2 longitudes --> GRIB1
-	if (g.ednum == 2 && (g.lon > 180000))
-	{
-		g.lon -= 360000;
-	}
-	else if (g.ednum == 1 && g.lon == -180000 && centre != 86)
-	{
-		g.lon += 360000;  // Area is whole globe, ECMWF special case
-	}
 
 	g.gridtype = message.GridType();
 	switch (message.NormalizedGridType())

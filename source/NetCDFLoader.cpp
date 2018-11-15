@@ -187,12 +187,10 @@ bool NetCDFLoader::Load(const string& theInfile)
 		}
 	}
 
-	info.lat = static_cast<int>(1000.0f * lat);
-	info.lon = static_cast<int>(1000.0f * lon);
 	info.lat_degrees = lat;
 	info.lon_degrees = lon;
 
-	if (info.lat == static_cast<int>(kFloatMissing * 1000.))
+	if (info.lat_degrees == static_cast<int>(kFloatMissing))
 	{
 		std::cerr << "Unable to determine first grid point coordinates" << std::endl;
 	}
