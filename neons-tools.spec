@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        18.10.15
+Version:        19.1.17
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jan 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.1.17-1.fmi
+- Change some GRIB2 level definitions to suite radon
 * Mon Oct 15 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.15-1.fmi
 - ss_state table changes
 * Tue Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.9-1.fmi
