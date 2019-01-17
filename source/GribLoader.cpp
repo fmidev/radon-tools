@@ -279,7 +279,20 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.ednum = message.Edition();
 
-	const auto levtype = message.LevelType();
+	auto levtype = message.LevelType();
+
+	if (g.ednum == 2)
+	{
+		const long secondLevelType = message.GetLongKey("typeOfSecondFixedSurface");
+
+		// if two level types are defined and one is ground and other is
+		// top of atmosphere, change level type to entire atmosphere
+		// because radon does not support two leveltypes
+		if (levtype == 1 && secondLevelType == 8)
+		{
+			levtype = 10;
+		}
+	}
 
 	if (options.process != 0)
 	{
@@ -551,7 +564,9 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	string theFileName = GetFileName(databaseLoader, g);
 
 	if (theFileName.empty())
-		exit(1);
+	{
+		return;
+	}
 
 	g.filename = theFileName;
 
