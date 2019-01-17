@@ -279,7 +279,20 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.ednum = message.Edition();
 
-	const auto levtype = message.LevelType();
+	auto levtype = message.LevelType();
+
+	if (g.ednum == 2)
+	{
+		const long secondLevelType = message.GetLongKey("typeOfSecondFixedSurface");
+
+		// if two level types are defined and one is ground and other is
+		// top of atmosphere, change level type to entire atmosphere
+		// because radon does not support two leveltypes
+		if (levtype == 1 && secondLevelType == 8)
+		{
+			levtype = 10;
+		}
+	}
 
 	if (options.process != 0)
 	{
@@ -406,21 +419,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	g.ni = message.SizeX();
 	g.nj = message.SizeY();
 
-	g.lat = message.Y0() * 1000;
-	g.lon = message.X0() * 1000;
-
 	g.lat_degrees = message.Y0();
 	g.lon_degrees = message.X0();
-
-	// GRIB2 longitudes --> GRIB1
-	if (g.ednum == 2 && (g.lon > 180000))
-	{
-		g.lon -= 360000;
-	}
-	else if (g.ednum == 1 && g.lon == -180000 && centre != 86)
-	{
-		g.lon += 360000;  // Area is whole globe, ECMWF special case
-	}
 
 	g.gridtype = message.GridType();
 	switch (message.NormalizedGridType())
@@ -564,7 +564,9 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	string theFileName = GetFileName(databaseLoader, g);
 
 	if (theFileName.empty())
-		exit(1);
+	{
+		return;
+	}
 
 	g.filename = theFileName;
 

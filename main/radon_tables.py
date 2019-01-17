@@ -13,6 +13,7 @@ import re
 import bunch
 import os
 import shutil
+import time
 from timeit import default_timer as timer
 
 from dateutil.relativedelta import relativedelta
@@ -633,7 +634,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 
 		except psycopg2.extensions.TransactionRollbackError,e:
 			print e
-			sleep(1)
+			time.sleep(1)
 
 			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
 			cur.execute(query)

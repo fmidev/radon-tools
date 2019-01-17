@@ -16,8 +16,6 @@ struct fc_info
 	      timeUnit(0),
 	      ni(0),
 	      nj(0),
-	      lat(kFloatMissing),
-	      lon(kFloatMissing),
 	      di(kFloatMissing),
 	      dj(kFloatMissing),
 	      paramid(0),
@@ -52,8 +50,6 @@ struct fc_info
 	long timeUnit;
 	long ni;
 	long nj;
-	double lat;
-	double lon;
 	double di;
 	double dj;
 	long paramid;  // db id
