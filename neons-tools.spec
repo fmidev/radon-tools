@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.1.17
+Version:        19.4.3
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Apr  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.3-1.fmi
+- Bugfix for Netcdf loading
 * Thu Jan 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.1.17-1.fmi
 - Change some GRIB2 level definitions to suite radon
 * Mon Oct 15 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.15-1.fmi
