@@ -442,6 +442,12 @@ bool NetCDFLoader::Load(const string& theInfile)
 						}
 					}
 
+					if (itsDatabaseLoader.NeedsAnalyze())
+					{
+						const auto table = itsDatabaseLoader.LastInsertedTable();
+						analyzeTables.insert(table);
+					}
+
 					if (!itsDatabaseLoader.WriteToRadon(info))
 					{
 						return false;
