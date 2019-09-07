@@ -168,12 +168,13 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
-	         "forecast_type_id, file_location, file_server, forecast_type_value) "
+	         "forecast_type_id, file_location, file_server, forecast_type_value, message_no, byte_offset, byte_length) "
 	      << "VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
 	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "
-	      << "'" << itsHostname << "', " << forecastTypeValue << ")";
+	      << "'" << itsHostname << "', " << forecastTypeValue << ", " << info.messageNo << ", " << info.offset << ", "
+	      << info.length << ")";
 
 	try
 	{
@@ -197,13 +198,14 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"] << " SET file_location = '"
 		      << info.filename << "', "
 		      << " file_server = '" << itsHostname << "', "
-		      << " forecast_type_value = " << forecastTypeValue << " WHERE"
+		      << " message_no = " << info.messageNo << ", byte_offset = " << info.offset
+		      << ", byte_length = " << info.length << " WHERE"
 		      << " producer_id = " << info.producer_id << " AND analysis_time = '" << base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
 		      << " AND forecast_type_id = " << info.forecast_type_id
-		      << " AND forecast_type_value = " << info.forecast_type_value;
+		      << " AND forecast_type_value = " << forecastTypeValue;
 
 		try
 		{
@@ -234,7 +236,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 bool BDAPLoader::ReadREFEnvironment()
 {
-	if ((base = getenv("NEONS_REF_BASE")) == NULL)
+	if (!options.in_place_insert && (base = getenv("NEONS_REF_BASE")) == NULL)
 	{
 		if ((base = getenv("RADON_REF_BASE")) == NULL)
 		{

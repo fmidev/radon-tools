@@ -4,7 +4,6 @@
 #include <fstream>
 #include <iostream>
 
-#include "GribIndexLoader.h"
 #include "GribLoader.h"
 #include "NetCDFLoader.h"
 #include "options.h"
@@ -30,6 +29,7 @@ bool parse_options(int argc, char* argv[])
 	bool radon_switch = false;
 	bool neons_switch = false;
 	bool ss_state_switch = true;
+
 	int max_failures = -1;
 	int max_skipped = -1;
 
@@ -39,8 +39,6 @@ bool parse_options(int argc, char* argv[])
 		("verbose,v", po::bool_switch(&options.verbose), "set verbose mode on")
 		("netcdf,n", po::bool_switch(&options.netcdf), "force netcdf mode on")
 		("grib,g", po::bool_switch(&options.grib), "force grib mode on")
-		("index", po::bool_switch(&options.index), "force grib index mode on")
-		("index-keys", po::value(&options.keys), "define keys for file indexing, using grib_api notation")
 		("version,V", "display version number")
 		("infile,i", po::value<std::vector<std::string>>(&options.infile), "input file(s), - for stdin")
 		("center,c", po::value(&options.center), "force center id")
@@ -57,7 +55,9 @@ bool parse_options(int argc, char* argv[])
 		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
 		("neons,N", po::bool_switch(&neons_switch), "use only neons database (DEPRECATED)")
 		("radon,R", po::bool_switch(&radon_switch), "use only radon database (DEPRECATED)")
-		("no-ss_state-update,X", po::bool_switch(&ss_state_switch), "do not update ss_state table information");
+		("no-ss_state-update,X", po::bool_switch(&ss_state_switch), "do not update ss_state table information")
+	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied");
+
 	// clang-format on
 
 	po::positional_options_description p;
@@ -149,7 +149,8 @@ int main(int argc, char** argv)
 
 		if (type == filetype::netcdf || options.netcdf)
 		{
-			if (options.verbose) std::cout << "File '" << infile << "' is NetCDF" << std::endl;
+			if (options.verbose)
+				std::cout << "File '" << infile << "' is NetCDF" << std::endl;
 
 			NetCDFLoader ncl;
 
@@ -161,23 +162,12 @@ int main(int argc, char** argv)
 		}
 		else if (type == filetype::grib || options.grib)
 		{
-			if (options.verbose) std::cout << "File '" << infile << "' is GRIB" << std::endl;
+			if (options.verbose)
+				std::cout << "File '" << infile << "' is GRIB" << std::endl;
 
 			GribLoader g;
 
 			if (!g.Load(infile))
-			{
-				std::cerr << "Load failed" << std::endl;
-				retval = 1;
-			}
-		}
-		else if (type == filetype::gribindex || options.index)
-		{
-			if (options.verbose) std::cout << "File '" << infile << "' is GRIB index" << std::endl;
-
-			GribIndexLoader i;
-
-			if (!i.Load(infile, options.keys))
 			{
 				std::cerr << "Load failed" << std::endl;
 				retval = 1;
