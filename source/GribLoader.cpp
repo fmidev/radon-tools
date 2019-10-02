@@ -14,6 +14,7 @@ extern Options options;
 using namespace std;
 
 mutex dirCreateMutex;
+bool grib1CacheInitialized = false, grib2CacheInitialized = false;
 
 struct timer
 {
@@ -335,7 +336,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	if (g.ednum == 1)
 	{
-		databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+		if (!grib1CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+			grib1CacheInitialized = true;
+		}
 
 		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(g.producer_id, levtype, g.ednum);
 
@@ -369,7 +374,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	}
 	else
 	{
-		databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+		if (!grib2CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+			grib2CacheInitialized = true;
+		}
 
 		const long tosp = (message.TypeOfStatisticalProcessing() == -999) ? -1 : message.TypeOfStatisticalProcessing();
 
@@ -573,7 +582,10 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	timer tmr;
 	tmr.start();
 
-	CreateDirectory(theFileName);
+	if (!options.dry_run)
+	{
+		CreateDirectory(theFileName);
+	}
 
 	/*
 	 * Write grib msg to disk with unique filename.
