@@ -526,7 +526,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 {
 	struct tm t = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-	char epoch[40];
 	long e;
 
 	boost::regex r1("seconds since ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2}) UTC");
@@ -537,7 +536,7 @@ long NetCDFLoader::Epoch(const string& dateTime, const string& mask)
 	{
 		strptime(dateTime.c_str(), mask.c_str(), &t);
 
-		strftime(epoch, 40, "%s", &t);
+		time_t epoch = mktime(&t);
 
 		try
 		{

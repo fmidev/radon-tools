@@ -105,7 +105,7 @@ cflags_difficult.append('-Wctor-dtor-privacy')
 # Default flags (common for release/debug)
 
 cflags = []
-cflags.append('-std=c++11')
+cflags.append('-std=c++14')
 
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
