@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.4.3
+Version:        19.10.7
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -14,13 +14,13 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 18.2.12
+BuildRequires:  libfmigrib-devel >= 19.9.20
 BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 Requires:       hdf5
-Requires:	libfmigrib >= 18.5.3
+Requires:	libfmigrib >= 19.9.20
 Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Oct  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.7-1.fmi
+- fmigrib ABI change
 * Wed Apr  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.3-1.fmi
 - Bugfix for Netcdf loading
 * Thu Jan 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.1.17-1.fmi
