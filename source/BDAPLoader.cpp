@@ -168,13 +168,31 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	         "level_value, level_value2, forecast_period, "
-	         "forecast_type_id, file_location, file_server, forecast_type_value, message_no, byte_offset, byte_length) "
-	      << "VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
+	         "forecast_type_id, file_location, file_server, forecast_type_value";
+
+	if (options.in_place_insert)
+	{
+		query << ", message_no, byte_offset, byte_length)";
+	}
+	else
+	{
+		query << ")";
+	}
+
+	query << " VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
 	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "
-	      << "'" << itsHostname << "', " << forecastTypeValue << ", " << info.messageNo << ", " << info.offset << ", "
-	      << info.length << ")";
+	      << "'" << itsHostname << "', " << forecastTypeValue;
+
+	if (options.in_place_insert)
+	{
+		query << ", " << info.messageNo << ", " << info.offset << ", " << info.length << ")";
+	}
+	else
+	{
+		query << ")";
+	}
 
 	try
 	{
@@ -197,9 +215,15 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"] << " SET file_location = '"
 		      << info.filename << "', "
-		      << " file_server = '" << itsHostname << "', "
-		      << " message_no = " << info.messageNo << ", byte_offset = " << info.offset
-		      << ", byte_length = " << info.length << " WHERE"
+		      << " file_server = '" << itsHostname << "' ";
+
+		if (options.in_place_insert)
+		{
+			query << " message_no = " << info.messageNo << ", byte_offset = " << info.offset
+			      << ", byte_length = " << info.length;
+		}
+
+		query << " WHERE"
 		      << " producer_id = " << info.producer_id << " AND analysis_time = '" << base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
