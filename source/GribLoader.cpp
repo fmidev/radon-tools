@@ -14,6 +14,7 @@ extern Options options;
 using namespace std;
 
 mutex dirCreateMutex;
+bool grib1CacheInitialized = false, grib2CacheInitialized = false;
 
 struct timer
 {
@@ -75,6 +76,7 @@ GribLoader::~GribLoader()
 }
 bool GribLoader::Load(const string& theInfile)
 {
+	inputFileName = theInfile;
 	itsReader.Open(theInfile);
 
 	// Read all message from file
@@ -277,6 +279,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	const auto centre = message.Centre();
 	auto process = message.Process();
 
+	g.length = static_cast<unsigned long>(message.GetLongKey("totalLength"));
+
 	g.ednum = message.Edition();
 
 	auto levtype = message.LevelType();
@@ -335,7 +339,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	if (g.ednum == 1)
 	{
-		databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+		if (!grib1CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+			grib1CacheInitialized = true;
+		}
 
 		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(g.producer_id, levtype, g.ednum);
 
@@ -369,7 +377,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	}
 	else
 	{
-		databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+		if (!grib2CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+			grib2CacheInitialized = true;
+		}
 
 		const long tosp = (message.TypeOfStatisticalProcessing() == -999) ? -1 : message.TypeOfStatisticalProcessing();
 
@@ -498,24 +510,23 @@ void GribLoader::Run(short threadId)
 	BDAPLoader dbLoader;
 
 	NFmiGribMessage myMessage;
+	unsigned int messageNo;
 
-	while (DistributeMessages(myMessage))
+	while (DistributeMessages(myMessage, messageNo))
 	{
-		Process(dbLoader, myMessage, threadId);
+		Process(dbLoader, myMessage, threadId, messageNo);
 	}
 
 	printf("Thread %d stopped\n", threadId);
 }
 
-bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
+bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage, unsigned int& messageNo)
 {
 	lock_guard<mutex> lock(distMutex);
+
 	if (itsReader.NextMessage())
 	{
-		if (options.verbose)
-		{
-			printf("Message %d\n", itsReader.CurrentMessageIndex());
-		}
+		messageNo = static_cast<unsigned int>(itsReader.CurrentMessageIndex());
 		newMessage = NFmiGribMessage(itsReader.Message());
 		return true;
 	}
@@ -523,7 +534,7 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
 	return false;
 }
 
-void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
+void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId, unsigned int messageNo)
 {
 	fc_info g;
 
@@ -536,6 +547,9 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	/*
 	 * Read metadata from grib msg
 	 */
+
+	g.messageNo = messageNo;
+	g.offset = itsReader.Offset(messageNo);
 
 	if (!CopyMetaData(databaseLoader, g, message))
 	{
@@ -561,11 +575,29 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		}
 	}
 
-	string theFileName = GetFileName(databaseLoader, g);
+	string theFileName;
 
-	if (theFileName.empty())
+	if (options.in_place_insert)
 	{
-		return;
+		namespace fs = boost::filesystem;
+
+		fs::path pathname(inputFileName);
+		pathname = fs::system_complete(pathname);
+
+		string dirName = pathname.parent_path().string();
+
+		// Input file name can contain path, or not.
+		// Force full path to the file even if user has not given it
+
+		theFileName = dirName + "/" + pathname.filename().string();
+	}
+	else
+	{
+		theFileName = GetFileName(databaseLoader, g);
+		if (theFileName.empty())
+		{
+			return;
+		}
 	}
 
 	g.filename = theFileName;
@@ -573,13 +605,16 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	timer tmr;
 	tmr.start();
 
-	CreateDirectory(theFileName);
+	if (!options.dry_run && !options.in_place_insert)
+	{
+		CreateDirectory(theFileName);
+	}
 
 	/*
 	 * Write grib msg to disk with unique filename.
 	 */
 
-	if (!options.dry_run && IsGrib(theFileName))
+	if (!options.dry_run && IsGrib(theFileName) && !options.in_place_insert)
 	{
 		if (!message.Write(theFileName, false))
 		{
@@ -643,9 +678,11 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 			lvl += "-" + boost::lexical_cast<string>(g.level2);
 		}
 
-		printf("Thread %d: Parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, total=%ld ms\n",
-		       threadId, g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime, databaseTime,
-		       otherTime, messageTime);
+		printf(
+		    "Thread %d: Message %d parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, "
+		    "total=%ld ms\n",
+		    threadId, g.messageNo, g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime,
+		    databaseTime, otherTime, messageTime);
 	}
 }
 

@@ -24,7 +24,8 @@ struct Options
 	      dry_run(false),
 	      leveltypes(""),
 	      threadcount(2),
-	      ss_state_update(true)
+	      ss_state_update(true),
+	      in_place_insert(false)
 	{
 	}
 
@@ -47,6 +48,7 @@ struct Options
 	std::string leveltypes;        // -l
 	short threadcount;             // -j
 	bool ss_state_update;          // -X
+	bool in_place_insert;          // -I
 };
 
 #endif

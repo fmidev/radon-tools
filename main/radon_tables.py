@@ -863,6 +863,9 @@ SELECT
 		a.forecast_type_id,
 		t.name AS forecast_type_name,
 		a.forecast_type_value,
+		a.message_no,
+		a.byte_offset,
+		a.byte_length,
 		a.last_updater,
 		a.last_updated
 FROM

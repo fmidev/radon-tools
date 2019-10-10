@@ -37,7 +37,10 @@ struct fc_info
 	      di_meters(kFloatMissing),
 	      dj_meters(kFloatMissing),
 	      geom_id(0),
-	      geom_name(""){};
+	      geom_name(""),
+	      messageNo(0),
+	      offset(0),
+	      length(0){};
 
 	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
@@ -72,6 +75,9 @@ struct fc_info
 	double dj_meters;
 	long geom_id;
 	std::string geom_name;
+	unsigned int messageNo;
+	unsigned long offset;
+	unsigned long length;
 };
 
 #endif
