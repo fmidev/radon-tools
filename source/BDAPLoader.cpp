@@ -219,7 +219,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		if (options.in_place_insert)
 		{
-			query << " message_no = " << info.messageNo << ", byte_offset = " << info.offset
+			query << ", message_no = " << info.messageNo << ", byte_offset = " << info.offset
 			      << ", byte_length = " << info.length;
 		}
 
