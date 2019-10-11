@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.10
+Version:        19.10.11
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Oct 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.11-1.fmi
+- Minor bugfix
 * Thu Oct 10 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.10-1.fmi
 - in place insert for grid_to_radon
 * Mon Oct  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.7-1.fmi
