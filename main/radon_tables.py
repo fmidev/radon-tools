@@ -136,7 +136,7 @@ def ReadCommandLine(argv):
 	if options.dry_run:
 		options.show_sql = True
 
-	return (options,arguments)
+	return (vars(options),arguments)
 
 
 # Validate()
@@ -165,7 +165,7 @@ def Validate(options, date):
 
 		query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s %s" % (query, (element['schema_name'], element['table_name'])))
 
 		cur.execute(query, (element['schema_name'], element['table_name']))
@@ -182,7 +182,7 @@ def Validate(options, date):
 
 		query = "SELECT count(*) FROM pg_views WHERE schemaname = 'public' AND viewname = %s"
 
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s %s" % (query, (element['table_name'] + "_v",)))
 
 		cur.execute(query, (element['table_name'] + "_v",))
@@ -204,7 +204,7 @@ def Validate(options, date):
 
 		query = "SELECT count(distinct partition_name) FROM " + as_table + " WHERE table_name = %s"
 
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s %s" % (query, (element['table_name'],)))
 
 		cur.execute(query, (element['table_name'],))
@@ -215,7 +215,7 @@ def Validate(options, date):
 
 		query = "SELECT count(*) FROM pg_inherits i WHERE i.inhparent = '%s.%s'::regclass" % (element['schema_name'],element['table_name'])
 
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s %s" % (query, (element['schema_name'],element['table_name'])))
 
 		cur.execute(query)
@@ -230,7 +230,7 @@ def Validate(options, date):
 
 		query = "SELECT count(*) FROM pg_trigger WHERE tgname = '%s_partitioning_trg'" % (element['table_name'])
 
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s %s" % (query, (element['table_name'],)))
 
 		cur.execute(query)
@@ -262,7 +262,7 @@ def Validate(options, date):
 				query = "SELECT partition_name, record_count FROM " + as_table + " WHERE producer_id = %s AND table_name = %s AND partition_name = %s"
 				args = (element['producer_id'], element['table_name'], partition_name)
 
-			if options.show_sql: 
+			if options['show_sql']: 
 				print("%s %s" % (query, args))
 
 			cur.execute(query, args)
@@ -277,7 +277,7 @@ def Validate(options, date):
 
 			query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
-			if options.show_sql:
+			if options['show_sql']:
 				print("%s %s" % (query, (element['schema_name'], partition_name)))
 
 			cur.execute(query, (element['schema_name'], partition_name))
@@ -295,7 +295,7 @@ def Validate(options, date):
 				query += " AND geometry_id = %s"
 				args = args + (element['geometry_id'],)
 
-			if options.show_sql:
+			if options['show_sql']:
 				print("%s %s" % (query, args))
 
 			cur.execute(query, args)
@@ -325,7 +325,7 @@ def GeomIds(producer_id, class_id, partitioning_period = None):
 		query += " AND partitioning_period = %s"
 		args += (partitioning_period,)
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, args)) 
 		
 	cur.execute(query, args)
@@ -342,7 +342,7 @@ def GeomIds(producer_id, class_id, partitioning_period = None):
 def GridPartitionExists(options, producer, geometry, partition):
 	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (producer, geometry, partition))) 
 		
 	cur.execute(query, (producer, geometry, partition))
@@ -354,7 +354,7 @@ def GridPartitionExists(options, producer, geometry, partition):
 def PreviPartitionExists(options, producer, partition):
 	query = "SELECT count(*) FROM as_previ WHERE producer_id = %s AND partition_name = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (producer, partition))) 
 		
 	cur.execute(query, (producer, partition))
@@ -366,7 +366,7 @@ def PreviPartitionExists(options, producer, partition):
 def TableExists(options, schema_name, table_name):
 	query = "SELECT count(*) FROM as_grid WHERE schema_name = %s AND table_name = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s (%s)" % (query, (schema_name, table)))
 
 	cur.execute(query, (schema_name, table_name))
@@ -378,7 +378,7 @@ def GetProducer(producer_id):
 
 	query = "SELECT id, name, class_id FROM fmi_producer WHERE id = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (producer_id,)))
 
 	cur.execute(query, (producer_id,))
@@ -396,7 +396,7 @@ def GetProducersFromClass(class_id):
 
 	query = "SELECT id, name, class_id FROM fmi_producer WHERE class_id = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (class_id,)))
 
 	cur.execute(query, (class_id,))
@@ -422,8 +422,8 @@ def GetDefinitions(options):
 
 	class_id = None
 
-	if options.producer_id != None:
-		producerinfo = GetProducer(options.producer_id)
+	if options['producer_id'] != None:
+		producerinfo = GetProducer(options['producer_id'])
 
 		if len(producerinfo) == 0:
 			print("No producer metadata found with given options")
@@ -443,15 +443,15 @@ def GetDefinitions(options):
 	
 	args = ()
 
-	if options.producer_id != None:
+	if options['producer_id'] != None:
 		query += " WHERE producer_id = %s"
-		args = (options.producer_id,)
+		args = (options['producer_id'],)
 
-	if options.geometry_id != None:
+	if options['geometry_id'] != None:
 		if class_id == 3:
 			print("geometry is not supported with previ producers")
 		else:
-			if options.producer_id == None:
+			if options['producer_id'] == None:
 				query += " WHERE geometry_id = %s"
 			else:
 				query += " AND geometry_id = %s"
@@ -459,7 +459,7 @@ def GetDefinitions(options):
 
 	query += " ORDER BY producer_id"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, args,))
 
 	cur.execute(query, args)
@@ -495,7 +495,7 @@ def ListPartitions(options, producerinfo, table_name):
 
 	query = "SELECT table_name, partition_name FROM " + as_table + " WHERE table_name = %s ORDER BY partition_name"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (table_name,)))
 
 	cur.execute(query, (table_name,))
@@ -521,10 +521,10 @@ def CreateMainTable(options, element, producerinfo):
 
 	query = "CREATE TABLE %s.%s (LIKE %s INCLUDING ALL)" % (element['schema_name'], element['table_name'], template_table)
 
-	if options.show_sql:
+	if options['show_sql']:
 		print(query)
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		try:
 			cur.execute(query)
 			query = "GRANT SELECT ON %s.%s TO radon_ro" % (element['schema_name'], element['table_name'])
@@ -620,10 +620,10 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 	
-	if options.show_sql:
+	if options['show_sql']:
 		print(query)
 	
-	if not options.dry_run:
+	if not options['dry_run']:
 		try:
 			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
 			cur.execute(query)
@@ -637,27 +637,27 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 
 	query = "DROP TRIGGER IF EXISTS %s_partitioning_trg ON %s.%s" % (table_name, schema_name, table_name)
 
-	if options.show_sql:
+	if options['show_sql']:
 		print(query)
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		cur.execute(query)
 
 	query = "CREATE TRIGGER %s_partitioning_trg BEFORE INSERT ON %s.%s FOR EACH ROW EXECUTE PROCEDURE %s_partitioning_f()" % (table_name, schema_name, table_name, table_name)
 	
-	if options.show_sql:
+	if options['show_sql']:
 		print(query)
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		cur.execute(query)
 
 def UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time):
 	query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print(cur.mogrify(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time)))
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		try:
 			cur.execute(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time))
 		except psycopg2.ProgrammingError as e:
@@ -667,10 +667,10 @@ def DropTables(options):
 
 	producers = []
 
-	if options.producer_id is not None:
-		producers.append(GetProducer(options.producer_id))
+	if options['producer_id'] is not None:
+		producers.append(GetProducer(options['producer_id']))
 	else:
-		producers = GetProducersFromClass(options.class_id)
+		producers = GetProducersFromClass(options['class_id'])
 
 	for producer in producers:
 
@@ -690,7 +690,7 @@ def DropTables(options):
 
 		query += " FROM "+ as_table + " WHERE producer_id = %s AND delete_time < now()"
 		
-		if options.show_sql:
+		if options['show_sql']:
 			print("%s, %s" % (query, args))
 
 		cur.execute(query, args)
@@ -730,7 +730,7 @@ def DropTables(options):
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
 					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
 
-					if options.show_sql:
+					if options['show_sql']:
 						print(cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time)))
 
 					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
@@ -741,10 +741,10 @@ def DropTables(options):
 
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
 
-				if options.show_sql:
+				if options['show_sql']:
 					print(cur.mogrify(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time)))
 
-				if not options.dry_run:
+				if not options['dry_run']:
 					try:
 						cur.execute(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time))
 						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
@@ -763,29 +763,39 @@ def DropTables(options):
 
 					start = timer()
 
-					if not options.dry_run:
+					if not options['dry_run']:
 						shutil.rmtree(directory, ignore_errors=True)
 
 					stop = timer()
 					print("Removed directory %s in %.2f seconds" % (directory, (stop-start)))
 
+				for row in directories:
+					parent = os.dirname(os.path.normpath(row[0]))
+
+					if not os.path.isdir(parent):
+						continue
+
+					while not os.listdir(parent):
+						print("os.rmdir(%s)" % parent)
+						parent = os.dirname(parent)
+
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
 				args = (producer['id'], min_analysis_time, max_analysis_time)
 
-				if options.show_sql:
+				if options['show_sql']:
 					print("%s, %s" % (query, args))
 
-				if not options.dry_run:
+				if not options['dry_run']:
 					cur.execute(query, args)
 
 			query = "DELETE FROM " + as_table + " WHERE id = %s"
 			args = (rowid,)
 				
-			if options.show_sql:
+			if options['show_sql']:
 				print("%s, %s" % (query, args))
 
-			if not options.dry_run:
+			if not options['dry_run']:
 				cur.execute(query, args)
 
 			# If table partition is empty and it is not referenced in as_{grid|previ} anymore,
@@ -800,27 +810,27 @@ def DropTables(options):
 			if int(row[0]) == 0:
 				query = "DROP TABLE %s.%s" % (schema_name, partition_name)
 
-				if options.show_sql:
+				if options['show_sql']:
 					print(query)
 
-				if not options.dry_run:
+				if not options['dry_run']:
 					cur.execute(query)
 
 			# fake options for this producer only
 			opts = {}
 			opts['producer_id'] = producer['id']
 			opts['geometry_id'] = None
-			opts.show_sql = options.show_sql
+			opts['show_sql'] = options['show_sql']
 
 			defs = GetDefinitions(opts)
 
 			for definition in defs:
 				CreatePartitioningTrigger(options, producer, definition)
 
-				if not options.dry_run:
+				if not options['dry_run']:
 					conn.commit()
 
-		if not options.dry_run:
+		if not options['dry_run']:
 			conn.commit()
 
 def CreateViews(options, element, class_id):
@@ -915,10 +925,10 @@ WHERE
 		s.id = a.station_id
 		""" % (element['table_name'], element['schema_name'], element['table_name'])
 
-	if options.show_sql:
+	if options['show_sql']:
 		print(query)
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		cur.execute(query)
 		query = "GRANT SELECT ON public.%s_v TO public" % (element['table_name'])
 		cur.execute(query)
@@ -972,10 +982,10 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s %s" % (query, (element['schema_name'], partition_name)))
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		cur.execute(query, (element['schema_name'], partition_name))
 
 	row = cur.fetchone()
@@ -993,10 +1003,10 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 			period_stop_timestamp = period_stop.strftime('%Y-%m-%d %H:%M:%S')
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, period_start_timestamp, period_stop_timestamp, element['schema_name'], element['table_name'])
 
-		if options.show_sql:
+		if options['show_sql']:
 			print(query)
 
-		if not options.dry_run:
+		if not options['dry_run']:
 			cur.execute(query)
 			query = "GRANT SELECT ON %s.%s TO radon_ro" % (element['schema_name'], partition_name)
 			cur.execute(query)
@@ -1013,18 +1023,18 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 			as_table = 'as_previ'
 			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s_pkey PRIMARY KEY (producer_id, analysis_time, station_id, param_id, level_id, level_value, level_value2, forecast_period, forecast_type_id, forecast_type_value)" % (element['schema_name'], partition_name, partition_name)
 
-		if options.show_sql:
+		if options['show_sql']:
 			print(query)
 
-		if not options.dry_run:
+		if not options['dry_run']:
 			cur.execute(query)
 					
 		query = "CREATE TRIGGER %s_store_last_updated_trg BEFORE UPDATE ON %s.%s FOR EACH ROW EXECUTE PROCEDURE store_last_updated_f()" % (partition_name, element['schema_name'], partition_name)
 
-		if options.show_sql:
+		if options['show_sql']:
 			print(query)
 
-		if not options.dry_run:
+		if not options['dry_run']:
 			cur.execute(query)
 
 	# Delete time type depends on partitioning type; for 'ANALYSISTIME' it's 
@@ -1047,10 +1057,10 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s, %s)"
 		args = (element['producer_id'], analysis_time, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element['schema_name'], element['table_name'], partition_name, period_start.strftime('%Y-%m-%d %H:%M:%S'), period_stop.strftime('%Y-%m-%d %H:%M:%S'))
 	
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s (%s)" % (query, args))
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		cur.execute(query, args)
 
 	return True
@@ -1068,7 +1078,7 @@ def CreateTables(options, element, date):
 	
 	query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
 
-	if options.show_sql:
+	if options['show_sql']:
 		print("%s (%s)" % (query, (element['schema_name'], element['table_name'])))
 
 	cur.execute(query, (element['schema_name'], element['table_name']))
@@ -1102,24 +1112,24 @@ def CreateTables(options, element, date):
 	if partitionAdded:
 		CreatePartitioningTrigger(options, producerinfo, element)
 
-	if not options.dry_run:
+	if not options['dry_run']:
 		conn.commit()
 
 if __name__ == '__main__':
 
 	(options,files) = ReadCommandLine(sys.argv[1:])
 
-	print("Connecting to database %s at host %s port %s" % (options.database, options.host, options.port))
+	print("Connecting to database %s at host %s port %s" % (options['database'], options['host'], options['port']))
 
 	password = None
 
 	try:
-		password = os.environ["RADON_%s_PASSWORD" % (options.user.upper())]
+		password = os.environ["RADON_%s_PASSWORD" % (options['user'].upper())]
 	except:
-		print("password should be given with env variable RADON_%s_PASSWORD" % (options.user.upper()))
+		print("password should be given with env variable RADON_%s_PASSWORD" % (options['user'].upper()))
 		sys.exit(1)
 
-	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options.user, password, options.host, options.database, options.port)
+	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options['user'], password, options['host'], options['database'], options['port'])
 	conn = psycopg2.connect(dsn)
 
 	conn.autocommit = 0
@@ -1128,20 +1138,20 @@ if __name__ == '__main__':
 
 	date = datetime.datetime.now().strftime('%Y%m%d')
 
-	if options.date != None:
-		date = options.date
+	if options['date'] != None:
+		date = options['date']
 
-	if options.validate:
+	if options['validate']:
 		sys.exit(Validate(options, date))
 
-	if options.drop:
+	if options['drop']:
 		DropTables(options)
 		sys.exit(0)
 
 	definitions = GetDefinitions(options)
 
 	for element in definitions:
-		if options.recreate_triggers:
+		if options['recreate_triggers']:
 			print("Recreating triggers for table %s" % (element['table_name']))
 			CreatePartitioningTrigger(options, GetProducer(element['producer_id']), element)
 			conn.commit()
