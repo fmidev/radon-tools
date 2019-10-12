@@ -41,7 +41,6 @@ Requires:       python36-pytz
 Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
-Provides:       previ_to_neons.py
 Provides:	geom_to_radon.py
 %endif
 
