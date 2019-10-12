@@ -36,9 +36,8 @@ Requires:	libnetcdf4 >= 4.0.1
 BuildRequires:  boost-devel >= 1.66
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-Requires:	python-psycopg2
-Requires:	python-bunch
-Requires:       pytz
+Requires:	python36-psycopg2
+Requires:       python36-pytz
 Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
