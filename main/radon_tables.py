@@ -720,15 +720,16 @@ def DropTables(options):
 				directories = []
 
 				if options.unlink:
-					# Fetch file path with the last two directories removed; ie
+					# Fetch file path with the last directory; ie
 					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
 					# -->
-					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/
+					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150
+					#
 					# and then we can remove the whole directory without specifying individual files.
 					# Note! If directory structure is changed on the righternmost end, this logic will fail
 					query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
-					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
+					query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
 
 					if options['show_sql']:
 						print(cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time)))
@@ -759,6 +760,10 @@ def DropTables(options):
 					directory = row[0]
 					if not os.path.isdir(directory):
 						print("Directory %s does not exist" % (directory))
+						continue
+
+					if directory == env['MASALA_PROCESSED_DATA_BASE'] || directory == env['MASALA_RAW_DATA_BASE']:
+						print("Not removing base directory %s" % (directory))
 						continue
 
 					start = timer()
