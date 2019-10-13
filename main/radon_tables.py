@@ -719,7 +719,7 @@ def DropTables(options):
 			if as_table == 'as_grid':
 				directories = []
 
-				if options.unlink:
+				if options['unlink']:
 					# Fetch file path with the last directory; ie
 					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
 					# -->
@@ -729,7 +729,7 @@ def DropTables(options):
 					# Note! If directory structure is changed on the righternmost end, this logic will fail
 					query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
-					query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
+					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
 
 					if options['show_sql']:
 						print(cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time)))
@@ -737,6 +737,9 @@ def DropTables(options):
 					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
 
 					directories = cur.fetchall()
+
+				if len(directories) == 0:
+					continue
 
 				# First delete rows in ss_state, then remove files in disk, finally drop table partition
 
@@ -762,9 +765,12 @@ def DropTables(options):
 						print("Directory %s does not exist" % (directory))
 						continue
 
-					if directory == env['MASALA_PROCESSED_DATA_BASE'] || directory == env['MASALA_RAW_DATA_BASE']:
-						print("Not removing base directory %s" % (directory))
-						continue
+					try:
+						if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
+							print("Not removing base directory %s" % (directory))
+							continue
+					except KeyError,e:
+						pass
 
 					start = timer()
 
@@ -775,14 +781,14 @@ def DropTables(options):
 					print("Removed directory %s in %.2f seconds" % (directory, (stop-start)))
 
 				for row in directories:
-					parent = os.dirname(os.path.normpath(row[0]))
+					parent = os.path.dirname(os.path.normpath(row[0]))
 
 					if not os.path.isdir(parent):
 						continue
 
 					while not os.listdir(parent):
 						print("os.rmdir(%s)" % parent)
-						parent = os.dirname(parent)
+						parent = os.path.dirname(parent)
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
