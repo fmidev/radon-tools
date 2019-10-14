@@ -787,16 +787,6 @@ def DropTables(options):
 						print("empty dir: os.rmdir(%s)" % parent)
 						parent = os.path.dirname(parent)
 
-					# check if parent dir is empty, and if so remove it
-					parent_dir = '/'.join(directory.split('/')[:-1])
-
-					try:
-						if not os.listdir(parent_dir):
-							print "Removing empty parent dir %s" % (parent_dir)
-							shutil.rmtree(parent_dir, ignore_errors=True)
-					except OSError,e:
-						print e
-
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
 				args = (producer['id'], min_analysis_time, max_analysis_time)
