@@ -4,6 +4,7 @@
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -38,7 +39,7 @@ struct timer
 
 namespace
 {
-bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
+bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info, short threadId)
 {
 	double di = info.di_degrees;
 	double dj = info.dj_degrees;
@@ -56,8 +57,10 @@ bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
 
 	if (geominfo.empty())
 	{
-		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
-		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
+		printf(
+		    "Thread %d: Geometry not found from radon, gridsize: %ldx%ld first point: %f,%f grid cell size: %fx%f "
+		    "type: %ld\n",
+		    threadId, info.ni, info.nj, info.lon_degrees, info.lat_degrees, di, dj, info.gridtype);
 		return false;
 	}
 
@@ -274,7 +277,7 @@ void CreateDirectory(const string& theFileName)
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
  */
 
-bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
+bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message, short threadId)
 {
 	const auto centre = message.Centre();
 	auto process = message.Process();
@@ -324,14 +327,14 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	if (prodInfo.empty())
 	{
-		cerr << "Producer information not found from radon for centre " << centre << ", process " << process
-		     << " producer type " << producer_type_id << endl;
+		printf("Thread %d: Producer information not found from radon for centre %ld, process %ld, producer type %ld\n",
+		       threadId, centre, process, producer_type_id);
 		return false;
 	}
 	else if (prodInfo["class_id"] != "1")
 	{
-		cerr << "producer class_id is " << prodInfo["class_id"]
-		     << ", grid_to_neons can only handle gridded data (class_id = 1)" << endl;
+		printf("Thread %d: Producer class_id is %s, grid_to_neons can only handle gridded data (class_id = 1)\n",
+		       threadId, prodInfo["class_id"].c_str());
 		return false;
 	}
 
@@ -349,7 +352,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 		if (levelinfo.empty())
 		{
-			cerr << "Level name not found for grib type " << levtype << endl;
+			printf("Thread %d: Level name not found for grib type %ld\n", threadId, levtype);
 			return false;
 		}
 
@@ -364,9 +367,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 		{
 			if (options.verbose)
 			{
-				cerr << "Parameter name not found for table2Version " << message.Table2Version() << ", number "
-				     << message.ParameterNumber() << ", time range indicator " << message.TimeRangeIndicator()
-				     << " level type " << levtype << endl;
+				printf(
+				    "Thread %d: Parameter name not found for table2Version %ld, number %ld, time range indicator %ld, "
+				    "level type %ld\n",
+				    threadId, message.Table2Version(), message.ParameterNumber(), message.TimeRangeIndicator(),
+				    levtype);
 			}
 
 			return false;
@@ -393,9 +398,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 		{
 			if (options.verbose)
 			{
-				cerr << "Parameter name not found for discipline " << message.ParameterDiscipline() << " category "
-				     << message.ParameterCategory() << " number " << message.ParameterNumber()
-				     << " statistical processing " << tosp << endl;
+				printf(
+				    "Thread %d: arameter name not found for discipline %ld, category %ld, number %ld, statistical "
+				    "processing %ld\n",
+				    threadId, message.ParameterDiscipline(), message.ParameterCategory(), message.ParameterNumber(),
+				    tosp);
 			}
 
 			return false;
@@ -417,7 +424,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		if (options.verbose)
 		{
-			cerr << "Level name not found for grib level " << levtype << endl;
+			printf("Thread %d: Level name not found for grib level %ld\n", threadId, levtype);
 		}
 		return false;
 	}
@@ -473,10 +480,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			break;
 
 		default:
-			cerr << "Invalid geometry for GRIB: " << message.NormalizedGridType()
-			     << ", only latlon, rotated latlon and polster are supported" << endl;
+			printf("Thread %d: Unsupported gridType: %ld\n", threadId, message.NormalizedGridType());
 			return false;
-			break;
 	}
 
 	g.level1 = message.LevelValue();
@@ -495,7 +500,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.fcst_per = message.NormalizedStep(true, true);
 
-	if (GetGeometryInformation(databaseLoader, g) == false)
+	if (GetGeometryInformation(databaseLoader, g, threadId) == false)
 	{
 		return false;
 	}
@@ -551,7 +556,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	g.messageNo = messageNo;
 	g.offset = itsReader.Offset(messageNo);
 
-	if (!CopyMetaData(databaseLoader, g, message))
+	if (!CopyMetaData(databaseLoader, g, message, threadId))
 	{
 		g_skipped++;
 		return;
@@ -582,8 +587,24 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		namespace fs = boost::filesystem;
 
 		fs::path pathname(inputFileName);
-		pathname = fs::system_complete(pathname);
+		pathname = canonical(fs::system_complete(pathname));
 
+		// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
+		const auto atimedir = pathname.parent_path().filename();
+		const auto proddir = pathname.parent_path().parent_path().filename();
+
+		const boost::regex r1("\\d+");
+		const boost::regex r2("\\d{12}");
+
+		if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
+		{
+			printf(
+			    "Thread %d: File path must include analysistime and producer id "
+			    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib')\n",
+			    threadId);
+			printf("Thread %d: Got file '%s'\n", threadId, pathname.string().c_str());
+			return;
+		}
 		string dirName = pathname.parent_path().string();
 
 		// Input file name can contain path, or not.
