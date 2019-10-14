@@ -493,7 +493,7 @@ def ListPartitions(options, producerinfo, table_name):
 	if producerinfo['class_id'] == 3:
 		as_table = "as_previ"
 
-	query = "SELECT table_name, partition_name FROM " + as_table + " WHERE table_name = %s ORDER BY partition_name"
+	query = "SELECT table_name, partition_name FROM " + as_table + " WHERE table_name = %s  GROUP BY table_name, partition_name ORDER BY partition_name"
 
 	if options['show_sql']:
 		print("%s %s" % (query, (table_name,)))
@@ -729,7 +729,7 @@ def DropTables(options):
 					# Note! If directory structure is changed on the righternmost end, this logic will fail
 					query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
 					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
-					query += "distinct array_to_string(a[1:array_upper(a,1)-2],'/') FROM x"
+					query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
 
 					if options['show_sql']:
 						print(cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time)))
@@ -737,9 +737,6 @@ def DropTables(options):
 					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
 
 					directories = cur.fetchall()
-
-				if len(directories) == 0:
-					continue
 
 				# First delete rows in ss_state, then remove files in disk, finally drop table partition
 
@@ -769,7 +766,7 @@ def DropTables(options):
 						if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
 							print("Not removing base directory %s" % (directory))
 							continue
-					except KeyError,e:
+					except KeyError as e:
 						pass
 
 					start = timer()
@@ -787,7 +784,7 @@ def DropTables(options):
 						continue
 
 					while not os.listdir(parent):
-						print("os.rmdir(%s)" % parent)
+						print("empty dir: os.rmdir(%s)" % parent)
 						parent = os.path.dirname(parent)
 
 			elif as_table == 'as_previ':
@@ -834,6 +831,19 @@ def DropTables(options):
 			opts['show_sql'] = options['show_sql']
 
 			defs = GetDefinitions(opts)
+
+			# Remove duplicate definitions resulting from different geometries (DB trigger doesn't consider geometries)
+			defs2 = []
+			for i in range(len(defs)):
+				add = True
+				for j in range(len(defs2)):
+					if defs[i]['schema_name'] == defs2[j]['schema_name'] and defs[i]['table_name'] == defs2[j]['table_name'] and defs[i]['analysis_times'] == defs2[j]['analysis_times']:
+						add = False
+						break
+				if add:
+					defs2.append(defs[i])
+
+			defs = defs2
 
 			for definition in defs:
 				CreatePartitioningTrigger(options, producer, definition)
