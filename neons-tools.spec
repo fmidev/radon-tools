@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.11
+Version:        19.10.14
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -77,11 +77,15 @@ rm -rf %{buildroot}
 %if %{undefined suse_version}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
-%{_bindir}/previ_to_neons.py
 %{_bindir}/geom_to_radon.py
 %endif
 
 %changelog
+* Mon Oct 14 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.14-1.fmi
+- radon_tables.py to python3
+- Remove previ_to_neons.py
+- Tweaking directory removal strategy due to in-place insert functionality
+- Misc bug fixes
 * Fri Oct 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.11-1.fmi
 - Minor bugfix
 * Thu Oct 10 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.10-1.fmi
