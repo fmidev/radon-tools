@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.14
-Release:        2.el7.fmi
+Version:        19.10.15
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -38,6 +38,7 @@ Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:	python36-psycopg2
 Requires:       python36-pytz
+Requires:	python36-dateutil
 Requires:       libpqxx
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
@@ -81,6 +82,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct 15 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.15-1.fmi
+- Bugfixes
 * Mon Oct 14 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.14-1.fmi
 - radon_tables.py to python3
 - Remove previ_to_neons.py
