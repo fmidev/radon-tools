@@ -152,6 +152,11 @@ int main(int argc, char** argv)
 			if (options.verbose)
 				std::cout << "File '" << infile << "' is NetCDF" << std::endl;
 
+			if (options.in_place_insert)
+			{
+				std::cerr << "In-place insert not possible for netcdf" << std::endl;
+				continue;
+			}
 			NetCDFLoader ncl;
 
 			if (!ncl.Load(infile))

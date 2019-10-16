@@ -165,33 +165,36 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	                            to_string(info.fcst_per) + interval + "/" + to_string(info.forecast_type_id) + "/" +
 	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["table_name"];
 
+	// clang-format off
+
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
-	         "level_value, level_value2, forecast_period, "
-	         "forecast_type_id, file_location, file_server, forecast_type_value";
-
-	if (options.in_place_insert)
-	{
-		query << ", message_no, byte_offset, byte_length)";
-	}
-	else
-	{
-		query << ")";
-	}
-
-	query << " VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
-	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
+	      << "level_value, level_value2, forecast_period, forecast_type_id,"
+	      << "file_location, file_server, forecast_type_value, message_no, byte_offset, byte_length)"
+	      << " VALUES ("
+	      << info.producer_id << ", '"
+	      << base_date << "', "
+	      << geometry_id << ", "
+	      << param_id << ", "
+	      << level_id << ", "
+	      << info.level1 << ", "
+	      << info.level2 << ", "
+	      << info.fcst_per
+	      << interval << ", "
 	      << info.forecast_type_id << ", "
 	      << "'" << info.filename << "', "
-	      << "'" << itsHostname << "', " << forecastTypeValue;
+	      << "'" << itsHostname << "', "
+	      << forecastTypeValue;
 
-	if (options.in_place_insert)
+	// clang-format on
+
+	if (info.messageNo && info.offset && info.length)
 	{
-		query << ", " << info.messageNo << ", " << info.offset << ", " << info.length << ")";
+		query << ", " << info.messageNo.get() << ", " << info.offset.get() << ", " << info.length.get() << ")";
 	}
 	else
 	{
-		query << ")";
+		query << ", NULL, NULL, NULL)";
 	}
 
 	try
@@ -213,14 +216,22 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		// level_value, forecast_period,
 		// forecast_type_id)
 
-		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"] << " SET file_location = '"
-		      << info.filename << "', "
-		      << " file_server = '" << itsHostname << "' ";
+		// clang-format off
 
-		if (options.in_place_insert)
+		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
+		      << " SET file_location = '" << info.filename << "', "
+		      << " file_server = '" << itsHostname << "', ";
+
+		// clang-format on
+
+		if (info.messageNo && info.offset && info.length)
 		{
-			query << ", message_no = " << info.messageNo << ", byte_offset = " << info.offset
-			      << ", byte_length = " << info.length;
+			query << "message_no = " << info.messageNo.get() << ", byte_offset = " << info.offset.get()
+			      << ", byte_length = " << info.length.get();
+		}
+		else
+		{
+			query << "NULL, NULL, NULL";
 		}
 
 		query << " WHERE"

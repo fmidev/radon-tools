@@ -399,7 +399,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			if (options.verbose)
 			{
 				printf(
-				    "Thread %d: arameter name not found for discipline %ld, category %ld, number %ld, statistical "
+				    "Thread %d: parameter name not found for discipline %ld, category %ld, number %ld, statistical "
 				    "processing %ld\n",
 				    threadId, message.ParameterDiscipline(), message.ParameterCategory(), message.ParameterNumber(),
 				    tosp);
@@ -553,8 +553,8 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	 * Read metadata from grib msg
 	 */
 
-	g.messageNo = messageNo;
-	g.offset = itsReader.Offset(messageNo);
+	g.messageNo = (options.in_place_insert) ? messageNo : 0;
+	g.offset = (options.in_place_insert) ? itsReader.Offset(messageNo) : 0;
 
 	if (!CopyMetaData(databaseLoader, g, message, threadId))
 	{
@@ -702,7 +702,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		printf(
 		    "Thread %d: Message %d parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, "
 		    "total=%ld ms\n",
-		    threadId, g.messageNo, g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime,
+		    threadId, g.messageNo.get(), g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime,
 		    databaseTime, otherTime, messageTime);
 	}
 }
