@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        19.10.17
-Release:        1.el7.fmi
+Release:        2.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
