@@ -13,6 +13,7 @@ import re
 import os
 import shutil
 import time
+from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
 from pytz import timezone
@@ -431,7 +432,7 @@ def GetDefinitions(options):
 
 		class_id = producerinfo['class_id']
 	else:
-		class_id = options.class_id
+		class_id = options['class_id']
 
 	query = ""
 
@@ -591,7 +592,7 @@ BEGIN
 				elif element['partitioning_period'] == 'MONTHLY':
 					period = partition_name[-6:]
 					period_start = datetime.datetime.strptime(period, '%Y%m')
-					delta = datetime.timedelta(months=1)
+					delta = relativedelta(months=+1)
 
 				elif element['partitioning_period'] == 'DAILY':
 					period = partition_name[-8:]
@@ -775,7 +776,7 @@ def DropTables(options):
 						shutil.rmtree(directory, ignore_errors=True)
 
 					stop = timer()
-					print("Removed directory %s in %.2f seconds" % (directory, (stop-start)))
+					print("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
 
 				for row in directories:
 					parent = os.path.dirname(os.path.normpath(row[0]))
@@ -784,8 +785,11 @@ def DropTables(options):
 						continue
 
 					while not os.listdir(parent):
-						print("empty dir: os.rmdir(%s)" % parent)
+						print("Removing empty dir %s" % parent)
+						os.rmdir(parent)
 						parent = os.path.dirname(parent)
+						print("New parent %s" % parent)
+						break
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
@@ -976,7 +980,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	elif element['partitioning_period'] == 'MONTHLY':
 		period_start = datetime.datetime.strptime(date[0:6], '%Y%m')
-		period_stop = period_start + datetime.timedelta(months=1)
+		period_stop = period_start + relativedelta(months=+1)
 		
 		partition_name = "%s_%s" % (element['table_name'], period_start.strftime('%Y%m'))
 
