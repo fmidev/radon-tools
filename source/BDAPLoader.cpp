@@ -231,7 +231,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		}
 		else
 		{
-			query << "NULL, NULL, NULL";
+			query << "message_no = NULL, byte_offset = NULL, byte_length = NULL";
 		}
 
 		query << " WHERE"
