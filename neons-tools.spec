@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.15
+Version:        19.10.17
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -82,6 +82,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Oct 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
+- Enable byte_offset&byte_length columns
 * Tue Oct 15 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.15-1.fmi
 - Bugfixes
 * Mon Oct 14 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.14-1.fmi
