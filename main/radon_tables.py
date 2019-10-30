@@ -789,7 +789,6 @@ def DropTables(options):
 						os.rmdir(parent)
 						parent = os.path.dirname(parent)
 						print("New parent %s" % parent)
-						break
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
