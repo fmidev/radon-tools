@@ -15,10 +15,6 @@ once_flag oflag;
 BDAPLoader::BDAPLoader()
     : itsUsername("wetodb"), itsDatabase("radon"), itsDatabaseHost("vorlon"), base(0), itsNeedsAnalyze(false)
 {
-	char myhost[255];
-	gethostname(myhost, 100);
-	itsHostname = string(myhost);
-
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
 	if (pw)
@@ -170,7 +166,8 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
 	      << "level_value, level_value2, forecast_period, forecast_type_id,"
-	      << "file_location, file_server, forecast_type_value, message_no, byte_offset, byte_length)"
+	      << "forecast_type_value, file_location, file_server, file_format_id, "
+	      << "file_protocol_id, message_no, byte_offset, byte_length)"
 	      << " VALUES ("
 	      << info.producer_id << ", '"
 	      << base_date << "', "
@@ -182,9 +179,11 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	      << info.fcst_per
 	      << interval << ", "
 	      << info.forecast_type_id << ", "
+	      << forecastTypeValue << ", "
 	      << "'" << info.filename << "', "
-	      << "'" << itsHostname << "', "
-	      << forecastTypeValue;
+	      << "'" << info.filehost << "', "
+	      << info.ednum << ", "
+	      << info.fileprotocol;
 
 	// clang-format on
 
@@ -220,7 +219,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 		      << " SET file_location = '" << info.filename << "', "
-		      << " file_server = '" << itsHostname << "', ";
+		      << "file_server = '" << info.filehost << "', "
+		      << "file_format_id = " << info.ednum << ", "
+		      << "file_protocol_id = " << info.fileprotocol << ", ";
 
 		// clang-format on
 

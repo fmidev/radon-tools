@@ -8,6 +8,7 @@ struct Options
 	      netcdf(false),
 	      grib(false),
 	      index(false),
+	      s3(false),
 	      center(86),
 	      process(0),
 	      analysistime(""),
@@ -33,6 +34,7 @@ struct Options
 	bool netcdf;   // -n
 	bool grib;     // -g
 	bool index;
+	bool s3;                   // -s
 	unsigned int center;       // -c
 	unsigned int process;      // -p
 	std::string analysistime;  // -a

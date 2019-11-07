@@ -28,6 +28,8 @@ struct fc_info
 	      levname(""),
 	      projection(""),
 	      filename(""),
+	      filehost(""),
+	      fileprotocol(1),
 	      forecast_type_id(1),  // deterministic
 	      forecast_type_value(-1),
 	      gridtype(0),
@@ -65,6 +67,8 @@ struct fc_info
 	std::string levname;
 	std::string projection;
 	std::string filename;
+	std::string filehost;
+	int fileprotocol;
 	long forecast_type_id;  // from table forecast_type
 	double forecast_type_value;
 	long gridtype;

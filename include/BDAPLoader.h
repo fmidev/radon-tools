@@ -38,7 +38,6 @@ class BDAPLoader
 	void Init();
 
 	char* base;
-	std::string itsHostname;
 
 	std::unique_ptr<NFmiRadonDB> itsRadonDB;
 

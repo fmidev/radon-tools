@@ -6,6 +6,7 @@
 
 #include "GribLoader.h"
 #include "NetCDFLoader.h"
+#include "S3GribLoader.h"
 #include "options.h"
 
 Options options;
@@ -28,7 +29,7 @@ bool parse_options(int argc, char* argv[])
 
 	bool radon_switch = false;
 	bool neons_switch = false;
-	bool ss_state_switch = true;
+	bool no_ss_state_switch = false;
 
 	int max_failures = -1;
 	int max_skipped = -1;
@@ -55,8 +56,8 @@ bool parse_options(int argc, char* argv[])
 		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
 		("neons,N", po::bool_switch(&neons_switch), "use only neons database (DEPRECATED)")
 		("radon,R", po::bool_switch(&radon_switch), "use only radon database (DEPRECATED)")
-		("no-ss_state-update,X", po::bool_switch(&ss_state_switch), "do not update ss_state table information")
-	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied");
+		("no-ss_state-update,X", po::bool_switch(&no_ss_state_switch), "do not update ss_state table information")
+	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)");
 
 	// clang-format on
 
@@ -97,7 +98,7 @@ bool parse_options(int argc, char* argv[])
 		std::cout << "Switch -N is deprecated" << std::endl;
 	}
 
-	options.ss_state_update = ss_state_switch;
+	options.ss_state_update = !no_ss_state_switch;
 
 	if (max_failures >= -1)
 	{
@@ -139,13 +140,39 @@ int main(int argc, char** argv)
 
 	for (const std::string& infile : options.infile)
 	{
-		if (infile != "-" && boost::filesystem::exists(infile) == false)
+		const bool isLocalFile = (infile.substr(0, 5) != "s3://") && infile != "-";
+
+		if (isLocalFile && !boost::filesystem::exists(infile))
 		{
 			std::cerr << "Input file '" << infile << "' does not exist" << std::endl;
 			continue;
 		}
 
 		filetype type = FileType(infile);
+
+		if (isLocalFile == false)
+		{
+			if (type != filetype::grib && options.grib == false)
+			{
+				std::cerr << "Only grib files are supported with s3" << std::endl;
+				continue;
+			}
+
+			S3GribLoader ldr;
+			options.s3 = true;
+
+			if (!ldr.Load(infile))
+			{
+				std::cerr << "Load failed" << std::endl;
+				retval = 1;
+			}
+
+			continue;
+		}
+		else
+		{
+			options.s3 = false;
+		}
 
 		if (type == filetype::netcdf || options.netcdf)
 		{

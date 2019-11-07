@@ -1,5 +1,6 @@
 #include "GribLoader.h"
 #include "NFmiRadonDB.h"
+#include "timer.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
@@ -15,27 +16,8 @@ extern Options options;
 using namespace std;
 
 mutex dirCreateMutex;
+
 bool grib1CacheInitialized = false, grib2CacheInitialized = false;
-
-struct timer
-{
-	timespec start_ts, stop_ts;
-
-	void start()
-	{
-		clock_gettime(CLOCK_REALTIME, &start_ts);
-	}
-	void stop()
-	{
-		clock_gettime(CLOCK_REALTIME, &stop_ts);
-	}
-	int get_time_ms()
-	{
-		size_t _start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
-		size_t _stop = static_cast<size_t>(stop_ts.tv_sec * 1000000000 + stop_ts.tv_nsec);
-		return static_cast<int>(static_cast<double>(_stop - _start) / 1000. / 1000.);
-	}
-};
 
 namespace
 {
@@ -70,50 +52,8 @@ bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info, short thr
 	return true;
 }
 }
-
-GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
+void UpdateAsGrid(const std::set<std::string>& analyzeTables)
 {
-}
-GribLoader::~GribLoader()
-{
-}
-bool GribLoader::Load(const string& theInfile)
-{
-	inputFileName = theInfile;
-	itsReader.Open(theInfile);
-
-	// Read all message from file
-
-	string levelString = options.leveltypes;
-
-	if (!levelString.empty())
-	{
-		boost::split(levels, levelString, boost::is_any_of(","), boost::token_compress_on);
-	}
-
-	string paramString = options.parameters;
-
-	if (!paramString.empty())
-	{
-		boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
-	}
-
-	vector<boost::thread> threadgroup;
-
-	for (short i = 0; i < options.threadcount; i++)
-	{
-		threadgroup.push_back(boost::thread(&GribLoader::Run, this, i));
-	}
-
-	for (auto& t : threadgroup)
-	{
-		t.join();
-	}
-
-	cout << "Success with " << g_success << " fields, "
-	     << "failed with " << g_failed << " fields, "
-	     << "skipped " << g_skipped << " fields" << std::endl;
-
 	BDAPLoader ldr;
 
 	for (const auto& table : analyzeTables)
@@ -163,59 +103,117 @@ bool GribLoader::Load(const string& theInfile)
 			ldr.RadonDB().Execute(ss.str());
 		}
 	}
+}
 
+void UpdateSSState(const std::set<std::string>& ssStateInformation)
+{
 	if (!options.ss_state_update)
 	{
-		for (const std::string& ssInfo : ssStateInformation)
+		return;
+	}
+
+	BDAPLoader ldr;
+
+	for (const std::string& ssInfo : ssStateInformation)
+	{
+		vector<string> tokens;
+		boost::split(tokens, ssInfo, boost::is_any_of("/"));
+
+		stringstream ss;
+		ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
+		      "forecast_type_value, table_name) VALUES ("
+		   << tokens[0] << ", " << tokens[1] << ", "
+		   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
+		   << "'" << tokens[6] << "')";
+
+		if (options.verbose)
 		{
-			vector<string> tokens;
-			boost::split(tokens, ssInfo, boost::is_any_of("/"));
+			cout << "Updating ss_state for " << ssInfo << endl;
+		}
 
-			stringstream ss;
-			ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
-			      "forecast_type_value, table_name) VALUES ("
-			   << tokens[0] << ", " << tokens[1] << ", "
-			   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
-			   << "'" << tokens[6] << "')";
-
-			if (options.verbose)
+		if (options.dry_run)
+		{
+			cout << ss.str() << endl;
+		}
+		else
+		{
+			try
 			{
-				cout << "Updating ss_state for " << ssInfo << endl;
+				ldr.RadonDB().Execute(ss.str());
 			}
-
-			if (options.dry_run)
-			{
-				cout << ss.str() << endl;
-			}
-			else
+			catch (const pqxx::unique_violation& e)
 			{
 				try
 				{
+					ss.str("");
+					ss << "UPDATE ss_state SET last_updated = now() WHERE "
+					   << "producer_id = " << tokens[0] << " AND "
+					   << "geometry_id = " << tokens[1] << " AND "
+					   << "analysis_time = '" << tokens[2] << "' AND "
+					   << "forecast_period = " << tokens[3] << " AND "
+					   << "forecast_type_id = " << tokens[4] << " AND "
+					   << "forecast_type_value = " << tokens[5];
+
 					ldr.RadonDB().Execute(ss.str());
 				}
-				catch (const pqxx::unique_violation& e)
+				catch (const pqxx::pqxx_exception& ee)
 				{
-					try
-					{
-						ss.str("");
-						ss << "UPDATE ss_state SET last_updated = now() WHERE "
-						   << "producer_id = " << tokens[0] << " AND "
-						   << "geometry_id = " << tokens[1] << " AND "
-						   << "analysis_time = '" << tokens[2] << "' AND "
-						   << "forecast_period = " << tokens[3] << " AND "
-						   << "forecast_type_id = " << tokens[4] << " AND "
-						   << "forecast_type_value = " << tokens[5];
-
-						ldr.RadonDB().Execute(ss.str());
-					}
-					catch (const pqxx::pqxx_exception& ee)
-					{
-						cerr << "Updating ss_state information failed" << endl;
-					}
+					cerr << "Updating ss_state information failed" << endl;
 				}
 			}
 		}
 	}
+}
+
+GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
+{
+	char myhost[128];
+	gethostname(myhost, 128);
+	itsHostName = string(myhost);
+}
+GribLoader::~GribLoader()
+{
+}
+
+bool GribLoader::Load(const string& theInfile)
+{
+	inputFileName = theInfile;
+	itsReader.Open(theInfile);
+
+	// Read all message from file
+
+	string levelString = options.leveltypes;
+
+	if (!levelString.empty())
+	{
+		boost::split(levels, levelString, boost::is_any_of(","), boost::token_compress_on);
+	}
+
+	string paramString = options.parameters;
+
+	if (!paramString.empty())
+	{
+		boost::split(parameters, paramString, boost::is_any_of(","), boost::token_compress_on);
+	}
+
+	vector<boost::thread> threadgroup;
+
+	for (short i = 0; i < options.threadcount; i++)
+	{
+		threadgroup.push_back(boost::thread(&GribLoader::Run, this, i));
+	}
+
+	for (auto& t : threadgroup)
+	{
+		t.join();
+	}
+
+	cout << "Success with " << g_success << " fields, "
+	     << "failed with " << g_failed << " fields, "
+	     << "skipped " << g_skipped << " fields" << std::endl;
+
+	UpdateAsGrid(analyzeTables);
+	UpdateSSState(ssStateInformation);
 
 	// When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
 	// as something to be checked against.
@@ -622,6 +620,7 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	}
 
 	g.filename = theFileName;
+	g.filehost = itsHostName;
 
 	timer tmr;
 	tmr.start();
@@ -631,13 +630,16 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		CreateDirectory(theFileName);
 	}
 
-	/*
-	 * Write grib msg to disk with unique filename.
-	 */
+	if (g.filename.empty())
+	{
+		exit(1);
+	}
+
+	CreateDirectory(g.filename);
 
 	if (!options.dry_run && IsGrib(theFileName) && !options.in_place_insert)
 	{
-		if (!message.Write(theFileName, false))
+		if (!message.Write(g.filename, false))
 		{
 			g_failed++;
 			return;

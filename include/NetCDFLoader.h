@@ -7,9 +7,10 @@ class NetCDFLoader
 	NetCDFLoader();
 	~NetCDFLoader();
 
-	bool Load(const std::string &theInfile);
+	bool Load(const std::string& theInfile);
 
    private:
-	long Epoch(const std::string &dateTime, const std::string &mask);
+	long Epoch(const std::string& dateTime, const std::string& mask);
 	BDAPLoader itsDatabaseLoader;
+	std::string itsHostName;
 };

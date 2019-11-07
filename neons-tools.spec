@@ -19,6 +19,7 @@ BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
+BuildRequires:  libs3-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 19.9.20
 Requires:	libfmidb >= 18.10.5
