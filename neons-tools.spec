@@ -6,28 +6,29 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.10.17
-Release:        2.el7.fmi
+Version:        19.11.7
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 19.9.20
+BuildRequires:  libfmigrib-devel >= 19.11.6
 BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
 BuildRequires:  libs3-devel
 Requires:       hdf5
-Requires:	libfmigrib >= 19.9.20
+Requires:	libfmigrib >= 19.11.6
 Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	python-dateutil
 Requires:	libpqxx
 Requires:	eccodes
+Requires:	libs3
 
 %if %{defined suse_version}
 BuildRequires:  boost-devel >= 1.53
@@ -83,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Nov  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
+- Enable indexing of files in S3 storage
 * Thu Oct 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
 - Enable byte_offset&byte_length columns
 * Tue Oct 15 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.15-1.fmi
