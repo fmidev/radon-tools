@@ -140,19 +140,17 @@ int main(int argc, char** argv)
 
 	for (const std::string& infile : options.infile)
 	{
-		const bool isLocalFile = (infile.substr(0, 5) != "s3://") && infile != "-";
+		const bool isLocalFile = (infile.substr(0, 5) != "s3://");
 
-		if (isLocalFile && !boost::filesystem::exists(infile))
+		if (isLocalFile && infile != "-" && !boost::filesystem::exists(infile))
 		{
 			std::cerr << "Input file '" << infile << "' does not exist" << std::endl;
 			continue;
 		}
 
-		filetype type = FileType(infile);
-
 		if (isLocalFile == false)
 		{
-			if (type != filetype::grib && options.grib == false)
+			if (options.grib == false)
 			{
 				std::cerr << "Only grib files are supported with s3" << std::endl;
 				continue;
@@ -174,7 +172,9 @@ int main(int argc, char** argv)
 			options.s3 = false;
 		}
 
-		if (type == filetype::netcdf || options.netcdf)
+		filetype type = FileType(infile);
+
+		if (type == filetype::netcdf)
 		{
 			if (options.verbose)
 				std::cout << "File '" << infile << "' is NetCDF" << std::endl;
@@ -192,7 +192,7 @@ int main(int argc, char** argv)
 				retval = 1;
 			}
 		}
-		else if (type == filetype::grib || options.grib)
+		else if (type == filetype::grib)
 		{
 			if (options.verbose)
 				std::cout << "File '" << infile << "' is GRIB" << std::endl;
@@ -217,6 +217,15 @@ int main(int argc, char** argv)
 
 filetype FileType(const std::string& theFile)
 {
+	if (options.grib)
+	{
+		return filetype::grib;
+	}
+	else if (options.netcdf)
+	{
+		return filetype::netcdf;
+	}
+
 	// First check by extension since its cheap
 
 	boost::filesystem::path p(theFile);
