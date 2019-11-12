@@ -101,7 +101,7 @@ def ReadCommandLine(argv):
 	databasegroup.add_option("--user",
 					action="store",
 					type="string",
-					default="wetodb",
+					default="radon_admin",
 					help="Database username")
 
 	parser.add_option_group(databasegroup)
@@ -542,6 +542,42 @@ def CreateMainTable(options, element, producerinfo):
 			else:
 				print(e)
 				sys.exit(1)
+	# Create foreign keys
+
+	query = """
+SELECT
+    replace(tc.constraint_name, 'grid_data_template', '%s'),
+    kcu.column_name,
+    ccu.table_schema AS foreign_table_schema,
+    ccu.table_name AS foreign_table_name,
+    ccu.column_name AS foreign_column_name 
+FROM
+    information_schema.table_constraints AS tc
+    JOIN information_schema.key_column_usage AS kcu
+      ON tc.constraint_name = kcu.constraint_name
+      AND tc.table_schema = kcu.table_schema
+    JOIN information_schema.constraint_column_usage AS ccu
+      ON ccu.constraint_name = tc.constraint_name
+      AND ccu.table_schema = tc.table_schema
+WHERE
+    tc.constraint_type = 'FOREIGN KEY'
+    AND
+    tc.table_schema = 'public'
+    AND
+    tc.table_name = '%s'
+""" % (element['table_name'], template_table)
+
+	if options['show_sql']:
+		print(query)
+
+	if not options['dry_run']:
+		cur.execute(query)
+		rows = cur.fetchall()
+
+		for row in rows:
+			query = "ALTER TABLE %s.%s ADD CONSTRAINT %s FOREIGN KEY (%s) REFERENCES %s.%s(%s)" % (element['schema_name'], element['table_name'], row[0], row[1], row[2], row[3], row[4])
+			cur.execute(query)
+
 	CreateViews(options, element, class_id)
 	CreatePartitioningTrigger(options, producerinfo, element)
 
