@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.11.7
+Version:        19.11.11
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,7 +84,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Thu Nov  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
+* Mon Nov 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.11-1.fmi
+- Bugfix
+* Thu Nov  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.17-1.fmi
 - Enable indexing of files in S3 storage
 * Thu Oct 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
 - Enable byte_offset&byte_length columns
