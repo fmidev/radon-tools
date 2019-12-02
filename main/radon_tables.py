@@ -688,17 +688,97 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 	if not options['dry_run']:
 		cur.execute(query)
 
-def UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time):
-	query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
+def UpdateSSState(options, producer, geometry_id, analysis_time):
+	query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
 
 	if options['show_sql']:
-		print(cur.mogrify(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time)))
+		print(cur.mogrify(query, (producer['id'], geometry_id, analysis_time)))
 
 	if not options['dry_run']:
 		try:
-			cur.execute(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time))
+			cur.execute(query, (producer['id'], geometry_id, analysis_time))
 		except psycopg2.ProgrammingError as e:
 			print(e)
+
+def DropFromAsGrid(options, producer, row):
+	schema_name = row[1]
+	table_name = row[2]
+	partition_name = row[3]
+	analysis_time = row[4]
+	geometry_id = row[8]
+
+	directories = []
+
+	if options['unlink']:
+		# Fetch file path with the last directory; ie
+		# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
+		# -->
+		# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150
+		#
+		# and then we can remove the whole directory without specifying individual files.
+		# Note! If directory structure is changed on the righternmost end, this logic will fail
+		query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
+		query += " WHERE geometry_id = %s AND analysis_time = %s) SELECT "
+		query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
+
+		if options['show_sql']:
+			print(cur.mogrify(query, (geometry_id, analysis_time)))
+
+		cur.execute(query, (geometry_id, analysis_time))
+
+		directories = cur.fetchall()
+
+	# First delete rows in ss_state, then remove files in disk, finally drop table partition
+
+	query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
+
+	if options['show_sql']:
+		print(cur.mogrify(query, (producer['id'], geometry_id, analysis_time)))
+
+	if not options['dry_run']:
+		try:
+			cur.execute(query, (producer['id'], geometry_id, analysis_time))
+			UpdateSSState(options, producer, geometry_id, analysis_time)
+
+			conn.commit() # commit at this point as file delete might take a long
+			              # time sometimes
+
+		except psycopg2.ProgrammingError as e:
+			print("Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table))
+
+	for row in directories:
+		directory = row[0]
+		if not os.path.isdir(directory):
+			print("Directory %s does not exist" % (directory))
+			continue
+
+		try:
+			if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
+				print("Not removing base directory %s" % (directory))
+				continue
+		except KeyError as e:
+			pass
+
+		start = timer()
+
+		if not options['dry_run']:
+			shutil.rmtree(directory, ignore_errors=True)
+
+		stop = timer()
+		print("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
+
+	for row in directories:
+		parent = os.path.dirname(os.path.normpath(row[0]))
+
+		if not os.path.isdir(parent):
+			continue
+
+		while not os.listdir(parent):
+			print("Removing empty dir %s" % parent)
+			os.rmdir(parent)
+			parent = os.path.dirname(parent)
+			print("New parent %s" % parent)
+
 
 def DropTables(options):
 
@@ -720,7 +800,7 @@ def DropTables(options):
 	
 		args = (producer['id'],)
 
-		query = "SELECT id, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time, now()-delete_time"
+		query = "SELECT id, schema_name, table_name, partition_name, analysis_time, min_analysis_time, max_analysis_time, now()-delete_time"
 
 		if as_table == 'as_grid':
 			query += ", geometry_id"
@@ -745,86 +825,16 @@ def DropTables(options):
 			schema_name = row[1]
 			table_name = row[2]
 			partition_name = row[3]
-			min_analysis_time = row[4]
-			max_analysis_time = row[5]
-			age = row[6]
-			geometry_id = None if as_table == 'as_previ' else row[7]
+			analysis_time = row[4]
+			min_analysis_time = row[5]
+			max_analysis_time = row[6]
+			age = row[7]
 
 			# strip microseconds off from timedelta
-			print("Deleting partition %s with analysis times %s .. %s age %s" % (partition_name, min_analysis_time, max_analysis_time, age))
+			print("Deleting from partition %s using analysis time %s age %s" % (partition_name, analysis_time, age))
 
 			if as_table == 'as_grid':
-				directories = []
-
-				if options['unlink']:
-					# Fetch file path with the last directory; ie
-					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
-					# -->
-					# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150
-					#
-					# and then we can remove the whole directory without specifying individual files.
-					# Note! If directory structure is changed on the righternmost end, this logic will fail
-					query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
-					query += " WHERE geometry_id = %s AND analysis_time BETWEEN %s AND %s) SELECT "
-					query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
-
-					if options['show_sql']:
-						print(cur.mogrify(query, (geometry_id, min_analysis_time, max_analysis_time)))
-
-					cur.execute(query, (geometry_id, min_analysis_time, max_analysis_time))
-
-					directories = cur.fetchall()
-
-				# First delete rows in ss_state, then remove files in disk, finally drop table partition
-
-				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time BETWEEN %s AND %s"
-
-				if options['show_sql']:
-					print(cur.mogrify(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time)))
-
-				if not options['dry_run']:
-					try:
-						cur.execute(query, (producer['id'], geometry_id, min_analysis_time, max_analysis_time))
-						UpdateSSState(options, producer, geometry_id, min_analysis_time, max_analysis_time)
-
-						conn.commit() # commit at this point as file delete might take a long
-						              # time sometimes
-
-					except psycopg2.ProgrammingError as e:
-						print("Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table))
-
-				for row in directories:
-					directory = row[0]
-					if not os.path.isdir(directory):
-						print("Directory %s does not exist" % (directory))
-						continue
-
-					try:
-						if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
-							print("Not removing base directory %s" % (directory))
-							continue
-					except KeyError as e:
-						pass
-
-					start = timer()
-
-					if not options['dry_run']:
-						shutil.rmtree(directory, ignore_errors=True)
-
-					stop = timer()
-					print("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
-
-				for row in directories:
-					parent = os.path.dirname(os.path.normpath(row[0]))
-
-					if not os.path.isdir(parent):
-						continue
-
-					while not os.listdir(parent):
-						print("Removing empty dir %s" % parent)
-						os.rmdir(parent)
-						parent = os.path.dirname(parent)
-						print("New parent %s" % parent)
+				DropFromAsGrid(options, producer, row)
 
 			elif as_table == 'as_previ':
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
@@ -1003,6 +1013,58 @@ WHERE
 		query = "GRANT SELECT ON public.%s_v TO public" % (element['table_name'])
 		cur.execute(query)
 
+def AddNewTableToAsGrid(options, element, period_start, period_stop, partition_name, ahour):
+	if element['partitioning_period'] == "ANALYSISTIME":
+		delete_time = period_start + element['retention_period']
+
+		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+		args = (element['producer_id'], period_start, element['geometry_id'], delete_time, element['schema_name'], element['table_name'], partition_name, period_start, period_start)
+
+		if options['show_sql']:
+			print("%s (%s)" % (query, args))
+
+		if not options['dry_run']:
+			cur.execute(query, args)
+
+		return
+
+	start_time = period_start
+	stop_time = period_stop
+
+	while start_time < stop_time:
+		analysis_time = start_time + datetime.timedelta(hours=int(ahour))
+		delete_time = analysis_time + element['retention_period']
+
+		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+		args = (element['producer_id'], analysis_time, element['geometry_id'], delete_time, element['schema_name'], element['table_name'], partition_name, analysis_time, analysis_time)
+		if options['show_sql']:
+			print("%s (%s)" % (query, args))
+
+		try:
+			if not options['dry_run']:
+				cur.execute('SAVEPOINT sp1')
+				cur.execute(query, args)
+
+			print("Adding entry to as_grid for analysis time %s" % analysis_time)
+		except psycopg2.IntegrityError:
+			cur.execute('ROLLBACK TO SAVEPOINT sp1')
+			print("Table partition for analysis_time %s exists already" % analysis_time)
+		else:
+			cur.execute('RELEASE SAVEPOINT sp1')
+
+		start_time = start_time + datetime.timedelta(days=1)
+
+def AddNewTableToAsPrevi(options, element, analysis_time, partition_name):
+	delete_time = analysis_time + element['retention_period']
+
+	query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s)"
+	args = (element['producer_id'], analysis_time, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element['schema_name'], element['table_name'], partition_name, analysis_time, analysis_time)
+
+	if options['show_sql']:
+		print("%s (%s)" % (query, args))
+
+	if not options['dry_run']:
+		cur.execute(query, args)
 
 def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Determine partition length and name
@@ -1011,9 +1073,11 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	period_start = None
 	period_stop = None
 
+	analysis_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
+
 	if element['partitioning_period'] == "ANALYSISTIME":
-		period_start = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
-		period_stop = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
+		period_start = analysis_timestamp
+		period_stop = analysis_timestamp
 
 		partition_name = "%s_%s" % (element['table_name'], analysis_time)
 
@@ -1038,10 +1102,11 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Check if partition exists in as_grid
 	# This is the case when multiple geometries share one table
 
-	if producerinfo['class_id'] == 1:
+	if producerinfo['class_id'] == 1 and element['partitioning_period'] == 'ANALYSISTIME':
 		if GridPartitionExists(options, element['producer_id'], element['geometry_id'], partition_name):
 			print("Table partition %s for geometry %s exists already" % (partition_name, element['geometry_id']))
 			return False
+
 	elif producerinfo['class_id'] == 3:
 		if PreviPartitionExists(options, element['producer_id'], partition_name):
 			print("Table partition %s exists already" % (partition_name,))
@@ -1062,11 +1127,11 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	if row == None or int(row[0]) == 0:
 
-		analysis_time_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H').strftime('%Y-%m-%d %H:%M:%S')
+		sql_timestamp = analysis_timestamp.strftime('%Y-%m-%d %H:%M:%S')
 		
 		if element['partitioning_period'] == "ANALYSISTIME":
 			print("Creating partition %s" % (partition_name))
-			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, analysis_time_timestamp, element['schema_name'], element['table_name'])
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, sql_timestamp, element['schema_name'], element['table_name'])
 		else:
 			print("Creating %s partition %s" % (element['partitioning_period'], partition_name))
 			period_start_timestamp = period_start.strftime('%Y-%m-%d %H:%M:%S')
@@ -1107,31 +1172,11 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		if not options['dry_run']:
 			cur.execute(query)
 
-	# Delete time type depends on partitioning type; for 'ANALYSISTIME' it's 
-	# analysis_time + retention, for others its now + retention
-
-	delete_time = None
-
-	if element['partitioning_period'] == "ANALYSISTIME":
-	        delete_time = datetime.datetime.strptime(analysis_time, '%Y%m%d%H') + element['retention_period']
-	else:
-		delete_time = datetime.datetime.now() + element['retention_period']	
-
-	args = ()
-	
 	if producerinfo['class_id'] == 1:
-		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s, %s, %s)"
-		args = (element['producer_id'], analysis_time, element['geometry_id'], delete_time.strftime('%Y-%m-%d %H:%M:%S'), element['schema_name'], element['table_name'], partition_name, period_start.strftime('%Y-%m-%d %H:%M:%S'), period_stop.strftime('%Y-%m-%d %H:%M:%S'))
+		AddNewTableToAsGrid(options, element, period_start, period_stop, partition_name, analysis_timestamp.strftime("%H"))
 
 	if producerinfo['class_id'] == 3:
-		query = "INSERT INTO as_previ (producer_id, analysis_time, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, to_timestamp(%s, 'yyyymmddhh24'), %s, %s, %s, %s, %s, %s)"
-		args = (element['producer_id'], analysis_time, delete_time.strftime('%Y-%m-%d %H:%M:%S'), element['schema_name'], element['table_name'], partition_name, period_start.strftime('%Y-%m-%d %H:%M:%S'), period_stop.strftime('%Y-%m-%d %H:%M:%S'))
-	
-	if options['show_sql']:
-		print("%s (%s)" % (query, args))
-
-	if not options['dry_run']:
-		cur.execute(query, args)
+		AddNewTableToAsPrevi(options, element, analysis_timestamp, partition_name)
 
 	return True
 
@@ -1166,16 +1211,12 @@ def CreateTables(options, element, date):
 	partitionAdded = False
 
 	if element['analysis_times'] is None:
-		if CreateForecastPartition(options,element,producerinfo,date + "00"):
-
+		print("Analysis_time information from database is NULL")
+		sys.exit(1)
+	for atime in element['analysis_times']:
+		analysis_time = "%s%02d" % (date,atime)
+		if CreateForecastPartition(options,element,producerinfo,analysis_time):
 			partitionAdded = True
-	else:
-		for atime in element['analysis_times']:
-
-			analysis_time = "%s%02d" % (date,atime)
-
-			if CreateForecastPartition(options,element,producerinfo,analysis_time):
-				partitionAdded = True
 
 	# Update trigger 
 
