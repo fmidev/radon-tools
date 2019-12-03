@@ -56,22 +56,8 @@ void UpdateAsGrid(const std::set<std::string>& analyzeTables)
 {
 	BDAPLoader ldr;
 
-	for (const auto& table : analyzeTables)
+	for (const auto& id : analyzeTables)
 	{
-		if (options.verbose)
-		{
-			cout << "Analyzing table " << table << " due to first insert" << endl;
-		}
-
-		if (!options.dry_run)
-		{
-			ldr.RadonDB().Execute("ANALYZE " + table);
-		}
-		else
-		{
-			cout << "ANALYZE " + table << endl;
-		}
-
 		// update record_count column
 
 		stringstream ss;
@@ -82,12 +68,15 @@ void UpdateAsGrid(const std::set<std::string>& analyzeTables)
 		// based on just that information.
 
 		std::vector<std::string> tokens;
-		boost::split(tokens, table, boost::is_any_of("."));
+		boost::split(tokens, id, boost::is_any_of(";"));
+
+		std::vector<std::string> tableparts;
+		boost::split(tableparts, tokens[0], boost::is_any_of("."));
 
 		assert(tokens.size() == 2);
 
-		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
-		   << tokens[1] << "'";
+		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tableparts[0] << "' AND partition_name = '"
+		   << tableparts[1] << "' AND analysis_time = '" << tokens[1] << "'";
 
 		if (options.verbose)
 		{
@@ -663,11 +652,14 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 	if (databaseLoader.NeedsAnalyze())
 	{
-		const auto table = databaseLoader.LastInsertedTable();
+		stringstream ss;
+		ss << databaseLoader.LastInsertedTable() << ";" << g.year << "-" << setw(2) << setfill('0') << g.month << "-"
+		   << setw(2) << setfill('0') << g.day << " " << setw(2) << setfill('0') << g.hour << ":" << setw(2)
+		   << setfill('0') << g.minute << ":00";
 
 		lock_guard<mutex> lock(tableMutex);
 
-		analyzeTables.insert(table);
+		analyzeTables.insert(ss.str());
 	}
 
 	{
