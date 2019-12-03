@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.11.12
+Version:        19.12.3
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-1.fmi
+- STU-11538: Big fix to partitioning type <> analysistime
 * Tue Nov 12 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.12-1.fmi
 - Copy foreign keys to data tables on creation
 * Mon Nov 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.11-1.fmi
