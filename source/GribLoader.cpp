@@ -76,7 +76,8 @@ void UpdateAsGrid(const std::set<std::string>& analyzeTables)
 		assert(tokens.size() == 2);
 
 		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tableparts[0] << "' AND partition_name = '"
-		   << tableparts[1] << "' AND analysis_time = '" << tokens[1] << "'";
+		   << tableparts[1] << "' AND to_char(analysis_time, 'YYYYMMDDHH24') = to_char(to_timestamp('" << tokens[1]
+		   << "', 'YYYY-MM-DD HH24:MI:SS'), 'YYYYMMDDHH24')";
 
 		if (options.verbose)
 		{
