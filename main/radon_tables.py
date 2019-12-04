@@ -13,6 +13,7 @@ import re
 import os
 import shutil
 import time
+import logging
 from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
@@ -427,7 +428,7 @@ def GetDefinitions(options):
 		producerinfo = GetProducer(options['producer_id'])
 
 		if len(producerinfo) == 0:
-			print("No producer metadata found with given options")
+			logging.critical("No producer metadata found with given options")
 			sys.exit(1)
 
 		class_id = producerinfo['class_id']
@@ -450,7 +451,7 @@ def GetDefinitions(options):
 
 	if options['geometry_id'] != None:
 		if class_id == 3:
-			print("geometry is not supported with previ producers")
+			logging.error("geometry is not supported with previ producers")
 		else:
 			if options['producer_id'] == None:
 				query += " WHERE geometry_id = %s"
@@ -468,7 +469,7 @@ def GetDefinitions(options):
 	rows = cur.fetchall()
 
 	if len(rows) == 0:
-		print("No definitions found from database with given options")
+		logging.warning("No definitions found from database with given options")
 
 	ret = []
 
@@ -536,7 +537,7 @@ def CreateMainTable(options, element, producerinfo):
 		except psycopg2.ProgrammingError as e:
 			# Table existed already; this happened in dev but probably not in production
 			if e.pgcode == "42P07":
-				print("Table %s exists already" % (element['table_name']))
+				logging.debug("Table %s exists already" % (element['table_name']))
 				conn.rollback() # "current transaction is aborted, commands ignored until end of transaction block"
 
 			else:
@@ -666,7 +667,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
 			cur.execute(query)
 
 		except psycopg2.extensions.TransactionRollbackError as e:
-			print(e)
+			logging.error(e)
 			time.sleep(1)
 
 			cur.execute("LOCK %s.%s IN ACCESS EXCLUSIVE MODE" % (schema_name, table_name))
@@ -698,14 +699,17 @@ def UpdateSSState(options, producer, geometry_id, analysis_time):
 		try:
 			cur.execute(query, (producer['id'], geometry_id, analysis_time))
 		except psycopg2.ProgrammingError as e:
-			print(e)
+			logging.error(e)
 
 def DropFromAsGrid(options, producer, row):
 	schema_name = row[1]
 	table_name = row[2]
 	partition_name = row[3]
 	analysis_time = row[4]
+	age = row[7]
 	geometry_id = row[8]
+
+	logging.info("Deleting from partition %s using (analysis time %s geometry %d) age is %s" % (partition_name, analysis_time, geometry_id, age))
 
 	directories = []
 
@@ -744,17 +748,17 @@ def DropFromAsGrid(options, producer, row):
 			              # time sometimes
 
 		except psycopg2.ProgrammingError as e:
-			print("Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table))
+			logging.error("Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table))
 
 	for row in directories:
 		directory = row[0]
 		if not os.path.isdir(directory):
-			print("Directory %s does not exist" % (directory))
+			logging.error("Directory %s does not exist" % (directory))
 			continue
 
 		try:
 			if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
-				print("Not removing base directory %s" % (directory))
+				logging.debug("Not removing base directory %s" % (directory))
 				continue
 		except KeyError as e:
 			pass
@@ -765,7 +769,7 @@ def DropFromAsGrid(options, producer, row):
 			shutil.rmtree(directory, ignore_errors=True)
 
 		stop = timer()
-		print("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
+		logging.info("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
 
 	for row in directories:
 		parent = os.path.dirname(os.path.normpath(row[0]))
@@ -774,10 +778,9 @@ def DropFromAsGrid(options, producer, row):
 			continue
 
 		while not os.listdir(parent):
-			print("Removing empty dir %s" % parent)
+			logging.info("Removing empty dir %s" % parent)
 			os.rmdir(parent)
 			parent = os.path.dirname(parent)
-			print("New parent %s" % parent)
 
 
 def DropTables(options):
@@ -815,10 +818,10 @@ def DropTables(options):
 		rows = cur.fetchall()
 
 		if len(rows) == 0:
-			print("Producer %d: No tables expired" % (producer['id']))
+			logging.info("Producer: %d No tables expired" % (producer['id']))
 			continue
 
-		print("Producer: %d" % (producer['id']))
+		logging.info("Producer: %d" % (producer['id']))
 
 		for row in rows:
 			rowid = row[0]
@@ -830,13 +833,12 @@ def DropTables(options):
 			max_analysis_time = row[6]
 			age = row[7]
 
-			# strip microseconds off from timedelta
-			print("Deleting from partition %s using analysis time %s age %s" % (partition_name, analysis_time, age))
-
 			if as_table == 'as_grid':
 				DropFromAsGrid(options, producer, row)
 
 			elif as_table == 'as_previ':
+				logging.info("Deleting from partition %s using analysis time %s geometry %d age %s" % (partition_name, analysis_time, age))
+
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
 				args = (producer['id'], min_analysis_time, max_analysis_time)
 
@@ -1045,10 +1047,10 @@ def AddNewTableToAsGrid(options, element, period_start, period_stop, partition_n
 				cur.execute('SAVEPOINT sp1')
 				cur.execute(query, args)
 
-			print("Adding entry to as_grid for analysis time %s" % analysis_time)
+			logging.info("Adding entry to as_grid for analysis time %s" % analysis_time)
 		except psycopg2.IntegrityError:
 			cur.execute('ROLLBACK TO SAVEPOINT sp1')
-			print("Table partition for analysis_time %s exists already" % analysis_time)
+			logging.debug("Table partition for analysis_time %s exists already" % analysis_time)
 		else:
 			cur.execute('RELEASE SAVEPOINT sp1')
 
@@ -1104,12 +1106,12 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 
 	if producerinfo['class_id'] == 1 and element['partitioning_period'] == 'ANALYSISTIME':
 		if GridPartitionExists(options, element['producer_id'], element['geometry_id'], partition_name):
-			print("Table partition %s for geometry %s exists already" % (partition_name, element['geometry_id']))
+			logging.debug("Table partition %s for geometry %s exists already" % (partition_name, element['geometry_id']))
 			return False
 
 	elif producerinfo['class_id'] == 3:
 		if PreviPartitionExists(options, element['producer_id'], partition_name):
-			print("Table partition %s exists already" % (partition_name,))
+			logging.debug("Table partition %s exists already" % (partition_name,))
 			return False
 
 	# Check that if as_grid did not have information on this partition, does the
@@ -1130,10 +1132,10 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 		sql_timestamp = analysis_timestamp.strftime('%Y-%m-%d %H:%M:%S')
 		
 		if element['partitioning_period'] == "ANALYSISTIME":
-			print("Creating partition %s" % (partition_name))
+			logging.info("Creating partition %s" % (partition_name))
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, sql_timestamp, element['schema_name'], element['table_name'])
 		else:
-			print("Creating %s partition %s" % (element['partitioning_period'], partition_name))
+			logging.info("Creating %s partition %s" % (element['partitioning_period'], partition_name))
 			period_start_timestamp = period_start.strftime('%Y-%m-%d %H:%M:%S')
 			period_stop_timestamp = period_stop.strftime('%Y-%m-%d %H:%M:%S')
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, period_start_timestamp, period_stop_timestamp, element['schema_name'], element['table_name'])
@@ -1185,9 +1187,9 @@ def CreateTables(options, element, date):
 	producerinfo = GetProducer(element['producer_id'])
 
 	if producerinfo['class_id'] == 1:
-		print("Producer: %s geometry: %s" % (element['producer_id'], element['geometry_id'])) 
+		logging.info("Producer: %s geometry: %s" % (element['producer_id'], element['geometry_id']))
 	else:
-		print("Producer: %d" % (element['producer_id']))
+		logging.info("Producer: %d" % (element['producer_id']))
 
 	# Check that main table exists, both physically and in as_grid
 	
@@ -1199,8 +1201,7 @@ def CreateTables(options, element, date):
 	cur.execute(query, (element['schema_name'], element['table_name']))
 
 	if int(cur.fetchone()[0]) == 0:
-
-		print("Parent table %s.%s does not exists, creating" % (element['schema_name'], element['table_name']))
+		logging.debug("Parent table %s.%s does not exists, creating" % (element['schema_name'], element['table_name']))
 		CreateMainTable(options, element, producerinfo)
 
 	# All DDL on one producer is done in one transaction
@@ -1211,7 +1212,7 @@ def CreateTables(options, element, date):
 	partitionAdded = False
 
 	if element['analysis_times'] is None:
-		print("Analysis_time information from database is NULL")
+		logging.critical("Analysis_time information from database is NULL")
 		sys.exit(1)
 	for atime in element['analysis_times']:
 		analysis_time = "%s%02d" % (date,atime)
@@ -1227,17 +1228,21 @@ def CreateTables(options, element, date):
 		conn.commit()
 
 if __name__ == '__main__':
+	logging.basicConfig(
+		format='%(asctime)s %(levelname)-8s %(message)s',
+		level=logging.INFO,
+		datefmt='%Y-%m-%d %H:%M:%S')
 
 	(options,files) = ReadCommandLine(sys.argv[1:])
 
-	print("Connecting to database %s at host %s port %s" % (options['database'], options['host'], options['port']))
+	logging.info("Connecting to database %s at host %s port %s" % (options['database'], options['host'], options['port']))
 
 	password = None
 
 	try:
 		password = os.environ["RADON_%s_PASSWORD" % (options['user'].upper())]
 	except:
-		print("password should be given with env variable RADON_%s_PASSWORD" % (options['user'].upper()))
+		logging.critical("password should be given with env variable RADON_%s_PASSWORD" % (options['user'].upper()))
 		sys.exit(1)
 
 	dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (options['user'], password, options['host'], options['database'], options['port'])
@@ -1263,7 +1268,7 @@ if __name__ == '__main__':
 
 	for element in definitions:
 		if options['recreate_triggers']:
-			print("Recreating triggers for table %s" % (element['table_name']))
+			logging.info("Recreating triggers for table %s" % (element['table_name']))
 			CreatePartitioningTrigger(options, GetProducer(element['producer_id']), element)
 			conn.commit()
 		else:
