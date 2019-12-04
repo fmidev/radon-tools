@@ -51,6 +51,11 @@ def ReadCommandLine(argv):
 					  type="string",
 					  help="Date for which tables are created (YYYYMMDD)",)
 
+	parser.add_option("--log-level",
+					  action="store",
+					  type="int",
+					  help="log level: 1-5 where 1 is least logging",)
+
 	parser.add_option("--show-sql",
 					  action="store_true",
 					  default=False,
@@ -130,6 +135,19 @@ def ReadCommandLine(argv):
 		print("1 (grid)\n2 (obs-not supported currently)\n3 (previ)\n4 (analysis)")
 		sys.exit(1)
 
+	if options.log_level == 1:
+		options.log_level = logging.CRITICAL
+	elif options.log_level == 2:
+		options.log_level = logging.ERROR
+	elif options.log_level == 3:
+		options.log_level = logging.WARNING
+	elif options.log_level == 4:
+		options.log_level = logging.INFO
+	elif options.log_level == 5:
+		options.log_level = logging.DEBUG
+	else:
+		options.log_level = logging.INFO
+
 	if options.dry_run:
 		options.show_sql = True
 
@@ -161,13 +179,13 @@ def GeomIds(producer_id, class_id, partitioning_period = None):
 
 	return ret
 
-def GridPartitionExists(options, producer, geometry, partition):
-	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s"
+def GridPartitionExists(options, producer, geometry, partition, analysis_time):
+	query = "SELECT count(*) FROM as_grid WHERE producer_id = %s AND geometry_id = %s AND partition_name = %s AND analysis_time = %s"
 
 	if options['show_sql']:
-		print("%s %s" % (query, (producer, geometry, partition))) 
+		print("%s %s" % (query, (producer, geometry, partition, analysis_time)))
 		
-	cur.execute(query, (producer, geometry, partition))
+	cur.execute(query, (producer, geometry, partition, analysis_time))
 
 	row = cur.fetchone()
 
@@ -898,8 +916,8 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Check if partition exists in as_grid
 	# This is the case when multiple geometries share one table
 
-	if producerinfo['class_id'] == 1 and element['partitioning_period'] == 'ANALYSISTIME':
-		if GridPartitionExists(options, element['producer_id'], element['geometry_id'], partition_name):
+	if producerinfo['class_id'] == 1:
+		if GridPartitionExists(options, element['producer_id'], element['geometry_id'], partition_name, analysis_timestamp):
 			logging.debug("Table partition %s for geometry %s exists already" % (partition_name, element['geometry_id']))
 			return False
 
@@ -1020,12 +1038,13 @@ def CreateTables(options, element, date):
 		conn.commit()
 
 if __name__ == '__main__':
-	logging.basicConfig(
-		format='%(asctime)s %(levelname)-8s %(message)s',
-		level=logging.INFO,
-		datefmt='%Y-%m-%d %H:%M:%S')
 
 	(options,files) = ReadCommandLine(sys.argv[1:])
+
+	logging.basicConfig(
+		format='%(asctime)s %(levelname)-8s %(message)s',
+		level=options['log_level'],
+		datefmt='%Y-%m-%d %H:%M:%S')
 
 	logging.info("Connecting to database %s at host %s port %s" % (options['database'], options['host'], options['port']))
 
@@ -1062,4 +1081,3 @@ if __name__ == '__main__':
 			conn.commit()
 		else:
 			CreateTables(options, element, date)
-
