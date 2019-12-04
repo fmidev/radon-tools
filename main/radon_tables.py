@@ -1015,46 +1015,25 @@ WHERE
 		query = "GRANT SELECT ON public.%s_v TO public" % (element['table_name'])
 		cur.execute(query)
 
-def AddNewTableToAsGrid(options, element, period_start, period_stop, partition_name, ahour):
-	if element['partitioning_period'] == "ANALYSISTIME":
-		delete_time = period_start + element['retention_period']
+def AddNewTableToAsGrid(options, element, analysis_time, partition_name):
+	delete_time = analysis_time + element['retention_period']
 
-		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-		args = (element['producer_id'], period_start, element['geometry_id'], delete_time, element['schema_name'], element['table_name'], partition_name, period_start, period_start)
+	query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+	args = (element['producer_id'], analysis_time, element['geometry_id'], delete_time, element['schema_name'], element['table_name'], partition_name, analysis_time, analysis_time)
 
-		if options['show_sql']:
-			print("%s (%s)" % (query, args))
+	if options['show_sql']:
+		print("%s (%s)" % (query, args))
 
-		if not options['dry_run']:
-			cur.execute(query, args)
-
-		return
-
-	start_time = period_start
-	stop_time = period_stop
-
-	while start_time < stop_time:
-		analysis_time = start_time + datetime.timedelta(hours=int(ahour))
-		delete_time = analysis_time + element['retention_period']
-
-		query = "INSERT INTO as_grid (producer_id, analysis_time, geometry_id, delete_time, schema_name, table_name, partition_name, min_analysis_time, max_analysis_time) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
-		args = (element['producer_id'], analysis_time, element['geometry_id'], delete_time, element['schema_name'], element['table_name'], partition_name, analysis_time, analysis_time)
-		if options['show_sql']:
-			print("%s (%s)" % (query, args))
-
+	if not options['dry_run']:
 		try:
-			if not options['dry_run']:
-				cur.execute('SAVEPOINT sp1')
-				cur.execute(query, args)
-
+			cur.execute('SAVEPOINT sp1')
+			cur.execute(query, args)
 			logging.info("Adding entry to as_grid for analysis time %s" % analysis_time)
 		except psycopg2.IntegrityError:
 			cur.execute('ROLLBACK TO SAVEPOINT sp1')
 			logging.debug("Table partition for analysis_time %s exists already" % analysis_time)
 		else:
 			cur.execute('RELEASE SAVEPOINT sp1')
-
-		start_time = start_time + datetime.timedelta(days=1)
 
 def AddNewTableToAsPrevi(options, element, analysis_time, partition_name):
 	delete_time = analysis_time + element['retention_period']
@@ -1072,15 +1051,10 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Determine partition length and name
 
 	partition_name = None
-	period_start = None
-	period_stop = None
 
 	analysis_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
 
 	if element['partitioning_period'] == "ANALYSISTIME":
-		period_start = analysis_timestamp
-		period_stop = analysis_timestamp
-
 		partition_name = "%s_%s" % (element['table_name'], analysis_time)
 
 	elif element['partitioning_period'] == 'DAILY':
@@ -1136,9 +1110,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, sql_timestamp, element['schema_name'], element['table_name'])
 		else:
 			logging.info("Creating %s partition %s" % (element['partitioning_period'], partition_name))
-			period_start_timestamp = period_start.strftime('%Y-%m-%d %H:%M:%S')
-			period_stop_timestamp = period_stop.strftime('%Y-%m-%d %H:%M:%S')
-			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, period_start_timestamp, period_stop_timestamp, element['schema_name'], element['table_name'])
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, analysis_timestamp, analysis_timestamp, element['schema_name'], element['table_name'])
 
 		if options['show_sql']:
 			print(query)
@@ -1175,7 +1147,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 			cur.execute(query)
 
 	if producerinfo['class_id'] == 1:
-		AddNewTableToAsGrid(options, element, period_start, period_stop, partition_name, analysis_timestamp.strftime("%H"))
+		AddNewTableToAsGrid(options, element, analysis_timestamp, partition_name)
 
 	if producerinfo['class_id'] == 3:
 		AddNewTableToAsPrevi(options, element, analysis_timestamp, partition_name)
