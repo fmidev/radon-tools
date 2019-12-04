@@ -61,11 +61,6 @@ def ReadCommandLine(argv):
 					  default=False,
 					  help="Do not make any changes to database, sets --show-sql",)
 
-	parser.add_option("--validate",
-					  action="store_true",
-					  default=False,
-					  help="Validate current configuration",)
-
 	parser.add_option("--recreate-triggers",
 					  action="store_true",
 					  default=False,
@@ -140,181 +135,6 @@ def ReadCommandLine(argv):
 
 	return (vars(options),arguments)
 
-
-# Validate()
-# Check that contents of as_grid and the database system tables are in sync
-
-def Validate(options, date):
-
-	definitions = GetDefinitions(options)
-
-	# return value 0 --> OK
-	# return value 1 --> NOT OK
-
-	if len(definitions) == 0:
-		return 1
-
-	for element in definitions:
-
-		producerinfo = GetProducer(element['producer_id'])
-		
-		if producerinfo['class_id'] == 1:
-			print("Producer: %d geometry: %d" % (element['producer_id'], element['geometry_id']))
-		elif producerinfo['class_id'] == 3:
-			print("Producer: %d" % (element['producer_id']))
-
-		# Check main table
-
-		query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
-
-		if options['show_sql']:
-			print("%s %s" % (query, (element['schema_name'], element['table_name'])))
-
-		cur.execute(query, (element['schema_name'], element['table_name']))
-			
-		row = cur.fetchone()
-
-		if int(row[0]) != 1:
-			print("Parent table %s does not exist" % (element['table_name'],))
-			print("Fixing..")
-			
-			CreateMainTable(options, element, producerinfo)
-
-		# Check main table view
-
-		query = "SELECT count(*) FROM pg_views WHERE schemaname = 'public' AND viewname = %s"
-
-		if options['show_sql']:
-			print("%s %s" % (query, (element['table_name'] + "_v",)))
-
-		cur.execute(query, (element['table_name'] + "_v",))
-
-		row = cur.fetchone()
-
-		if int(row[0]) != 1:
-			print("Parent table view public.%s_v does not exist" % (element['table_name'],))
-			print("Fixing..")
-
-			CreateViews(options, element, producerinfo['class_id'])
-
-		# Check that number of childs matches as_grid information
-
-		as_table = 'as_grid'
-
-		if producerinfo['class_id'] == 3:
-			as_table = 'as_previ'
-
-		query = "SELECT count(distinct partition_name) FROM " + as_table + " WHERE table_name = %s"
-
-		if options['show_sql']:
-			print("%s %s" % (query, (element['table_name'],)))
-
-		cur.execute(query, (element['table_name'],))
-		
-		row = cur.fetchone()
-
-		childs = int(row[0])
-
-		query = "SELECT count(*) FROM pg_inherits i WHERE i.inhparent = '%s.%s'::regclass" % (element['schema_name'],element['table_name'])
-
-		if options['show_sql']:
-			print("%s %s" % (query, (element['schema_name'],element['table_name'])))
-
-		cur.execute(query)
-		
-		row = cur.fetchone()
-	
-		if int(row[0]) != childs:
-			print("Number of child tables for parent %s in %s (%d) does not match with database (%d)" % (element['table_name'], as_table, childs, int(row[0])))
-			return 1
-
-		# Check that parent has partitioning trigger
-
-		query = "SELECT count(*) FROM pg_trigger WHERE tgname = '%s_partitioning_trg'" % (element['table_name'])
-
-		if options['show_sql']:
-			print("%s %s" % (query, (element['table_name'],)))
-
-		cur.execute(query)
-		
-		row = cur.fetchone()
-
-		if int(row[0]) != 1:
-			print("Table %s does not have partitioning trigger defined" % (element['table_name']))
-			print("Fixing..")
-
-			CreatePartitioningTrigger(options, producerinfo, element)
-
-		print("Parent table %s is valid" % (element['table_name']))
-
-		# Check tables for each analysis times
-
-		for atime in element['analysis_times']:
-			analysis_time = "%s%02d" % (date,atime)
-			partition_name = "%s_%s" % (element['table_name'], analysis_time)
-
-			# Check if partition is in as_grid
-
-			args = ()
-			if producerinfo['class_id'] == 1:
-				query = "SELECT partition_name, record_count FROM " + as_table + " WHERE producer_id = %s AND geometry_id = %s AND table_name = %s AND partition_name = %s"
-				args = (element['producer_id'], element['geometry_id'], element['table_name'], partition_name)
-
-			elif producerinfo['class_id'] == 3:
-				query = "SELECT partition_name, record_count FROM " + as_table + " WHERE producer_id = %s AND table_name = %s AND partition_name = %s"
-				args = (element['producer_id'], element['table_name'], partition_name)
-
-			if options['show_sql']: 
-				print("%s %s" % (query, args))
-
-			cur.execute(query, args)
-			
-			row = cur.fetchone()
-
-			if row == None:
-				print("Partition for analysis time %s (%s) for table %s is not in %s" % (analysis_time, partition_name, element['table_name'], as_table))
-				return 1
-
-			record_count = row[1]
-
-			query = "SELECT count(*) FROM pg_tables WHERE schemaname = %s AND tablename = %s"
-
-			if options['show_sql']:
-				print("%s %s" % (query, (element['schema_name'], partition_name)))
-
-			cur.execute(query, (element['schema_name'], partition_name))
-			
-			row = cur.fetchone()
-
-			if int(row[0]) != 1:
-				print("Partition %s is in %s but does not exist" % (element['table_name'], as_table))
-				return 1
-
-			args = (analysis_time,)
-			query = "SELECT count(*) FROM " + element['table_name'] + " WHERE analysis_time = to_timestamp(%s, 'yyyymmddhh24')"
-
-			if producerinfo['class_id'] == 1:
-				query += " AND geometry_id = %s"
-				args = args + (element['geometry_id'],)
-
-			if options['show_sql']:
-				print("%s %s" % (query, args))
-
-			cur.execute(query, args)
-			
-			row = cur.fetchone()
-
-			if int(row[0]) != record_count:
-				print("as_grid reports that record_count for table %s partition %s is %d, but database says it's %d" % (element['table_name'], partition_name, record_count, int(row[0])))
-				return 1
-
-			if producerinfo['class_id'] == 1:
-				print("Partition %s for analysis time %s geometry_id %d (table %s) is valid" % (partition_name, analysis_time, element['geometry_id'], element['table_name']))
-
-			elif producerinfo['class_id'] == 3:
-				print("Partition %s for analysis time %s (table %s) is valid" % (partition_name, analysis_time, element['table_name']))
-
-	return 0
 
 def GeomIds(producer_id, class_id, partitioning_period = None):
 
@@ -1228,9 +1048,6 @@ if __name__ == '__main__':
 
 	if options['date'] != None:
 		date = options['date']
-
-	if options['validate']:
-		sys.exit(Validate(options, date))
 
 	if options['drop']:
 		DropTables(options)
