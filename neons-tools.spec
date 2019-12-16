@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.12.3
-Release:        2.el7.fmi
+Version:        19.12.16
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -84,6 +84,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Dec 16 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.16-1.fmi
+- Logging output changes to radon_tables.py
 * Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-2.fmi
 - Allow analysis time where minute != 0
 * Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-1.fmi
