@@ -13,7 +13,12 @@ extern Options options;
 once_flag oflag;
 
 BDAPLoader::BDAPLoader()
-    : itsUsername("wetodb"), itsDatabase("radon"), itsDatabaseHost("vorlon"), base(0), itsNeedsAnalyze(false)
+    : itsUsername("wetodb"),
+      itsDatabase("radon"),
+      itsDatabaseHost("vorlon"),
+      itsPort(5432),
+      base(0),
+      itsNeedsAnalyze(false)
 {
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
@@ -40,14 +45,22 @@ BDAPLoader::BDAPLoader()
 		itsDatabase = string(database);
 	}
 
+	const auto port = getenv("RADON_PORT");
+
+	if (port)
+	{
+		itsPort = static_cast<uint16_t>(stoi(port));
+	}
+
 	call_once(oflag, [&]() {
 		NFmiRadonDBPool::Instance()->Username(itsUsername);
 		NFmiRadonDBPool::Instance()->Password(itsPassword);
 		NFmiRadonDBPool::Instance()->Database(itsDatabase);
 		NFmiRadonDBPool::Instance()->Hostname(itsDatabaseHost);
+		NFmiRadonDBPool::Instance()->Port(itsPort);
 		NFmiRadonDBPool::Instance()->MaxWorkers(10);
 
-		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ")" << endl;
+		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ":" << itsPort << ")" << endl;
 	});
 
 	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());

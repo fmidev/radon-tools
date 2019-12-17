@@ -33,6 +33,7 @@ class BDAPLoader
 	std::string itsPassword;
 	std::string itsDatabase;
 	std::string itsDatabaseHost;
+	uint16_t itsPort;
 
 	bool ReadREFEnvironment();
 	void Init();
