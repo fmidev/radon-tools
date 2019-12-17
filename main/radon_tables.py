@@ -675,7 +675,7 @@ def DropTables(options):
 				DropFromAsGrid(options, producer, row)
 
 			elif as_table == 'as_previ':
-				logging.info("Deleting from partition %s using analysis time %s geometry %d age %s" % (partition_name, analysis_time, age))
+				logging.info("Deleting from partition %s using analysis time %s age %s" % (partition_name, analysis_time, age))
 
 				query = "DELETE FROM " + schema_name + "." + partition_name + " WHERE producer_id = %s AND analysis_time BETWEEN %s AND %s"
 				args = (producer['id'], min_analysis_time, max_analysis_time)
