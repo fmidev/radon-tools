@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.12.16
-Release:        1.el7.fmi
+Version:        19.12.17
+Release:        2.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -84,6 +84,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-2.fmi
+- grid_to_neons: read port from environment
+* Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-1.fmi
+- Fix bug in previ table drop
 * Mon Dec 16 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.16-1.fmi
 - Logging output changes to radon_tables.py
 * Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-2.fmi
