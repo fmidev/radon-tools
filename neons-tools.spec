@@ -42,6 +42,12 @@ Requires:	python36-psycopg2
 Requires:       python36-pytz
 Requires:	python36-dateutil
 Requires:       libpqxx
+Requires:       boost-system
+Requires:       boost-filesystem
+Requires:       boost-program-options
+Requires:       boost-iostreams
+Requires:       boost-regex
+Requires:	boost-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
