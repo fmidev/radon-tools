@@ -90,6 +90,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Dec 30 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.30-1.fmi
+- Add security context for S3 read
 * Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-2.fmi
 - grid_to_neons: read port from environment
 * Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-1.fmi
