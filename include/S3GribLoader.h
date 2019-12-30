@@ -17,4 +17,5 @@ class S3GribLoader
 	char* itsHost;
 	char* itsAccessKey;
 	char* itsSecretKey;
+	char* itsSecurityToken;
 };

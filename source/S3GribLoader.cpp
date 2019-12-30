@@ -274,6 +274,7 @@ void S3GribLoader::Initialize()
 	itsAccessKey = getenv("S3_ACCESS_KEY_ID");
 	itsSecretKey = getenv("S3_SECRET_ACCESS_KEY");
 	itsHost = getenv("S3_HOSTNAME");
+	itsSecurityToken = getenv("S3_SESSION_TOKEN");
 
 	if (!itsHost)
 	{
@@ -328,7 +329,7 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 		S3UriStylePath,
 		itsAccessKey,
 		itsSecretKey,
-		0
+		itsSecurityToken
 	};
 
 	std::cerr << "Input file: '" << theFileName << "' host: '" << itsHost << "' bucket: '" << bucket << "' key: '" << key << "'" << std::endl; 
@@ -369,6 +370,11 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 			break;
 		case S3StatusFailedToConnect:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is proxy required but not set?" << std::endl;
+			break;
+		case S3StatusErrorInvalidAccessKeyId:
+			std::cerr << "ERROR S3 " << S3_get_status_name(statusG)
+			          << ": are Temporary Security Credentials used without security token (env: S3_SESSION_TOKEN)?"
+			          << std::endl;
 			break;
 		default:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << std::endl;
