@@ -889,7 +889,6 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Determine partition length and name
 
 	partition_name = None
-
 	analysis_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
 
 	if element['partitioning_period'] == "ANALYSISTIME":
@@ -948,7 +947,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 			query = "CREATE TABLE %s.%s (CHECK (analysis_time = '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, sql_timestamp, element['schema_name'], element['table_name'])
 		else:
 			logging.info("Creating %s partition %s" % (element['partitioning_period'], partition_name))
-			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, analysis_timestamp, analysis_timestamp, element['schema_name'], element['table_name'])
+			query = "CREATE TABLE %s.%s (CHECK (analysis_time >= '%s' AND analysis_time < '%s')) INHERITS (%s.%s)" % (element['schema_name'], partition_name, period_start, period_stop, element['schema_name'], element['table_name'])
 
 		if options['show_sql']:
 			print(query)
