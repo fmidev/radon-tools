@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.12.17
-Release:        2.el7.fmi
+Version:        20.1.2
+Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
 License:        FMI
@@ -90,8 +90,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Mon Dec 30 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.30-1.fmi
+* Thu Jan  1 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.2-1.fmi
 - Add security context for S3 read
+- Fix for radon_tables monthly partitioning
 * Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-2.fmi
 - grid_to_neons: read port from environment
 * Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-1.fmi
