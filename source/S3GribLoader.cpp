@@ -148,11 +148,18 @@ bool ProcessGribMessage(char* ptr, long len, long offset, int messageNo)
 
 	if (ldr.NeedsAnalyze())
 	{
-		const auto table = ldr.LastInsertedTable();
+		std::stringstream ss;
+
+		using std::setfill;
+		using std::setw;
+
+		ss << ldr.LastInsertedTable() << ";" << gribinfo.year << "-" << setw(2) << setfill('0') << gribinfo.month << "-"
+		   << setw(2) << setfill('0') << gribinfo.day << " " << setw(2) << setfill('0') << gribinfo.hour << ":"
+		   << setw(2) << setfill('0') << gribinfo.minute << ":00";
 
 		std::lock_guard<std::mutex> lock(tableMutex);
 
-		analyzeTables.insert(table);
+		analyzeTables.insert(ss.str());
 	}
 
 	{
