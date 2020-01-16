@@ -215,6 +215,15 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	// message number of grib inside file
 	static __thread int _message_no = 0;
 
+	// If this is the first call of the callback function, initialize static variables
+	// (required if multiple files are loaded with a single grid_to_radon call)
+	if (ret->size == bufferSize)
+	{
+		_file_bytes_from_start = 0;
+		_grib_message_offset = -1;
+		_message_no = 0;
+	}
+
 	// start reading from the beginning of the new chunk
 	char* buf = ret->buf + (ret->size - bufferSize);
 
