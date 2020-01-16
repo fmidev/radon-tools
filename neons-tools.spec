@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.1.7
+Version:        20.1.16
 Release:        1.el7.fmi
 Summary:        Tools for neons environment
 Group:          Applications/System
@@ -90,6 +90,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Jan 16 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.16-1.fmi
+- Fix to loading multiple files from S3
 * Tue Jan  7 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.7-1.fmi
 - Fix for as_grid update with S3 based files
 * Thu Jan  1 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.2-1.fmi
