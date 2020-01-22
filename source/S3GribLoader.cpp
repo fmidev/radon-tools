@@ -224,35 +224,56 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 		_message_no = 0;
 	}
 
-	// start reading from the beginning of the new chunk
-	char* buf = ret->buf + (ret->size - bufferSize);
+	// start reading from the beginning of the new chunk plus some
+	// offset, because the grib message boundary could have been in between
+	// two chunks
+	char* work = ret->buf + (ret->size - bufferSize);
+	int worklen = bufferSize;
+
+	int searchoffset = 0;
+	while (ret->size - bufferSize > 0 && searchoffset < 3)
+	{
+		work--;
+		worklen++;
+		searchoffset++;
+	}
+
+	// GRIB------------------7777GRIB-------------------7777GRIB----
+	// |_________________________| = grib message
+	// |______|______|_____|______|______|_____|____|____ = callback data chunks
+	//                         |_________| = work pointer
+	//                                 |_______| = work pointer
+	//                         ^^^     ^^^ = overlap that is not counted to the grib message size
 
 	while (true)
 	{
-		int ptr = 0;
+		int workptr = 0;
 		if (_grib_message_offset == -1)
 		{
-			if (SearchForGribStart(buf, bufferSize, ptr) == false)
+			if (SearchForGribStart(work, worklen, workptr) == false)
 			{
 				break;
 			}
 
 			// store the offset of the message start counting from file start
-			_grib_message_offset = ptr + _file_bytes_from_start;
+			// (that's what stored in the database)
+			_grib_message_offset = workptr + _file_bytes_from_start - searchoffset;
 			// printf("grib starting (GRIB) at position %ld\n", _grib_message_offset);
 		}
 
-		if (_grib_message_offset >= 0 && SearchForGribStop(buf, bufferSize, ptr) == true)
+		if (_grib_message_offset >= 0 && SearchForGribStop(work, worklen, workptr) == true)
 		{
 			// message length from 'GRIB' to '7777'
-			const long len = _file_bytes_from_start + ptr - _grib_message_offset + 1;
+			const long len = _file_bytes_from_start + workptr - _grib_message_offset + 1 - searchoffset;
+			// printf("grib stopping (7777) at position %ld\n", _grib_message_offset+len-1);
 
 			// load message to database
 			ProcessGribMessage(ret->buf, len, _grib_message_offset, _message_no);
 
-			// copy the remainin bytes to a new memory location
+			// copy the remaining bytes to a new memory location
 			// and start searching for a new grib message
 			const long newsize = ret->size - len;
+			assert(ret->size >= len);
 			char* newbuf = reinterpret_cast<char*>(malloc(newsize));
 			memcpy(newbuf, &ret->buf[len], newsize);
 
@@ -262,13 +283,15 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 
 			_message_no++;
 
-			// "restart" search for the next grib message from the next byte
+			// restart search for the next grib message from the next byte
 			// (right after the last '7'
-			buf = ret->buf;
+			work = ret->buf;
+			worklen -= workptr + 1 - searchoffset;
+
 			// if there are more grib messages, the next one will be found immediately;
 			// therefore increment the file byte counter and decrement the current buffer size
-			_file_bytes_from_start += ptr + 1;
-			bufferSize -= ptr + 1;
+			_file_bytes_from_start += workptr + 1 - searchoffset;
+			bufferSize -= workptr + 1;
 
 			_grib_message_offset = -1;
 			continue;
@@ -379,6 +402,8 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 		case S3StatusOK:
 			UpdateAsGrid(analyzeTables);
 			UpdateSSState(ssStateInformation);
+			ssStateInformation.clear();
+			analyzeTables.clear();
 			break;
 		case S3StatusInternalError:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is there a proxy blocking the connection?"
