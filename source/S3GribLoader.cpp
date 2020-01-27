@@ -25,8 +25,9 @@ struct sink
 {
 	char* buf;
 	long size;
+	int first_call;
 
-	sink() : buf(0), size(0)
+	sink() : buf(0), size(0), first_call(1)
 	{
 	}
 	~sink()
@@ -198,16 +199,6 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	// we accumulate read bytes to sink
 	sink* ret = reinterpret_cast<sink*>(callbackData);
 
-	// reallocate more memory to fit the latest chunk returned from s3 library
-	ret->buf = static_cast<char*>(realloc(ret->buf, ret->size + bufferSize));
-
-	// copy newest chunk to the end of sink
-	memcpy(ret->buf + ret->size, buffer, bufferSize);
-
-	ret->size += bufferSize;
-
-	// search data in buffer for grib message start (GRIB) and stop (7777)
-
 	// count bytes from the beginning of file (stream)
 	static __thread long _file_bytes_from_start = 0;
 	// offset of the current grib message from file start, -1 = message start not found
@@ -215,14 +206,23 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	// message number of grib inside file
 	static __thread int _message_no = 0;
 
-	// If this is the first call of the callback function, initialize static variables
-	// (required if multiple files are loaded with a single grid_to_radon call)
-	if (ret->size == bufferSize)
+	// If this is the first call of the callback function, initialize these variables
+	// to zero (required if multiple files are loaded with a single grid_to_radon call)
+	if (ret->first_call == 1)
 	{
+		ret->first_call = 0;
 		_file_bytes_from_start = 0;
 		_grib_message_offset = -1;
 		_message_no = 0;
 	}
+
+	// reallocate more memory to fit the latest chunk returned from s3 library
+	ret->buf = static_cast<char*>(realloc(ret->buf, ret->size + bufferSize));
+
+	// copy newest chunk to the end of sink
+	memcpy(ret->buf + ret->size, buffer, bufferSize);
+
+	ret->size += bufferSize;
 
 	// start reading from the beginning of the new chunk plus some
 	// offset, because the grib message boundary could have been in between
@@ -290,7 +290,7 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 
 			// if there are more grib messages, the next one will be found immediately;
 			// therefore increment the file byte counter and decrement the current buffer size
-			_file_bytes_from_start += workptr + 1 - searchoffset;
+			_file_bytes_from_start += workptr + 1;
 			bufferSize -= workptr + 1;
 
 			_grib_message_offset = -1;
