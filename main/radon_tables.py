@@ -549,26 +549,18 @@ def DropFromAsGrid(options, producer, row):
 
 	logging.info("Deleting from partition %s using (analysis time %s geometry %d) age is %s" % (partition_name, analysis_time, geometry_id, age))
 
-	directories = []
+	files = []
 
 	if options['unlink']:
-		# Fetch file path with the last directory; ie
-		# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150/FFG-MS_ground_0_ll_360_181_0_150_3_9.grib2
-		# -->
-		# /masala/data/forecasts/7_107/201809020600/KWBCONEDEG/150
-		#
-		# and then we can remove the whole directory without specifying individual files.
-		# Note! If directory structure is changed on the righternmost end, this logic will fail
-		query = "WITH x AS (SELECT regexp_split_to_array(file_location, '/') AS a FROM %s.%s " % (schema_name, partition_name)
-		query += " WHERE geometry_id = %s AND analysis_time = %s) SELECT "
-		query += "distinct array_to_string(a[1:array_upper(a,1)-1],'/') FROM x"
+		query = "SELECT distinct file_location FROM %s.%s " % (schema_name, partition_name)
+		query += " WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s"
 
 		if options['show_sql']:
-			print(cur.mogrify(query, (geometry_id, analysis_time)))
+			print(cur.mogrify(query, (geometry_id, analysis_time, producer['id'])))
 
-		cur.execute(query, (geometry_id, analysis_time))
+		cur.execute(query, (geometry_id, analysis_time, producer['id']))
 
-		directories = cur.fetchall()
+		files = cur.fetchall()
 
 	# First delete rows in ss_state, then remove files in disk, finally drop table partition
 
@@ -588,37 +580,51 @@ def DropFromAsGrid(options, producer, row):
 		except psycopg2.ProgrammingError as e:
 			logging.error("Table %s.%s does not exist although listed in %s" % (schema_name,partition_name,as_table))
 
-	for row in directories:
-		directory = row[0]
-		if not os.path.isdir(directory):
-			logging.error("Directory %s does not exist" % (directory))
+	count = 0
+	start = timer()
+
+	for row in files:
+		filename = row[0]
+		if not os.path.isfile(filename):
+			logging.error("File %s does not exist" % (filename,))
 			continue
 
-		try:
-			if directory == os.environ['MASALA_PROCESSED_DATA_BASE'] or directory == os.environ['MASALA_RAW_DATA_BASE']:
-				logging.debug("Not removing base directory %s" % (directory))
-				continue
-		except KeyError as e:
-			pass
-
-		start = timer()
+		count += 1
 
 		if not options['dry_run']:
-			shutil.rmtree(directory, ignore_errors=True)
+			try:
+				os.remove(filename)
+			except OSError as e:
+				print(e)
 
-		stop = timer()
-		logging.info("Removed directory %s in %.1f seconds" % (directory, (stop-start)))
+	stop = timer()
+	logging.info("Removed %d files in %.1f seconds" % (count, (stop-start)))
 
-	for row in directories:
-		parent = os.path.dirname(os.path.normpath(row[0]))
+	directories = []
+	for f in files:
+		directories.append(os.path.dirname(f[0]))
 
-		if not os.path.isdir(parent):
-			continue
+	directories = list(set(directories))
 
-		while not os.listdir(parent):
-			logging.info("Removing empty dir %s" % parent)
-			os.rmdir(parent)
-			parent = os.path.dirname(parent)
+	while len(directories) > 0:
+		newdirectories = []
+		for dirname in directories:
+			if not os.path.isdir(dirname):
+				print("Directory %s does not exist" % dirname)
+				continue
+
+			if dirname == "/" or dirname == os.environ['MASALA_PROCESSED_DATA_BASE'] or dirname == os.environ['MASALA_RAW_DATA_BASE']:
+				continue
+
+			if not options['dry_run']:
+				try:
+					os.rmdir(dirname)
+					logging.info("Removed empty dir %s" % dirname)
+				except OSError as e:
+					pass
+
+			newdirectories.append(os.path.dirname(os.path.normpath(dirname)))
+		directories = newdirectories
 
 
 def DropTables(options):
