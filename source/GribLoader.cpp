@@ -1,9 +1,11 @@
 #include "GribLoader.h"
 #include "NFmiRadonDB.h"
+#include "timer.h"
 #include <boost/algorithm/string.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
+#include <boost/regex.hpp>
 #include <iomanip>
 #include <iostream>
 #include <sstream>
@@ -15,29 +17,11 @@ using namespace std;
 
 mutex dirCreateMutex;
 
-struct timer
-{
-	timespec start_ts, stop_ts;
-
-	void start()
-	{
-		clock_gettime(CLOCK_REALTIME, &start_ts);
-	}
-	void stop()
-	{
-		clock_gettime(CLOCK_REALTIME, &stop_ts);
-	}
-	int get_time_ms()
-	{
-		size_t _start = static_cast<size_t>(start_ts.tv_sec * 1000000000 + start_ts.tv_nsec);
-		size_t _stop = static_cast<size_t>(stop_ts.tv_sec * 1000000000 + stop_ts.tv_nsec);
-		return static_cast<int>(static_cast<double>(_stop - _start) / 1000. / 1000.);
-	}
-};
+bool grib1CacheInitialized = false, grib2CacheInitialized = false;
 
 namespace
 {
-bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
+bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info, short threadId)
 {
 	double di = info.di_degrees;
 	double dj = info.dj_degrees;
@@ -55,8 +39,10 @@ bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
 
 	if (geominfo.empty())
 	{
-		cerr << "Geometry not found from radon: " << info.ni << " " << info.nj << " " << info.lat_degrees << " "
-		     << info.lon_degrees << " " << di << " " << dj << " " << info.gridtype << endl;
+		printf(
+		    "Thread %d: Geometry not found from radon, gridsize: %ldx%ld first point: %f,%f grid cell size: %fx%f "
+		    "type: %ld\n",
+		    threadId, info.ni, info.nj, info.lon_degrees, info.lat_degrees, di, dj, info.gridtype);
 		return false;
 	}
 
@@ -66,15 +52,122 @@ bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
 	return true;
 }
 }
+void UpdateAsGrid(const std::set<std::string>& analyzeTables)
+{
+	BDAPLoader ldr;
+
+	for (const auto& id : analyzeTables)
+	{
+		// update record_count column
+
+		stringstream ss;
+
+		// "table" contains table name with schema, ie schema.tablename.
+		// We have to separate schema and table names; the combinition of
+		// those is unique within a database so it's safe to update as_grid
+		// based on just that information.
+
+		std::vector<std::string> tokens;
+		boost::split(tokens, id, boost::is_any_of(";"));
+
+		std::vector<std::string> tableparts;
+		boost::split(tableparts, tokens[0], boost::is_any_of("."));
+
+		assert(tokens.size() == 2);
+
+		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tableparts[0] << "' AND partition_name = '"
+		   << tableparts[1] << "' AND to_char(analysis_time, 'YYYYMMDDHH24') = to_char(to_timestamp('" << tokens[1]
+		   << "', 'YYYY-MM-DD HH24:MI:SS'), 'YYYYMMDDHH24')";
+
+		if (options.verbose)
+		{
+			cout << "Updating record_count" << endl;
+		}
+
+		if (options.dry_run)
+		{
+			cout << ss.str() << endl;
+		}
+		else
+		{
+			ldr.RadonDB().Execute(ss.str());
+		}
+	}
+}
+
+void UpdateSSState(const std::set<std::string>& ssStateInformation)
+{
+	if (!options.ss_state_update)
+	{
+		return;
+	}
+
+	BDAPLoader ldr;
+
+	for (const std::string& ssInfo : ssStateInformation)
+	{
+		vector<string> tokens;
+		boost::split(tokens, ssInfo, boost::is_any_of("/"));
+
+		stringstream ss;
+		ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
+		      "forecast_type_value, table_name) VALUES ("
+		   << tokens[0] << ", " << tokens[1] << ", "
+		   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
+		   << "'" << tokens[6] << "')";
+
+		if (options.verbose)
+		{
+			cout << "Updating ss_state for " << ssInfo << endl;
+		}
+
+		if (options.dry_run)
+		{
+			cout << ss.str() << endl;
+		}
+		else
+		{
+			try
+			{
+				ldr.RadonDB().Execute(ss.str());
+			}
+			catch (const pqxx::unique_violation& e)
+			{
+				try
+				{
+					ss.str("");
+					ss << "UPDATE ss_state SET last_updated = now() WHERE "
+					   << "producer_id = " << tokens[0] << " AND "
+					   << "geometry_id = " << tokens[1] << " AND "
+					   << "analysis_time = '" << tokens[2] << "' AND "
+					   << "forecast_period = " << tokens[3] << " AND "
+					   << "forecast_type_id = " << tokens[4] << " AND "
+					   << "forecast_type_value = " << tokens[5];
+
+					ldr.RadonDB().Execute(ss.str());
+				}
+				catch (const pqxx::pqxx_exception& ee)
+				{
+					cerr << "Updating ss_state information failed" << endl;
+				}
+			}
+		}
+	}
+}
 
 GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
 {
+	char myhost[128];
+	gethostname(myhost, 128);
+	itsHostName = string(myhost);
 }
 GribLoader::~GribLoader()
 {
 }
+
 bool GribLoader::Load(const string& theInfile)
 {
+	inputFileName = theInfile;
 	itsReader.Open(theInfile);
 
 	// Read all message from file
@@ -109,108 +202,8 @@ bool GribLoader::Load(const string& theInfile)
 	     << "failed with " << g_failed << " fields, "
 	     << "skipped " << g_skipped << " fields" << std::endl;
 
-	BDAPLoader ldr;
-
-	for (const auto& table : analyzeTables)
-	{
-		if (options.verbose)
-		{
-			cout << "Analyzing table " << table << " due to first insert" << endl;
-		}
-
-		if (!options.dry_run)
-		{
-			ldr.RadonDB().Execute("ANALYZE " + table);
-		}
-		else
-		{
-			cout << "ANALYZE " + table << endl;
-		}
-
-		// update record_count column
-
-		stringstream ss;
-
-		// "table" contains table name with schema, ie schema.tablename.
-		// We have to separate schema and table names; the combinition of
-		// those is unique within a database so it's safe to update as_grid
-		// based on just that information.
-
-		std::vector<std::string> tokens;
-		boost::split(tokens, table, boost::is_any_of("."));
-
-		assert(tokens.size() == 2);
-
-		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
-		   << tokens[1] << "'";
-
-		if (options.verbose)
-		{
-			cout << "Updating record_count" << endl;
-		}
-
-		if (options.dry_run)
-		{
-			cout << ss.str() << endl;
-		}
-		else
-		{
-			ldr.RadonDB().Execute(ss.str());
-		}
-	}
-
-	if (!options.ss_state_update)
-	{
-		for (const std::string& ssInfo : ssStateInformation)
-		{
-			vector<string> tokens;
-			boost::split(tokens, ssInfo, boost::is_any_of("/"));
-
-			stringstream ss;
-			ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
-			      "forecast_type_value, table_name) VALUES ("
-			   << tokens[0] << ", " << tokens[1] << ", "
-			   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
-			   << "'" << tokens[6] << "')";
-
-			if (options.verbose)
-			{
-				cout << "Updating ss_state for " << ssInfo << endl;
-			}
-
-			if (options.dry_run)
-			{
-				cout << ss.str() << endl;
-			}
-			else
-			{
-				try
-				{
-					ldr.RadonDB().Execute(ss.str());
-				}
-				catch (const pqxx::unique_violation& e)
-				{
-					try
-					{
-						ss.str("");
-						ss << "UPDATE ss_state SET last_updated = now() WHERE "
-						   << "producer_id = " << tokens[0] << " AND "
-						   << "geometry_id = " << tokens[1] << " AND "
-						   << "analysis_time = '" << tokens[2] << "' AND "
-						   << "forecast_period = " << tokens[3] << " AND "
-						   << "forecast_type_id = " << tokens[4] << " AND "
-						   << "forecast_type_value = " << tokens[5];
-
-						ldr.RadonDB().Execute(ss.str());
-					}
-					catch (const pqxx::pqxx_exception& ee)
-					{
-						cerr << "Updating ss_state information failed" << endl;
-					}
-				}
-			}
-		}
-	}
+	UpdateAsGrid(analyzeTables);
+	UpdateSSState(ssStateInformation);
 
 	// When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
 	// as something to be checked against.
@@ -272,10 +265,12 @@ void CreateDirectory(const string& theFileName)
  * copied from PutGribMsgToNeons_api() (putgribmsgtoneons_api.c:87)
  */
 
-bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message)
+bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message, short threadId)
 {
 	const auto centre = message.Centre();
 	auto process = message.Process();
+
+	g.length = static_cast<unsigned long>(message.GetLongKey("totalLength"));
 
 	g.ednum = message.Edition();
 
@@ -320,14 +315,14 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	if (prodInfo.empty())
 	{
-		cerr << "Producer information not found from radon for centre " << centre << ", process " << process
-		     << " producer type " << producer_type_id << endl;
+		printf("Thread %d: Producer information not found from radon for centre %ld, process %ld, producer type %ld\n",
+		       threadId, centre, process, producer_type_id);
 		return false;
 	}
 	else if (prodInfo["class_id"] != "1")
 	{
-		cerr << "producer class_id is " << prodInfo["class_id"]
-		     << ", grid_to_neons can only handle gridded data (class_id = 1)" << endl;
+		printf("Thread %d: Producer class_id is %s, grid_to_neons can only handle gridded data (class_id = 1)\n",
+		       threadId, prodInfo["class_id"].c_str());
 		return false;
 	}
 
@@ -335,13 +330,17 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	if (g.ednum == 1)
 	{
-		databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+		if (!grib1CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib1ParameterCache(g.producer_id);
+			grib1CacheInitialized = true;
+		}
 
 		auto levelinfo = databaseLoader.RadonDB().GetLevelFromGrib(g.producer_id, levtype, g.ednum);
 
 		if (levelinfo.empty())
 		{
-			cerr << "Level name not found for grib type " << levtype << endl;
+			printf("Thread %d: Level name not found for grib type %ld\n", threadId, levtype);
 			return false;
 		}
 
@@ -356,9 +355,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 		{
 			if (options.verbose)
 			{
-				cerr << "Parameter name not found for table2Version " << message.Table2Version() << ", number "
-				     << message.ParameterNumber() << ", time range indicator " << message.TimeRangeIndicator()
-				     << " level type " << levtype << endl;
+				printf(
+				    "Thread %d: Parameter name not found for table2Version %ld, number %ld, time range indicator %ld, "
+				    "level type %ld\n",
+				    threadId, message.Table2Version(), message.ParameterNumber(), message.TimeRangeIndicator(),
+				    levtype);
 			}
 
 			return false;
@@ -369,7 +370,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	}
 	else
 	{
-		databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+		if (!grib2CacheInitialized)
+		{
+			databaseLoader.RadonDB().WarmGrib2ParameterCache(g.producer_id);
+			grib2CacheInitialized = true;
+		}
 
 		const long tosp = (message.TypeOfStatisticalProcessing() == -999) ? -1 : message.TypeOfStatisticalProcessing();
 
@@ -381,9 +386,11 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 		{
 			if (options.verbose)
 			{
-				cerr << "Parameter name not found for discipline " << message.ParameterDiscipline() << " category "
-				     << message.ParameterCategory() << " number " << message.ParameterNumber()
-				     << " statistical processing " << tosp << endl;
+				printf(
+				    "Thread %d: parameter name not found for discipline %ld, category %ld, number %ld, statistical "
+				    "processing %ld\n",
+				    threadId, message.ParameterDiscipline(), message.ParameterCategory(), message.ParameterNumber(),
+				    tosp);
 			}
 
 			return false;
@@ -405,7 +412,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 	{
 		if (options.verbose)
 		{
-			cerr << "Level name not found for grib level " << levtype << endl;
+			printf("Thread %d: Level name not found for grib level %ld\n", threadId, levtype);
 		}
 		return false;
 	}
@@ -461,10 +468,8 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 			break;
 
 		default:
-			cerr << "Invalid geometry for GRIB: " << message.NormalizedGridType()
-			     << ", only latlon, rotated latlon and polster are supported" << endl;
+			printf("Thread %d: Unsupported gridType: %ld\n", threadId, message.NormalizedGridType());
 			return false;
-			break;
 	}
 
 	g.level1 = message.LevelValue();
@@ -483,7 +488,7 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 
 	g.fcst_per = message.NormalizedStep(true, true);
 
-	if (GetGeometryInformation(databaseLoader, g) == false)
+	if (GetGeometryInformation(databaseLoader, g, threadId) == false)
 	{
 		return false;
 	}
@@ -498,24 +503,23 @@ void GribLoader::Run(short threadId)
 	BDAPLoader dbLoader;
 
 	NFmiGribMessage myMessage;
+	unsigned int messageNo;
 
-	while (DistributeMessages(myMessage))
+	while (DistributeMessages(myMessage, messageNo))
 	{
-		Process(dbLoader, myMessage, threadId);
+		Process(dbLoader, myMessage, threadId, messageNo);
 	}
 
 	printf("Thread %d stopped\n", threadId);
 }
 
-bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
+bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage, unsigned int& messageNo)
 {
 	lock_guard<mutex> lock(distMutex);
+
 	if (itsReader.NextMessage())
 	{
-		if (options.verbose)
-		{
-			printf("Message %d\n", itsReader.CurrentMessageIndex());
-		}
+		messageNo = static_cast<unsigned int>(itsReader.CurrentMessageIndex());
 		newMessage = NFmiGribMessage(itsReader.Message());
 		return true;
 	}
@@ -523,7 +527,7 @@ bool GribLoader::DistributeMessages(NFmiGribMessage& newMessage)
 	return false;
 }
 
-void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId)
+void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, short threadId, unsigned int messageNo)
 {
 	fc_info g;
 
@@ -537,7 +541,10 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 	 * Read metadata from grib msg
 	 */
 
-	if (!CopyMetaData(databaseLoader, g, message))
+	g.messageNo = (options.in_place_insert) ? messageNo : 0;
+	g.offset = (options.in_place_insert) ? itsReader.Offset(messageNo) : 0;
+
+	if (!CopyMetaData(databaseLoader, g, message, threadId))
 	{
 		g_skipped++;
 		return;
@@ -561,27 +568,68 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		}
 	}
 
-	string theFileName = GetFileName(databaseLoader, g);
+	string theFileName;
 
-	if (theFileName.empty())
+	if (options.in_place_insert)
 	{
-		return;
+		namespace fs = boost::filesystem;
+
+		fs::path pathname(inputFileName);
+		pathname = canonical(fs::system_complete(pathname));
+
+		// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
+		const auto atimedir = pathname.parent_path().filename();
+		const auto proddir = pathname.parent_path().parent_path().filename();
+
+		const boost::regex r1("\\d+");
+		const boost::regex r2("\\d{12}");
+
+		if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
+		{
+			printf(
+			    "Thread %d: File path must include analysistime and producer id "
+			    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib')\n",
+			    threadId);
+			printf("Thread %d: Got file '%s'\n", threadId, pathname.string().c_str());
+			return;
+		}
+		string dirName = pathname.parent_path().string();
+
+		// Input file name can contain path, or not.
+		// Force full path to the file even if user has not given it
+
+		theFileName = dirName + "/" + pathname.filename().string();
+	}
+	else
+	{
+		theFileName = GetFileName(databaseLoader, g);
+		if (theFileName.empty())
+		{
+			return;
+		}
 	}
 
 	g.filename = theFileName;
+	g.filehost = itsHostName;
 
 	timer tmr;
 	tmr.start();
 
-	CreateDirectory(theFileName);
-
-	/*
-	 * Write grib msg to disk with unique filename.
-	 */
-
-	if (!options.dry_run && IsGrib(theFileName))
+	if (!options.dry_run && !options.in_place_insert)
 	{
-		if (!message.Write(theFileName, false))
+		CreateDirectory(theFileName);
+	}
+
+	if (g.filename.empty())
+	{
+		exit(1);
+	}
+
+	CreateDirectory(g.filename);
+
+	if (!options.dry_run && IsGrib(theFileName) && !options.in_place_insert)
+	{
+		if (!message.Write(g.filename, false))
 		{
 			g_failed++;
 			return;
@@ -605,11 +653,14 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 
 	if (databaseLoader.NeedsAnalyze())
 	{
-		const auto table = databaseLoader.LastInsertedTable();
+		stringstream ss;
+		ss << databaseLoader.LastInsertedTable() << ";" << g.year << "-" << setw(2) << setfill('0') << g.month << "-"
+		   << setw(2) << setfill('0') << g.day << " " << setw(2) << setfill('0') << g.hour << ":" << setw(2)
+		   << setfill('0') << g.minute << ":00";
 
 		lock_guard<mutex> lock(tableMutex);
 
-		analyzeTables.insert(table);
+		analyzeTables.insert(ss.str());
 	}
 
 	{
@@ -643,9 +694,11 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 			lvl += "-" + boost::lexical_cast<string>(g.level2);
 		}
 
-		printf("Thread %d: Parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, total=%ld ms\n",
-		       threadId, g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime, databaseTime,
-		       otherTime, messageTime);
+		printf(
+		    "Thread %d: Message %d parameter %s at level %s/%s %s write time=%ld, database time=%ld, other=%ld, "
+		    "total=%ld ms\n",
+		    threadId, g.messageNo.get(), g.parname.c_str(), g.levname.c_str(), lvl.c_str(), ftype.c_str(), writeTime,
+		    databaseTime, otherTime, messageTime);
 	}
 }
 

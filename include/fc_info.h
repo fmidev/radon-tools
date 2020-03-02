@@ -1,6 +1,7 @@
 #ifndef _FC_INFO_
 #define _FC_INFO_
 
+#include <boost/optional.hpp>
 const float kFloatMissing = 32700.f;
 
 struct fc_info
@@ -27,6 +28,8 @@ struct fc_info
 	      levname(""),
 	      projection(""),
 	      filename(""),
+	      filehost(""),
+	      fileprotocol(1),
 	      forecast_type_id(1),  // deterministic
 	      forecast_type_value(-1),
 	      gridtype(0),
@@ -37,7 +40,10 @@ struct fc_info
 	      di_meters(kFloatMissing),
 	      dj_meters(kFloatMissing),
 	      geom_id(0),
-	      geom_name(""){};
+	      geom_name(""),
+	      messageNo(),
+	      offset(),
+	      length(){};
 
 	// edition 1 = grib1, 2 = grib2, 3 = netcdf
 	long ednum;
@@ -61,6 +67,8 @@ struct fc_info
 	std::string levname;
 	std::string projection;
 	std::string filename;
+	std::string filehost;
+	int fileprotocol;
 	long forecast_type_id;  // from table forecast_type
 	double forecast_type_value;
 	long gridtype;
@@ -72,6 +80,9 @@ struct fc_info
 	double dj_meters;
 	long geom_id;
 	std::string geom_name;
+	boost::optional<unsigned int> messageNo;
+	boost::optional<unsigned long> offset;
+	boost::optional<unsigned long> length;
 };
 
 #endif

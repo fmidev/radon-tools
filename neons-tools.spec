@@ -6,27 +6,29 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        19.4.3
+Version:        20.3.2
 Release:        1.el7.fmi
-Summary:        Tools for neons environment
+Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 18.2.12
+BuildRequires:  libfmigrib-devel >= 19.11.6
 BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  scons
+BuildRequires:  libs3-devel
 Requires:       hdf5
-Requires:	libfmigrib >= 18.5.3
+Requires:	libfmigrib >= 19.11.6
 Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	python-dateutil
 Requires:	libpqxx
 Requires:	eccodes
+Requires:	libs3
 
 %if %{defined suse_version}
 BuildRequires:  boost-devel >= 1.53
@@ -36,13 +38,18 @@ Requires:	libnetcdf4 >= 4.0.1
 BuildRequires:  boost-devel >= 1.66
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-Requires:	python-psycopg2
-Requires:	python-bunch
-Requires:       pytz
+Requires:	python36-psycopg2
+Requires:       python36-pytz
+Requires:	python36-dateutil
 Requires:       libpqxx
+Requires:       boost-system
+Requires:       boost-filesystem
+Requires:       boost-program-options
+Requires:       boost-iostreams
+Requires:       boost-regex
+Requires:	boost-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
-Provides:       previ_to_neons.py
 Provides:	geom_to_radon.py
 %endif
 
@@ -79,11 +86,58 @@ rm -rf %{buildroot}
 %if %{undefined suse_version}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
-%{_bindir}/previ_to_neons.py
 %{_bindir}/geom_to_radon.py
 %endif
 
 %changelog
+* Mon Mar  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.2-1.fmi
+- More fixes to S3 loading
+* Wed Feb 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.2.19-1.fmi
+- Remove files instead of directories
+* Mon Jan 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.26-1.fmi
+- More fixes to S3 loading
+* Fri Jan 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.24-1.fmi
+- More fixes to S3 loading
+* Wed Jan 22 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.22-1.fmi
+- More fixes to S3 loading
+* Tue Jan 16 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.16-1.fmi
+- Fix to loading multiple files from S3
+* Tue Jan  7 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.7-1.fmi
+- Fix for as_grid update with S3 based files
+* Thu Jan  1 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.2-1.fmi
+- Add security context for S3 read
+- Fix for radon_tables monthly partitioning
+* Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-2.fmi
+- grid_to_neons: read port from environment
+* Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-1.fmi
+- Fix bug in previ table drop
+* Mon Dec 16 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.16-1.fmi
+- Logging output changes to radon_tables.py
+* Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-2.fmi
+- Allow analysis time where minute != 0
+* Tue Dec  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.3-1.fmi
+- STU-11538: Big fix to partitioning type <> analysistime
+* Tue Nov 12 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.12-1.fmi
+- Copy foreign keys to data tables on creation
+* Mon Nov 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.11-1.fmi
+- Bugfix
+* Thu Nov  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.11.17-1.fmi
+- Enable indexing of files in S3 storage
+* Thu Oct 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.17-1.fmi
+- Enable byte_offset&byte_length columns
+* Tue Oct 15 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.15-1.fmi
+- Bugfixes
+* Mon Oct 14 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.14-1.fmi
+- radon_tables.py to python3
+- Remove previ_to_neons.py
+- Tweaking directory removal strategy due to in-place insert functionality
+- Misc bug fixes
+* Fri Oct 11 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.11-1.fmi
+- Minor bugfix
+* Thu Oct 10 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.10-1.fmi
+- in place insert for grid_to_radon
+* Mon Oct  7 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.10.7-1.fmi
+- fmigrib ABI change
 * Wed Apr  3 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.4.3-1.fmi
 - Bugfix for Netcdf loading
 * Thu Jan 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.1.17-1.fmi

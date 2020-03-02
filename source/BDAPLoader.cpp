@@ -13,12 +13,13 @@ extern Options options;
 once_flag oflag;
 
 BDAPLoader::BDAPLoader()
-    : itsUsername("wetodb"), itsDatabase("radon"), itsDatabaseHost("vorlon"), base(0), itsNeedsAnalyze(false)
+    : itsUsername("wetodb"),
+      itsDatabase("radon"),
+      itsDatabaseHost("vorlon"),
+      itsPort(5432),
+      base(0),
+      itsNeedsAnalyze(false)
 {
-	char myhost[255];
-	gethostname(myhost, 100);
-	itsHostname = string(myhost);
-
 	const auto pw = getenv("RADON_WETODB_PASSWORD");
 
 	if (pw)
@@ -44,14 +45,22 @@ BDAPLoader::BDAPLoader()
 		itsDatabase = string(database);
 	}
 
+	const auto port = getenv("RADON_PORT");
+
+	if (port)
+	{
+		itsPort = static_cast<uint16_t>(stoi(port));
+	}
+
 	call_once(oflag, [&]() {
 		NFmiRadonDBPool::Instance()->Username(itsUsername);
 		NFmiRadonDBPool::Instance()->Password(itsPassword);
 		NFmiRadonDBPool::Instance()->Database(itsDatabase);
 		NFmiRadonDBPool::Instance()->Hostname(itsDatabaseHost);
+		NFmiRadonDBPool::Instance()->Port(itsPort);
 		NFmiRadonDBPool::Instance()->MaxWorkers(10);
 
-		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ")" << endl;
+		cout << "Connected to radon (db=" + itsDatabase + ", host=" + itsDatabaseHost + ":" << itsPort << ")" << endl;
 	});
 
 	itsRadonDB = std::unique_ptr<NFmiRadonDB>(NFmiRadonDBPool::Instance()->GetConnection());
@@ -165,15 +174,40 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 	                            to_string(info.fcst_per) + interval + "/" + to_string(info.forecast_type_id) + "/" +
 	                            forecastTypeValue + "/" + tableinfo["schema_name"] + "." + tableinfo["table_name"];
 
+	// clang-format off
+
 	query << "INSERT INTO " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
 	      << " (producer_id, analysis_time, geometry_id, param_id, level_id, "
-	         "level_value, level_value2, forecast_period, "
-	         "forecast_type_id, file_location, file_server, forecast_type_value) "
-	      << "VALUES (" << info.producer_id << ", '" << base_date << "', " << geometry_id << ", " << param_id << ", "
-	      << level_id << ", " << info.level1 << ", " << info.level2 << ", " << info.fcst_per << interval << ", "
+	      << "level_value, level_value2, forecast_period, forecast_type_id,"
+	      << "forecast_type_value, file_location, file_server, file_format_id, "
+	      << "file_protocol_id, message_no, byte_offset, byte_length)"
+	      << " VALUES ("
+	      << info.producer_id << ", '"
+	      << base_date << "', "
+	      << geometry_id << ", "
+	      << param_id << ", "
+	      << level_id << ", "
+	      << info.level1 << ", "
+	      << info.level2 << ", "
+	      << info.fcst_per
+	      << interval << ", "
 	      << info.forecast_type_id << ", "
+	      << forecastTypeValue << ", "
 	      << "'" << info.filename << "', "
-	      << "'" << itsHostname << "', " << forecastTypeValue << ")";
+	      << "'" << info.filehost << "', "
+	      << info.ednum << ", "
+	      << info.fileprotocol;
+
+	// clang-format on
+
+	if (info.messageNo && info.offset && info.length)
+	{
+		query << ", " << info.messageNo.get() << ", " << info.offset.get() << ", " << info.length.get() << ")";
+	}
+	else
+	{
+		query << ", NULL, NULL, NULL)";
+	}
 
 	try
 	{
@@ -194,16 +228,33 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		// level_value, forecast_period,
 		// forecast_type_id)
 
-		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"] << " SET file_location = '"
-		      << info.filename << "', "
-		      << " file_server = '" << itsHostname << "', "
-		      << " forecast_type_value = " << forecastTypeValue << " WHERE"
+		// clang-format off
+
+		query << "UPDATE " << tableinfo["schema_name"] << "." << tableinfo["partition_name"]
+		      << " SET file_location = '" << info.filename << "', "
+		      << "file_server = '" << info.filehost << "', "
+		      << "file_format_id = " << info.ednum << ", "
+		      << "file_protocol_id = " << info.fileprotocol << ", ";
+
+		// clang-format on
+
+		if (info.messageNo && info.offset && info.length)
+		{
+			query << "message_no = " << info.messageNo.get() << ", byte_offset = " << info.offset.get()
+			      << ", byte_length = " << info.length.get();
+		}
+		else
+		{
+			query << "message_no = NULL, byte_offset = NULL, byte_length = NULL";
+		}
+
+		query << " WHERE"
 		      << " producer_id = " << info.producer_id << " AND analysis_time = '" << base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
 		      << " AND forecast_type_id = " << info.forecast_type_id
-		      << " AND forecast_type_value = " << info.forecast_type_value;
+		      << " AND forecast_type_value = " << forecastTypeValue;
 
 		try
 		{
@@ -234,7 +285,7 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 bool BDAPLoader::ReadREFEnvironment()
 {
-	if ((base = getenv("NEONS_REF_BASE")) == NULL)
+	if (!options.in_place_insert && (base = getenv("NEONS_REF_BASE")) == NULL)
 	{
 		if ((base = getenv("RADON_REF_BASE")) == NULL)
 		{

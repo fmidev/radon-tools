@@ -60,6 +60,10 @@ NetCDFLoader::NetCDFLoader()
 	// Epoch() function handles UTC only
 
 	setenv("TZ", "UTC", 1);
+
+	char myhost[128];
+	gethostname(myhost, 128);
+	itsHostName = string(myhost);
 }
 
 NetCDFLoader::~NetCDFLoader()
@@ -110,6 +114,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 	auto process = options.process;
 
 	info.producer_id = options.process;
+	info.fileprotocol = 1;
 
 	if (options.analysistime.size() < 10)
 	{
@@ -117,6 +122,8 @@ bool NetCDFLoader::Load(const string& theInfile)
 		cerr << "Use YYYYMMDDHH24[MI]" << endl;
 		return false;
 	}
+
+	info.filehost = itsHostName;
 
 	info.year = boost::lexical_cast<int>(options.analysistime.substr(0, 4));
 	info.month = boost::lexical_cast<int>(options.analysistime.substr(4, 2));

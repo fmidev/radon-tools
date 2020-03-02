@@ -57,6 +57,7 @@ libraries.append('fminc')
 libraries.append('pqxx')
 libraries.append('odbc')
 libraries.append('netcdf_c++')
+libraries.append('s3')
 
 env.Append(LIBS = libraries)
 

@@ -8,6 +8,7 @@ struct Options
 	      netcdf(false),
 	      grib(false),
 	      index(false),
+	      s3(false),
 	      center(86),
 	      process(0),
 	      analysistime(""),
@@ -24,7 +25,8 @@ struct Options
 	      dry_run(false),
 	      leveltypes(""),
 	      threadcount(2),
-	      ss_state_update(true)
+	      ss_state_update(true),
+	      in_place_insert(false)
 	{
 	}
 
@@ -32,6 +34,7 @@ struct Options
 	bool netcdf;   // -n
 	bool grib;     // -g
 	bool index;
+	bool s3;                   // -s
 	unsigned int center;       // -c
 	unsigned int process;      // -p
 	std::string analysistime;  // -a
@@ -47,6 +50,7 @@ struct Options
 	std::string leveltypes;        // -l
 	short threadcount;             // -j
 	bool ss_state_update;          // -X
+	bool in_place_insert;          // -I
 };
 
 #endif
