@@ -6,9 +6,9 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.1.27
+Version:        20.3.2
 Release:        1.el7.fmi
-Summary:        Tools for neons environment
+Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
@@ -90,6 +90,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Mar  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.2-1.fmi
+- More fixes to S3 loading
+* Wed Feb 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.2.19-1.fmi
+- Remove files instead of directories
 * Mon Jan 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.26-1.fmi
 - More fixes to S3 loading
 * Fri Jan 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.24-1.fmi
