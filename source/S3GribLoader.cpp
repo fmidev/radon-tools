@@ -96,7 +96,8 @@ bool SearchForGribStop(char* buf, int len, int& ptr)
 			// See "static int read_GRIB(reader* r)" at grib_io.c for more
 			// proof.
 
-			if (ptr + 1 < len && buf[ptr + 1] != 'G')
+			if (ptr + 4 < len &&
+			    (buf[ptr + 1] != 'G' || buf[ptr + 2] != 'R' || buf[ptr + 3] != 'I' || buf[ptr + 4] != 'B'))
 			{
 				return false;
 			}
