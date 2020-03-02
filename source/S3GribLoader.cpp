@@ -417,6 +417,10 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 			          << ": are Temporary Security Credentials used without security token (env: S3_SESSION_TOKEN)?"
 			          << std::endl;
 			break;
+		case S3StatusErrorPermanentRedirect:
+			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": S3_HOSTNAME has wrong region?" << std::endl;
+			break;
+
 		default:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << std::endl;
 	}
