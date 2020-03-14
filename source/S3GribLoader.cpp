@@ -99,7 +99,7 @@ bool SearchForGribStop(char* buf, int len, int& ptr)
 			if (ptr + 4 < len &&
 			    (buf[ptr + 1] != 'G' || buf[ptr + 2] != 'R' || buf[ptr + 3] != 'I' || buf[ptr + 4] != 'B'))
 			{
-				return false;
+				continue;
 			}
 			return true;
 		}
