@@ -58,14 +58,17 @@ libraries.append('pqxx')
 libraries.append('odbc')
 libraries.append('netcdf_c++')
 libraries.append('s3')
+libraries.append('fmigrib')
+libraries.append('eccodes')
 
 env.Append(LIBS = libraries)
-
-env.Append(LIBS=['fmigrib','eccodes'])
 
 boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
 
 env.Append(LIBS = boost_libraries)
+
+if env['HAVE_CUDA']:
+	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
 env.Append(LIBS = ['dl','rt'])
 
 # CFLAGS
@@ -115,7 +118,7 @@ env.Append(CCFLAGS = cflags_difficult)
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-Wl,--as-needed', '-Wl,--warn-unresolved-symbols'])
+env.Append(LINKFLAGS = ['-Wl,--as-needed', '-Wl,--warn-unresolved-symbols', '-pthread'])
 
 # '-Wl,-rpath,.'
 
@@ -126,7 +129,7 @@ env.Append(CPPDEFINES=['UNIX'])
 build_dir = ""
 
 if RELEASE:
-	env.Append(CCFLAGS = ['-O2'])
+	env.Append(CCFLAGS = ['-O2', '-g'])
 	env.Append(CPPDEFINES = ['NDEBUG'])
 	build_dir = "build/release"
 

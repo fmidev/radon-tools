@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.3.2
-Release:        1.el7.fmi
+Version:        20.3.14
+Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
 License:        FMI
@@ -18,14 +18,12 @@ BuildRequires:  libfmigrib-devel >= 19.11.6
 BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
-BuildRequires:  scons
 BuildRequires:  libs3-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 19.11.6
 Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
-Requires:	python-dateutil
 Requires:	libpqxx
 Requires:	eccodes
 Requires:	libs3
@@ -35,12 +33,18 @@ BuildRequires:  boost-devel >= 1.53
 Requires:	libjasper
 Requires:	libnetcdf4 >= 4.0.1
 %else
+%if %{defined el7}
+BuildRequires:  scons
+%else if %{defined el8}
+BuildRequires:  python3-scons
+%endif
+
 BuildRequires:  boost-devel >= 1.66
+Requires:       python3-psycopg2
+Requires:       python3-pytz
+Requires:       python3-dateutil
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-Requires:	python36-psycopg2
-Requires:       python36-pytz
-Requires:	python36-dateutil
 Requires:       libpqxx
 Requires:       boost-system
 Requires:       boost-filesystem
@@ -74,13 +78,13 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install bindir=$RPM_BUILD_ROOT/%{_bindir}
+ln -s $RPM_BUILD_ROOT/%{_bindir}/grid_to_radon grid_to_neons
 
 %clean
 rm -rf %{buildroot}
 
 %files
 %defattr(-,root,root,0755)
-%{_bindir}/grid_to_neons
 %{_bindir}/grid_to_radon
 
 %if %{undefined suse_version}
@@ -90,7 +94,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Mon Mar  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.2-1.fmi
+* Sat Mar 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.14-1.fmi
+- More fixes to S3 loading
+* Tue Mar  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.2-1.fmi
 - More fixes to S3 loading
 * Wed Feb 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.2.19-1.fmi
 - Remove files instead of directories
@@ -100,11 +106,11 @@ rm -rf %{buildroot}
 - More fixes to S3 loading
 * Wed Jan 22 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.22-1.fmi
 - More fixes to S3 loading
-* Tue Jan 16 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.16-1.fmi
+* Thu Jan 16 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.16-1.fmi
 - Fix to loading multiple files from S3
 * Tue Jan  7 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.7-1.fmi
 - Fix for as_grid update with S3 based files
-* Thu Jan  1 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.2-1.fmi
+* Thu Jan  2 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.1.2-1.fmi
 - Add security context for S3 read
 - Fix for radon_tables monthly partitioning
 * Tue Dec 17 2019 Mikko Partio <mikko.partio@fmi.fi> - 19.12.17-2.fmi
@@ -144,7 +150,7 @@ rm -rf %{buildroot}
 - Change some GRIB2 level definitions to suite radon
 * Mon Oct 15 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.15-1.fmi
 - ss_state table changes
-* Tue Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.9-1.fmi
+* Tue Oct  9 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.9-1.fmi
 - Fix netcdf parameter id handling
 * Mon Oct  8 2018 Mikko Partio <mikko.partio@fmi.fi> - 18.10.8-2.fmi
 - Code cleanup
