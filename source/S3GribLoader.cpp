@@ -266,7 +266,7 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 		{
 			// message length from 'GRIB' to '7777'
 			const long len = _file_bytes_from_start + workptr - _grib_message_offset + 1 - searchoffset;
-			// printf("grib stopping (7777) at position %ld\n", _grib_message_offset+len-1);
+			// printf("grib msg %d stopping (7777) at position %ld length %ld\n",_message_no, _grib_message_offset+len-1, len);
 
 			// load message to database
 			ProcessGribMessage(ret->buf, len, _grib_message_offset, _message_no);
@@ -357,11 +357,37 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 
 	const std::string key = boost::algorithm::join(tokens, "/");
 
+#ifdef S3_DEFAULT_REGION
+
+	// extract region name from host name, assuming aws
+	// s3.us-east-1.amazonaws.com
+	boost::split(tokens, itsHost, boost::is_any_of("."));
+
+	if (tokens.size() == 3)
+	{
+		std::cerr << "Hostname does not follow pattern s3.<regionname>.amazonaws.com" << std::endl;
+		return;
+	}
+
+	const std::string region = tokens[1];
+
 	// libs3 boilerplate
 
 	// clang-format off
 
-	S3BucketContext bucketContext = 
+	S3BucketContext bucketContext =
+	{
+		itsHost,
+		bucket.c_str(),
+		S3ProtocolHTTP,
+		S3UriStylePath,
+		itsAccessKey,
+		itsSecretKey,
+		itsSecurityToken,
+		region.c_str()
+	};
+#else
+	S3BucketContext bucketContext =
 	{
 		itsHost,
 		bucket.c_str(),
@@ -371,17 +397,14 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 		itsSecretKey,
 		itsSecurityToken
 	};
-
-	std::cerr << "Input file: '" << theFileName << "' host: '" << itsHost << "' bucket: '" << bucket << "' key: '" << key << "'" << std::endl; 
-
-	S3ResponseHandler responseHandler = 
-	{
-		&responsePropertiesCallback, 
-		&responseCompleteCallback
-	};
+#endif
 
 	// clang-format on
 
+	std::cerr << "Input file: '" << theFileName << "' host: '" << itsHost << "' bucket: '" << bucket << "' key: '"
+	          << key << "'" << std::endl;
+
+	S3ResponseHandler responseHandler = {&responsePropertiesCallback, &responseCompleteCallback};
 	S3GetObjectHandler getObjectHandler = {responseHandler, &getObjectDataCallbackStreamProcessing};
 
 	int count = 0;
@@ -391,8 +414,11 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 
 		sink buf;
 		_file_name = theFileName;
-
+#ifdef S3_DEFAULT_REGION
+		S3_get_object(&bucketContext, key.c_str(), NULL, startByte, byteCount, NULL, 0, &getObjectHandler, &buf);
+#else
 		S3_get_object(&bucketContext, key.c_str(), NULL, startByte, byteCount, NULL, &getObjectHandler, &buf);
+#endif
 		std::cout << "Stream-read file " << theFileName << " (" << S3_get_status_name(statusG) << ")" << std::endl;
 
 		count++;
