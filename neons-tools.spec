@@ -83,7 +83,7 @@ make %{?_smp_mflags}
 %install
 rm -rf $RPM_BUILD_ROOT
 make install bindir=$RPM_BUILD_ROOT/%{_bindir}
-ln -s $RPM_BUILD_ROOT/%{_bindir}/grid_to_radon grid_to_neons
+ln -s %{_bindir}/grid_to_radon %{buildroot}/%{_bindir}/grid_to_neons
 
 %clean
 rm -rf %{buildroot}
@@ -91,6 +91,7 @@ rm -rf %{buildroot}
 %files
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_radon
+%{_bindir}/grid_to_neons
 
 %if %{undefined suse_version}
 %{_bindir}/radon_tables.py
