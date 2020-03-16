@@ -35,14 +35,19 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
+Requires:       python36-pytz
+Requires:       python36-dateutil
+
 %else if %{defined el8}
 BuildRequires:  python3-scons
-%endif
-
-BuildRequires:  boost-devel >= 1.66
-Requires:       python3-psycopg2
 Requires:       python3-pytz
 Requires:       python3-dateutil
+
+%endif
+
+Requires:       python3-psycopg2
+
+BuildRequires:  boost-devel >= 1.66
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:       libpqxx
