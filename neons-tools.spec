@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.3.14
+Version:        20.3.17
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -100,6 +100,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.17-1.fmi
+- New release
 * Sat Mar 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.14-1.fmi
 - More fixes to S3 loading
 * Tue Mar  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.2-1.fmi
