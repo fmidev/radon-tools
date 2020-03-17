@@ -13,6 +13,10 @@
 thread_local S3Status statusG = S3StatusOK;
 
 static thread_local std::string _file_name;
+static thread_local size_t _file_size;
+// count bytes from the beginning of file (stream)
+static thread_local long _file_bytes_from_start = 0;
+
 thread_local std::set<std::string> analyzeTables, ssStateInformation;
 
 extern Options options;
@@ -42,6 +46,7 @@ struct sink
 S3Status responsePropertiesCallback(const S3ResponseProperties* properties, void* callbackData)
 {
 	printf("File size is %ld bytes\n", properties->contentLength);
+	_file_size = properties->contentLength;
 	return S3StatusOK;
 }
 
@@ -61,7 +66,6 @@ bool SearchForGribStart(char* buf, int len, int& ptr)
 		stencil |= buf[ptr];
 		if ((stencil & 0xffffffff) == 0x47524942)
 		{
-			ptr -= 3;
 			return true;
 		}
 	}
@@ -69,7 +73,7 @@ bool SearchForGribStart(char* buf, int len, int& ptr)
 	return false;
 }
 
-bool SearchForGribStop(char* buf, int len, int& ptr)
+bool SearchForGribStop(char* buf, int len, int& ptr, int searchoffset)
 {
 	unsigned long stencil = 0;
 	for (; ptr < len; ptr++)
@@ -96,15 +100,25 @@ bool SearchForGribStop(char* buf, int len, int& ptr)
 			// See "static int read_GRIB(reader* r)" at grib_io.c for more
 			// proof.
 
-			if (ptr + 4 < len &&
-			    (buf[ptr + 1] != 'G' || buf[ptr + 2] != 'R' || buf[ptr + 3] != 'I' || buf[ptr + 4] != 'B'))
+			const long file_so_far = _file_bytes_from_start + ptr - searchoffset + 1;
+			if (ptr + 4 < len)
 			{
-				continue;
+				if (buf[ptr + 1] != 'G' || buf[ptr + 2] != 'R' || buf[ptr + 3] != 'I' || buf[ptr + 4] != 'B')
+				{
+					continue;
+				}
+				return true;
 			}
-			return true;
+			else if (static_cast<long>(_file_size) > file_so_far)
+			{
+				// 7777 found but chunk ended before could verify for GRIB
+			}
+			else
+			{
+				return true;
+			}
 		}
 	}
-
 	return false;
 }
 
@@ -199,9 +213,6 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 {
 	// we accumulate read bytes to sink
 	sink* ret = reinterpret_cast<sink*>(callbackData);
-
-	// count bytes from the beginning of file (stream)
-	static __thread long _file_bytes_from_start = 0;
 	// offset of the current grib message from file start, -1 = message start not found
 	static __thread long _grib_message_offset = -1;
 	// message number of grib inside file
@@ -225,14 +236,15 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 
 	ret->size += bufferSize;
 
-	// start reading from the beginning of the new chunk plus some
+	// start reading from the beginning of the new chunk minus some
 	// offset, because the grib message boundary could have been in between
-	// two chunks
+	// two chunks (and it will be!)
 	char* work = ret->buf + (ret->size - bufferSize);
 	int worklen = bufferSize;
 
+	const int maxsearchoffset = 4;
 	int searchoffset = 0;
-	while (ret->size - bufferSize > 0 && searchoffset < 3)
+	while (ret->size - bufferSize > 0 && searchoffset < maxsearchoffset)
 	{
 		work--;
 		worklen++;
@@ -249,6 +261,7 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	while (true)
 	{
 		int workptr = 0;
+
 		if (_grib_message_offset == -1)
 		{
 			if (SearchForGribStart(work, worklen, workptr) == false)
@@ -258,15 +271,16 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 
 			// store the offset of the message start counting from file start
 			// (that's what stored in the database)
-			_grib_message_offset = workptr + _file_bytes_from_start - searchoffset;
+			_grib_message_offset = workptr + _file_bytes_from_start - searchoffset - 3;
 			// printf("grib starting (GRIB) at position %ld\n", _grib_message_offset);
+			workptr++;  // advance to next byte after 'B'
 		}
-
-		if (_grib_message_offset >= 0 && SearchForGribStop(work, worklen, workptr) == true)
+		if (_grib_message_offset >= 0 && SearchForGribStop(work, worklen, workptr, searchoffset) == true)
 		{
 			// message length from 'GRIB' to '7777'
 			const long len = _file_bytes_from_start + workptr - _grib_message_offset + 1 - searchoffset;
-			// printf("grib msg %d stopping (7777) at position %ld length %ld\n",_message_no, _grib_message_offset+len-1, len);
+			// printf("grib msg %d stopping (7777) at position %ld length %ld\n", _message_no,
+			//        _grib_message_offset + len - 1, len);
 
 			// load message to database
 			ProcessGribMessage(ret->buf, len, _grib_message_offset, _message_no);
@@ -285,9 +299,9 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 			_message_no++;
 
 			// restart search for the next grib message from the next byte
-			// (right after the last '7'
+			// (right after the last '7')
 			work = ret->buf;
-			worklen -= workptr + 1 - searchoffset;
+			worklen -= workptr + 1;
 
 			// if there are more grib messages, the next one will be found immediately;
 			// therefore increment the file byte counter and decrement the current buffer size
