@@ -44,6 +44,9 @@ env.Append(CPPPATH = includes)
 
 librarypaths = []
 
+if os.environ.get('LIBRARYPATH') != None:
+        librarypaths.append(os.environ.get('LIBRARYPATH'))
+
 librarypaths.append('/usr/lib64')
 
 env.Append(LIBPATH = librarypaths)
