@@ -12,11 +12,6 @@
 
 thread_local S3Status statusG = S3StatusOK;
 
-static thread_local std::string _file_name;
-static thread_local size_t _file_size;
-// count bytes from the beginning of file (stream)
-static thread_local long _file_bytes_from_start = 0;
-
 thread_local std::set<std::string> analyzeTables, ssStateInformation;
 
 extern Options options;
@@ -114,25 +109,9 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 		}
 
 		{
-<<<<<<< HEAD
-			// message length from 'GRIB' to '7777'
-			const long len = _file_bytes_from_start + workptr - _grib_message_offset + 1 - searchoffset;
-			// printf("grib msg %d stopping (7777) at position %ld length %ld\n",_message_no, _grib_message_offset+len-1, len);
-
-			// load message to database
-			ProcessGribMessage(ret->buf, len, _grib_message_offset, _message_no);
-
-			// copy the remaining bytes to a new memory location
-			// and start searching for a new grib message
-			const long newsize = ret->size - len;
-			assert(ret->size >= len);
-			char* newbuf = reinterpret_cast<char*>(malloc(newsize));
-			memcpy(newbuf, &ret->buf[len], newsize);
-=======
 			std::lock_guard<std::mutex> lock(ssMutex);
 			ssStateInformation.insert(ldr.LastSSStateInformation());
 		}
->>>>>>> origin/development
 
 		dbtimer.stop();
 
