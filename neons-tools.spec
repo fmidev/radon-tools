@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.3.17
+Version:        20.3.18
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -14,13 +14,13 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 19.11.6
+BuildRequires:  libfmigrib-devel >= 20.3.18
 BuildRequires:  libfmidb-devel >= 18.10.5
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
 Requires:       hdf5
-Requires:	libfmigrib >= 19.11.6
+Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 18.10.5
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
@@ -100,6 +100,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Mar 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.18-1.fmi
+- New release
 * Tue Mar 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.17-1.fmi
 - New release
 * Sat Mar 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.14-1.fmi
