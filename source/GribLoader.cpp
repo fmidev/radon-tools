@@ -577,22 +577,26 @@ void GribLoader::Process(BDAPLoader& databaseLoader, NFmiGribMessage& message, s
 		fs::path pathname(inputFileName);
 		pathname = canonical(fs::system_complete(pathname));
 
-		// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
-		const auto atimedir = pathname.parent_path().filename();
-		const auto proddir = pathname.parent_path().parent_path().filename();
-
-		const boost::regex r1("\\d+");
-		const boost::regex r2("\\d{12}");
-
-		if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
+		if (options.directory_structure_check)
 		{
-			printf(
-			    "Thread %d: File path must include analysistime and producer id "
-			    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib')\n",
-			    threadId);
-			printf("Thread %d: Got file '%s'\n", threadId, pathname.string().c_str());
-			return;
+			// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
+			const auto atimedir = pathname.parent_path().filename();
+			const auto proddir = pathname.parent_path().parent_path().filename();
+
+			const boost::regex r1("\\d+");
+			const boost::regex r2("\\d{12}");
+
+			if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
+			{
+				printf(
+				    "Thread %d: File path must include analysistime and producer id "
+				    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib')\n",
+				    threadId);
+				printf("Thread %d: Got file '%s'\n", threadId, pathname.string().c_str());
+				return;
+			}
 		}
+
 		string dirName = pathname.parent_path().string();
 
 		// Input file name can contain path, or not.

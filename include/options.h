@@ -26,7 +26,8 @@ struct Options
 	      leveltypes(""),
 	      threadcount(2),
 	      ss_state_update(true),
-	      in_place_insert(false)
+	      in_place_insert(false),
+	      directory_structure_check(true)
 	{
 	}
 
@@ -41,16 +42,17 @@ struct Options
 	std::vector<std::string> infile;
 	std::string parameters;  // -P
 	std::string keys;
-	std::string level;             // -L
-	bool use_level_value;          // --use-level-value
-	bool use_inverse_level_value;  // --use-inverse-level-value
-	int max_failures;              // --max-failures
-	int max_skipped;               // --max-skipped
-	bool dry_run;                  // -d;
-	std::string leveltypes;        // -l
-	short threadcount;             // -j
-	bool ss_state_update;          // -X
-	bool in_place_insert;          // -I
+	std::string level;               // -L
+	bool use_level_value;            // --use-level-value
+	bool use_inverse_level_value;    // --use-inverse-level-value
+	int max_failures;                // --max-failures
+	int max_skipped;                 // --max-skipped
+	bool dry_run;                    // -d;
+	std::string leveltypes;          // -l
+	short threadcount;               // -j
+	bool ss_state_update;            // -X
+	bool in_place_insert;            // -I
+	bool directory_structure_check;  // --no-directory-structure-check
 };
 
 #endif

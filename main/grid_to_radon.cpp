@@ -30,6 +30,7 @@ bool parse_options(int argc, char* argv[])
 	bool radon_switch = false;
 	bool neons_switch = false;
 	bool no_ss_state_switch = false;
+	bool no_directory_structure_check_switch = false;
 
 	int max_failures = -1;
 	int max_skipped = -1;
@@ -57,7 +58,8 @@ bool parse_options(int argc, char* argv[])
 		("neons,N", po::bool_switch(&neons_switch), "use only neons database (DEPRECATED)")
 		("radon,R", po::bool_switch(&radon_switch), "use only radon database (DEPRECATED)")
 		("no-ss_state-update,X", po::bool_switch(&no_ss_state_switch), "do not update ss_state table information")
-	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)");
+	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)")
+	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "do not check for correct directory structure (in-place insert)");
 
 	// clang-format on
 
@@ -99,6 +101,7 @@ bool parse_options(int argc, char* argv[])
 	}
 
 	options.ss_state_update = !no_ss_state_switch;
+	options.directory_structure_check = !no_directory_structure_check_switch;
 
 	if (max_failures >= -1)
 	{
