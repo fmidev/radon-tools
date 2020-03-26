@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.3.18
+Version:        20.3.26
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -100,6 +100,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Mar 26 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.28-1.fmi
+- Add option to skip directory structure check
 * Wed Mar 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.18-1.fmi
 - New release
 * Tue Mar 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.17-1.fmi
