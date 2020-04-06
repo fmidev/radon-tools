@@ -116,6 +116,14 @@ string BDAPLoader::REFFileName(const fc_info& info)
 	return ss.str();
 }
 
+template <typename T>
+string FormatOptionalToSQL(const boost::optional<T>& opt)
+{
+	if (opt)
+		return std::to_string(opt.get());
+	return "NULL";
+}
+
 bool BDAPLoader::WriteToRadon(const fc_info& info)
 {
 	stringstream query;
@@ -200,14 +208,9 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 
 	// clang-format on
 
-	if (info.messageNo && info.offset && info.length)
-	{
-		query << ", " << info.messageNo.get() << ", " << info.offset.get() << ", " << info.length.get() << ")";
-	}
-	else
-	{
-		query << ", NULL, NULL, NULL)";
-	}
+	query << ", " << FormatOptionalToSQL<unsigned int>(info.messageNo) << ", "
+	      << FormatOptionalToSQL<unsigned long>(info.offset) << ", " << FormatOptionalToSQL<unsigned long>(info.length)
+	      << ")";
 
 	try
 	{
@@ -234,27 +237,19 @@ bool BDAPLoader::WriteToRadon(const fc_info& info)
 		      << " SET file_location = '" << info.filename << "', "
 		      << "file_server = '" << info.filehost << "', "
 		      << "file_format_id = " << info.ednum << ", "
-		      << "file_protocol_id = " << info.fileprotocol << ", ";
-
-		// clang-format on
-
-		if (info.messageNo && info.offset && info.length)
-		{
-			query << "message_no = " << info.messageNo.get() << ", byte_offset = " << info.offset.get()
-			      << ", byte_length = " << info.length.get();
-		}
-		else
-		{
-			query << "message_no = NULL, byte_offset = NULL, byte_length = NULL";
-		}
-
-		query << " WHERE"
+		      << "file_protocol_id = " << info.fileprotocol << ", "
+		      << "message_no = " << FormatOptionalToSQL<unsigned int>(info.messageNo) << ", "
+		      << "byte_offset = " << FormatOptionalToSQL<unsigned long>(info.offset) << ", "
+		      << "byte_length = " << FormatOptionalToSQL<unsigned long>(info.length)
+		      << " WHERE"
 		      << " producer_id = " << info.producer_id << " AND analysis_time = '" << base_date << "'"
 		      << " AND geometry_id = " << geometry_id << " AND param_id = " << param_id
 		      << " AND level_id = " << level_id << " AND level_value = " << info.level1
 		      << " AND level_value2 = " << info.level2 << " AND forecast_period = interval '1 hour' * " << info.fcst_per
 		      << " AND forecast_type_id = " << info.forecast_type_id
 		      << " AND forecast_type_value = " << forecastTypeValue;
+
+		// clang-format on
 
 		try
 		{

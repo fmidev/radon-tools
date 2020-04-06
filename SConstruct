@@ -37,6 +37,7 @@ if os.environ.get('INCLUDE') != None:
         includes.append(os.environ.get('INCLUDE'))
 
 includes.append('include')
+includes.append('/usr/include/gdal')
 
 env.Append(CPPPATH = includes)
 
@@ -64,6 +65,7 @@ libraries.append('netcdf_c++')
 libraries.append('s3')
 libraries.append('fmigrib')
 libraries.append('eccodes')
+libraries.append('gdal')
 
 env.Append(LIBS = libraries)
 
@@ -73,6 +75,7 @@ env.Append(LIBS = boost_libraries)
 
 #if env['HAVE_CUDA']:
 #	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
+
 env.Append(LIBS = ['dl','rt'])
 
 # CFLAGS

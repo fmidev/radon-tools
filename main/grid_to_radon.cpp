@@ -4,6 +4,7 @@
 #include <fstream>
 #include <iostream>
 
+#include "GeoTIFFLoader.h"
 #include "GribLoader.h"
 #include "NetCDFLoader.h"
 #include "S3GribLoader.h"
@@ -16,7 +17,8 @@ enum class filetype
 	unknown = 0,
 	grib,
 	gribindex,
-	netcdf
+	netcdf,
+	geotiff
 };
 
 filetype FileType(const std::string& theFile);
@@ -47,7 +49,7 @@ bool parse_options(int argc, char* argv[])
 		("process,p", po::value(&options.process), "force process id")
 		("analysistime,a", po::value(&options.analysistime), "force analysis time")
 		("parameters,P", po::value(&options.parameters), "accept these parameters, comma separated list")
-		("level,L", po::value(&options.level), "force level (only nc)")
+		("level,L", po::value(&options.level), "force level (only nc,geotiff)")
 		("leveltypes,l", po::value(&options.leveltypes), "accept these leveltypes, comma separated list")
 		("use-level-value", po::bool_switch(&options.use_level_value), "use level value instead of index")
 		("use-inverse-level-value", po::bool_switch(&options.use_inverse_level_value), "use inverse level value instead of index")
@@ -177,45 +179,70 @@ int main(int argc, char** argv)
 
 		filetype type = FileType(infile);
 
-		if (type == filetype::netcdf)
+		switch (type)
 		{
-			if (options.verbose)
-				std::cout << "File '" << infile << "' is NetCDF" << std::endl;
-
-			if (options.in_place_insert)
+			case filetype::netcdf:
 			{
-				std::cerr << "In-place insert not possible for netcdf" << std::endl;
-				continue;
-			}
-			NetCDFLoader ncl;
+				if (options.verbose)
+					std::cout << "File '" << infile << "' is NetCDF" << std::endl;
 
-			if (!ncl.Load(infile))
+				if (options.in_place_insert)
+				{
+					std::cerr << "In-place insert not possible for netcdf" << std::endl;
+					continue;
+				}
+				NetCDFLoader ncl;
+
+				if (!ncl.Load(infile))
+				{
+					std::cerr << "Load failed" << std::endl;
+					retval = 1;
+				}
+			}
+			break;
+			case filetype::grib:
 			{
-				std::cerr << "Load failed" << std::endl;
-				retval = 1;
+				if (options.verbose)
+					std::cout << "File '" << infile << "' is GRIB" << std::endl;
+
+				GribLoader g;
+
+				if (!g.Load(infile))
+				{
+					std::cerr << "Load failed" << std::endl;
+					retval = 1;
+				}
 			}
-		}
-		else if (type == filetype::grib)
-		{
-			if (options.verbose)
-				std::cout << "File '" << infile << "' is GRIB" << std::endl;
-
-			GribLoader g;
-
-			if (!g.Load(infile))
+			break;
+			case filetype::geotiff:
 			{
-				std::cerr << "Load failed" << std::endl;
-				retval = 1;
+				if (options.verbose)
+					std::cout << "File '" << infile << "' is GeoTIFF" << std::endl;
+
+				if (options.process == 0)
+				{
+					std::cerr << "Producer id must be specified with -p\n";
+					continue;
+				}
+				GeoTIFFLoader g;
+
+				options.in_place_insert = true;
+
+				if (!g.Load(infile))
+				{
+					std::cerr << "Load failed" << std::endl;
+					retval = 1;
+				}
 			}
+			break;
+
+			default:
+				std::cerr << "Unable to determine file type for file '" << infile << "'" << std::endl
+				          << "Use switch -n or -g to force file type" << std::endl;
 		}
-		else
-		{
-			std::cerr << "Unable to determine file type for file '" << infile << "'" << std::endl
-			          << "Use switch -n or -g to force file type" << std::endl;
-		}
+
+		return retval;
 	}
-
-	return retval;
 }
 
 filetype FileType(const std::string& theFile)
@@ -246,6 +273,10 @@ filetype FileType(const std::string& theFile)
 	else if (ext == ".idx")
 	{
 		return filetype::gribindex;
+	}
+	else if (ext == ".TIFF" || ext == ".tif")
+	{
+		return filetype::geotiff;
 	}
 
 	// Try the check the file header; CSV is not possible anymore
