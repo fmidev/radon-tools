@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.3.26
+Version:        20.4.6
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -15,13 +15,13 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.3.18
-BuildRequires:  libfmidb-devel >= 18.10.5
+BuildRequires:  libfmidb-devel >= 20.4.6
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
-Requires:	libfmidb >= 18.10.5
+Requires:	libfmidb >= 20.4.6
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	libpqxx
@@ -100,6 +100,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
+- fmidb ABI change
 * Thu Mar 26 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.28-1.fmi
 - Add option to skip directory structure check
 * Wed Mar 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.18-1.fmi
