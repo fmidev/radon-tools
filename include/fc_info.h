@@ -17,8 +17,6 @@ struct fc_info
 	      timeUnit(0),
 	      ni(0),
 	      nj(0),
-	      di(kFloatMissing),
-	      dj(kFloatMissing),
 	      paramid(0),
 	      levelid(0),
 	      level1(0),
@@ -56,8 +54,6 @@ struct fc_info
 	long timeUnit;
 	long ni;
 	long nj;
-	double di;
-	double dj;
 	long paramid;  // db id
 	long levelid;  // db id
 	long level1;

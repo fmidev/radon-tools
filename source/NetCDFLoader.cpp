@@ -213,10 +213,6 @@ bool NetCDFLoader::Load(const string& theInfile)
 		info.dj_degrees = reader.YResolution();
 	}
 
-	// we might consider to use round here, since floor can give unexpected results due to floating point precision
-	info.di = floor(reader.XResolution() * 1000);
-	info.dj = floor(reader.YResolution() * 1000);
-
 	long atimeEpoch = Epoch(options.analysistime, "%Y%m%d%H%M");
 
 	map<string, short> pskip;

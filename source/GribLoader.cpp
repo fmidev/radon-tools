@@ -435,22 +435,16 @@ bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage&
 		case 0:  // ll
 			g.di_degrees = message.iDirectionIncrement();
 			g.dj_degrees = message.jDirectionIncrement();
-			g.di = g.di_degrees * 1000.;
-			g.dj = g.dj_degrees * 1000.;
 			g.projection = "ll";
 			break;
 
 		case 10:  // rll
 			g.di_degrees = message.iDirectionIncrement();
 			g.dj_degrees = message.jDirectionIncrement();
-			g.di = g.di_degrees * 1000.;
-			g.dj = g.dj_degrees * 1000.;
 			g.projection = "rll";
 			break;
 
 		case 5:  // ps
-			g.di = message.XLengthInMeters();
-			g.dj = message.YLengthInMeters();
 			g.di_meters = message.XLengthInMeters();
 			g.dj_meters = message.YLengthInMeters();
 			g.projection = "polster";
