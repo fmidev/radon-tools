@@ -14,6 +14,7 @@ import os
 import shutil
 import time
 import logging
+import math
 from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
@@ -895,7 +896,7 @@ def CreateForecastPartition(options, element, producerinfo, analysis_time):
 	# Determine partition length and name
 
 	partition_name = None
-	analysis_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H')
+	analysis_timestamp = datetime.datetime.strptime(analysis_time, '%Y%m%d%H%M')
 
 	if element['partitioning_period'] == "ANALYSISTIME":
 		partition_name = "%s_%s" % (element['table_name'], analysis_time)
@@ -1030,7 +1031,10 @@ def CreateTables(options, element, date):
 		logging.critical("Analysis_time information from database is NULL")
 		sys.exit(1)
 	for atime in element['analysis_times']:
-		analysis_time = "%s%02d" % (date,atime)
+		(minutes, hours) = math.modf(atime)
+		hours = int(hours)
+		minutes = int(round(minutes*60))
+		analysis_time = "%s%02d%02d" % (date,hours,minutes)
 		if CreateForecastPartition(options,element,producerinfo,analysis_time):
 			partitionAdded = True
 
