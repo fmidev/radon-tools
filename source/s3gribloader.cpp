@@ -1,24 +1,30 @@
-#include "S3GribLoader.h"
-#include "GribLoader.h"
+#include "s3gribloader.h"
+#include "NFmiGrib.h"
+#include "common.h"
 #include "libs3.h"
+#include "options.h"
+#include "plugin_factory.h"
 #include "timer.h"
 #include <boost/algorithm/string.hpp>
 #include <iostream>
-#include <mutex>
 #include <stdexcept>
 #include <string.h>
 #include <string>
 #include <vector>
 
+#define HIMAN_AUXILIARY_INCLUDE
+#include "grib.h"
+#include "radon.h"
+#undef HIMAN_AUXILIARY_INCLUDE
+
 thread_local S3Status statusG = S3StatusOK;
 
-thread_local std::set<std::string> analyzeTables, ssStateInformation;
+thread_local std::set<std::string> ssStateInformation;
 
-extern Options options;
-extern bool CopyMetaData(BDAPLoader& databaseLoader, fc_info& g, const NFmiGribMessage& message, short threadId);
-extern void UpdateAsGrid(const std::set<std::string>& analyzeTables);
+extern grid_to_radon::Options options;
 extern void UpdateSSState(const std::set<std::string>& ssStateInformation);
-std::mutex tableMutex, ssMutex;
+extern std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<double>>> ReadMetadata(
+    const NFmiGribMessage& message);
 
 S3Status responsePropertiesCallback(const S3ResponseProperties* properties, void* callbackData)
 {
@@ -55,8 +61,7 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 		return ret;
 	};
 
-	timer othertimer;
-	othertimer.start();
+	himan::timer othertimer(true);
 
 	NFmiGrib reader;
 	if (!reader.Open(std::move(fp)))
@@ -65,11 +70,31 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 		return false;
 	}
 
-	BDAPLoader ldr;
-
 	int messageNo = -1;
+	auto r = GET_PLUGIN(radon);
+
+	const auto plainFilename = StripProtocol(filename);
 	while (reader.NextMessage())
 	{
+		auto ret = ReadMetadata(reader.Message());
+
+		othertimer.Stop();
+
+		auto config = ret.first;
+		auto info = ret.second;
+
+		himan::timer dbtimer(true);
+
+		himan::file_information finfo;
+		finfo.storage_type = himan::kS3ObjectStorageSystem;
+		finfo.message_no = messageNo;
+		finfo.offset = reader.Offset(messageNo);
+		finfo.length = static_cast<unsigned long>(reader.Message().GetLongKey("totalLength"));
+		finfo.file_location = plainFilename;
+
+		grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation);
+
+#if 0
 		messageNo++;
 		const auto gribmsg = reader.Message();
 
@@ -86,9 +111,6 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 		gribinfo.filehost = std::string(getenv("S3_HOSTNAME"));
 		gribinfo.fileprotocol = 2;
 
-		othertimer.stop();
-		timer dbtimer;
-		dbtimer.start();
 
 		ldr.WriteToRadon(gribinfo);
 
@@ -108,32 +130,16 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 			analyzeTables.insert(ss.str());
 		}
 
-		{
-			std::lock_guard<std::mutex> lock(ssMutex);
-			ssStateInformation.insert(ldr.LastSSStateInformation());
-		}
-
-		dbtimer.stop();
+		ssStateInformation.insert(ldr.LastSSStateInformation());
+#endif
+		dbtimer.Stop();
 
 		if (options.verbose)
 		{
-			std::string ftype;
-
-			if (gribinfo.forecast_type_id > 2)
-			{
-				ftype = "forecast type " + std::to_string(static_cast<int>(gribinfo.forecast_type_id)) + "/" +
-				        std::to_string(static_cast<int>(gribinfo.forecast_type_value));
-			}
-
-			std::string lvl = std::to_string(static_cast<int>(gribinfo.level1));
-			if (gribinfo.level2 != -1)
-			{
-				lvl += "-" + std::to_string(static_cast<int>(gribinfo.level2));
-			}
-
-			printf("Thread 0: Message %d parameter %s at level %s/%s %s database time=%d other=%d ms\n",
-			       gribinfo.messageNo.get(), gribinfo.parname.c_str(), gribinfo.levname.c_str(), lvl.c_str(),
-			       ftype.c_str(), dbtimer.get_time_ms(), othertimer.get_time_ms());
+			printf(
+			    "Thread 0: Message %d parameter %s at level %s forecast type %s database time=%ld, other = % ld ms\n",
+			    messageNo, info->Param().Name().c_str(), static_cast<std::string>(info->Level()).c_str(),
+			    static_cast<std::string>(info->ForecastType()).c_str(), dbtimer.GetTime(), othertimer.GetTime());
 		}
 	}
 	return true;
@@ -147,12 +153,7 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	return ((wrote < static_cast<size_t>(bufferSize)) ? S3StatusAbortedByCallback : S3StatusOK);
 }
 
-S3GribLoader::S3GribLoader() : itsHost(0), itsAccessKey(0), itsSecretKey(0)
-{
-	Initialize();
-}
-
-void S3GribLoader::Initialize()
+grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(0), itsAccessKey(0), itsSecretKey(0)
 {
 	itsAccessKey = getenv("S3_ACCESS_KEY_ID");
 	itsSecretKey = getenv("S3_SECRET_ACCESS_KEY");
@@ -182,13 +183,14 @@ void S3GribLoader::Initialize()
 	}
 }
 
-bool S3GribLoader::Load(const std::string& theFileName) const
+bool grid_to_radon::S3GribLoader::Load(const std::string& theFileName) const
 {
 	ReadFileStream(theFileName, 0, 0);
 	return true;
 }
 
-void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startByte, size_t byteCount) const
+void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startByte,
+                                                 size_t byteCount) const
 {
 	// example: s3://noaa-gefs-pds/gefs.20170101/00/gep07.t00z.pgrb2bf036
 	std::vector<std::string> tokens;
@@ -276,10 +278,8 @@ void S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startBy
 	switch (statusG)
 	{
 		case S3StatusOK:
-			UpdateAsGrid(analyzeTables);
 			UpdateSSState(ssStateInformation);
 			ssStateInformation.clear();
-			analyzeTables.clear();
 			break;
 		case S3StatusInternalError:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is there a proxy blocking the connection?"

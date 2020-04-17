@@ -2,6 +2,8 @@
 
 #include <string>
 
+namespace grid_to_radon
+{
 class S3GribLoader
 {
    public:
@@ -11,7 +13,6 @@ class S3GribLoader
 	bool Load(const std::string& theInfile) const;
 
    private:
-	void Initialize();
 	void ReadFileStream(const std::string& theFileName, size_t startByte, size_t byteCount) const;
 
 	char* itsHost;
@@ -19,3 +20,4 @@ class S3GribLoader
 	char* itsSecretKey;
 	char* itsSecurityToken;
 };
+}
