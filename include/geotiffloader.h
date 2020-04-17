@@ -1,15 +1,13 @@
-#include "BDAPLoader.h"
 #include <string>
 
+namespace grid_to_radon
+{
 class GeoTIFFLoader
 {
    public:
-	GeoTIFFLoader();
+	GeoTIFFLoader() = default;
 	~GeoTIFFLoader() = default;
 
 	bool Load(const std::string& theInfile);
-
-   private:
-	BDAPLoader itsDatabaseLoader;
-	std::string itsHostName;
 };
+}

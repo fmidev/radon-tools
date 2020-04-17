@@ -34,7 +34,7 @@ else:
 includes = []
 
 if os.environ.get('INCLUDE') != None:
-        includes.append(os.environ.get('INCLUDE'))
+        includes.append(os.environ.get('INCLUDE').split(":"))
 
 includes.append('include')
 includes.append('/usr/include/gdal')
@@ -46,7 +46,7 @@ env.Append(CPPPATH = includes)
 librarypaths = []
 
 if os.environ.get('LIBRARYPATH') != None:
-        librarypaths.append(os.environ.get('LIBRARYPATH'))
+        librarypaths.append(os.environ.get('LIBRARYPATH').split(":"))
 
 librarypaths.append('/usr/lib64')
 librarypaths.append('/usr/lib64/boost169')
@@ -57,6 +57,7 @@ env.Append(LIBPATH = librarypaths)
 
 libraries = []
 
+libraries.append('himan')
 libraries.append('fmidb')
 libraries.append('fminc')
 libraries.append('pqxx')
@@ -86,7 +87,7 @@ cflags_normal = []
 cflags_normal.append('-Wall')
 cflags_normal.append('-W')
 cflags_normal.append('-Wno-unused-parameter')
-cflags_normal.append('-Werror')
+#cflags_normal.append('-Werror')
 
 # Extra flags
 
@@ -118,6 +119,7 @@ cflags_difficult.append('-Wctor-dtor-privacy')
 cflags = []
 cflags.append('-std=c++11')
 
+env.Append(CCFLAGS = '-fPIC')
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
 env.Append(CCFLAGS = cflags_extra)
@@ -127,7 +129,7 @@ env.AppendUnique(CCFLAGS=('-isystem', '/usr/include/boost169'))
 
 # Linker flags
 
-env.Append(LINKFLAGS = ['-Wl,--as-needed', '-Wl,--warn-unresolved-symbols', '-pthread'])
+env.Append(LINKFLAGS = ['-Wl,--export-dynamic', '-rdynamic', '-Wl,--as-needed', '-Wl,--warn-unresolved-symbols', '-pthread'])
 
 # '-Wl,-rpath,.'
 

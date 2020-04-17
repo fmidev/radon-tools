@@ -1,16 +1,19 @@
-#include "BDAPLoader.h"
+#include <logger.h>
 #include <string>
 
+namespace grid_to_radon
+{
 class NetCDFLoader
 {
    public:
 	NetCDFLoader();
-	~NetCDFLoader();
+	~NetCDFLoader() = default;
 
 	bool Load(const std::string& theInfile);
 
    private:
-	long Epoch(const std::string& dateTime, const std::string& mask);
-	BDAPLoader itsDatabaseLoader;
 	std::string itsHostName;
+	himan::logger itsLogger;
+	std::set<std::string> ssStateInformation;
 };
+}
