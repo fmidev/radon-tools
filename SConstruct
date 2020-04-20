@@ -48,6 +48,7 @@ if os.environ.get('LIBRARYPATH') != None:
         librarypaths.append(os.environ.get('LIBRARYPATH'))
 
 librarypaths.append('/usr/lib64')
+librarypaths.append('/usr/lib64/boost169')
 
 env.Append(LIBPATH = librarypaths)
 
@@ -70,8 +71,8 @@ boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system',
 
 env.Append(LIBS = boost_libraries)
 
-if env['HAVE_CUDA']:
-	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
+#if env['HAVE_CUDA']:
+#	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
 env.Append(LIBS = ['dl','rt'])
 
 # CFLAGS
@@ -112,12 +113,14 @@ cflags_difficult.append('-Wctor-dtor-privacy')
 # Default flags (common for release/debug)
 
 cflags = []
-cflags.append('-std=c++14')
+cflags.append('-std=c++11')
 
 env.Append(CCFLAGS = cflags)
 env.Append(CCFLAGS = cflags_normal)
 env.Append(CCFLAGS = cflags_extra)
 env.Append(CCFLAGS = cflags_difficult)
+
+env.AppendUnique(CCFLAGS=('-isystem', '/usr/include/boost169'))
 
 # Linker flags
 
@@ -130,6 +133,7 @@ env.Append(LINKFLAGS = ['-Wl,--as-needed', '-Wl,--warn-unresolved-symbols', '-pt
 env.Append(CPPDEFINES=['UNIX'])
 
 build_dir = ""
+
 
 if RELEASE:
 	env.Append(CCFLAGS = ['-O2', '-g'])

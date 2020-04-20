@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.6
+Version:        20.4.20
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -47,16 +47,16 @@ Requires:       python3-dateutil
 
 Requires:       python3-psycopg2
 
-BuildRequires:  boost-devel >= 1.66
+BuildRequires:  boost169-devel
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:       libpqxx
-Requires:       boost-system
-Requires:       boost-filesystem
-Requires:       boost-program-options
-Requires:       boost-iostreams
-Requires:       boost-regex
-Requires:	boost-thread
+Requires:       boost169-system
+Requires:       boost169-filesystem
+Requires:       boost169-program-options
+Requires:       boost169-iostreams
+Requires:       boost169-regex
+Requires:	boost169-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
@@ -100,6 +100,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
+- boost 1.69
 * Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
 - fmidb ABI change
 * Thu Mar 26 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.3.28-1.fmi
