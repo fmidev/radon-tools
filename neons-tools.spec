@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.20
+Version:        20.4.24
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -17,6 +17,7 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.3.18
 BuildRequires:  libfmidb-devel >= 20.4.6
 BuildRequires:  libfminc-devel >= 18.8.22
+BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
 Requires:       hdf5
@@ -27,6 +28,7 @@ Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
 Requires:	libs3
+Requires:	gdal
 
 %if %{defined suse_version}
 BuildRequires:  boost-devel >= 1.53
@@ -100,6 +102,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Apr 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.24-1.fmi
+- Initial support of geotiff
 * Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
 - boost 1.69
 * Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
