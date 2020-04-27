@@ -240,9 +240,14 @@ int main(int argc, char** argv)
 				std::cerr << "Unable to determine file type for file '" << infile << "'" << std::endl
 				          << "Use switch -n or -g to force file type" << std::endl;
 		}
-
-		return retval;
+		// early exit if needed
+		if (retval != 0)
+		{
+			return retval;
+		}
 	}
+
+	return retval;
 }
 
 filetype FileType(const std::string& theFile)
