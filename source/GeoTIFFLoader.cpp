@@ -425,7 +425,11 @@ bool GeoTIFFLoader::Load(const string& theInfile)
 			if (itsDatabaseLoader.NeedsAnalyze())
 			{
 				const auto table = itsDatabaseLoader.LastInsertedTable();
-				analyzeTables.insert(table);
+				std::stringstream ss;
+				ss << band_info.year << setw(2) << setfill('0') << band_info.month << setw(2) << setfill('0')
+				   << band_info.day << setw(2) << setfill('0') << band_info.hour << setw(2) << setfill('0')
+				   << band_info.minute << "00";
+				analyzeTables.insert(table + "." + ss.str());
 			}
 
 			if (options.verbose)
@@ -445,24 +449,14 @@ bool GeoTIFFLoader::Load(const string& theInfile)
 
 	for (const auto& table : analyzeTables)
 	{
-		if (options.verbose)
-		{
-			cout << "Analyzing table " << table << " due to first insert" << endl;
-		}
-
-		if (!options.dry_run)
-		{
-			itsDatabaseLoader.RadonDB().Execute("ANALYZE " + table);
-		}
-
 		std::vector<std::string> tokens;
 		boost::split(tokens, table, boost::is_any_of("."));
 
-		assert(tokens.size() == 2);
+		assert(tokens.size() == 3);
 
 		ss.str("");
 		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
-		   << tokens[1] << "'";
+		   << tokens[1] << "' AND analysis_time = to_timestamp('" << tokens[2] << "', 'yyyymmddhh24miss')";
 
 		if (options.verbose)
 		{
