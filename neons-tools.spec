@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        20.4.29
-Release:        1%{dist}.fmi
+Release:        2%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
 License:        FMI
@@ -102,6 +102,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-2.fmi
+- Proper time mask handling for geotiff
 * Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-1.fmi
 - Fix update of as_grid for netcdf/geotiff
 * Mon Apr 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.27-1.fmi
