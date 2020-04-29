@@ -29,6 +29,7 @@ using namespace std;
 
 static atomic<int> g_failedParams(0);
 static atomic<int> g_succeededParams(0);
+static std::mutex formatMutex;
 
 namespace
 {
@@ -60,26 +61,58 @@ bool GetGeometryInformation(BDAPLoader& databaseLoader, fc_info& info)
 }
 }
 
-void SQLTimeMaskToCTimeMask(std::string& sqlTimeMask)
+boost::posix_time::ptime ParseTimeFromString(const std::string& time, const std::string& mask)
 {
-	boost::replace_all(sqlTimeMask, "YYYY", "%Y");
-	boost::replace_all(sqlTimeMask, "MM", "%m");
-	boost::replace_all(sqlTimeMask, "DD", "%d");
-	boost::replace_all(sqlTimeMask, "hh", "%H");
-	boost::replace_all(sqlTimeMask, "mm", "%M");
+	std::stringstream s(time);
+
+	{
+		std::lock_guard<std::mutex> lock(formatMutex);
+		s.imbue(std::locale(s.getloc(), new boost::posix_time::time_input_facet(mask.c_str())));
+	}
+
+	boost::posix_time::ptime pt;
+	s >> pt;
+
+	return pt;
 }
 
-void ParseTimeFromString(const std::string& analysistime, const std::string& mask, fc_info& info)
+void ParseAnalysisTimeFromString(const std::string& analysistime, const std::string& mask, fc_info& info)
 {
-	info.year = boost::lexical_cast<int>(analysistime.substr(0, 4));
-	info.month = boost::lexical_cast<int>(analysistime.substr(4, 2));
-	info.day = boost::lexical_cast<int>(analysistime.substr(6, 2));
-	info.hour = boost::lexical_cast<int>(analysistime.substr(8, 2));
-	info.minute = 0;
+	const auto pt = ParseTimeFromString(analysistime, mask);
 
-	if (analysistime.length() > 10)
+	info.year = pt.date().year();
+	info.month = pt.date().month();
+	info.day = pt.date().day();
+	info.hour = pt.time_of_day().hours();
+	info.minute = pt.time_of_day().minutes();
+}
+
+void ParseValidTimeFromString(const std::string& validtime, const std::string& mask, fc_info& info)
+{
+	if (info.year == 0)
 	{
-		info.minute = boost::lexical_cast<int>(analysistime.substr(10, 2));
+		return;
+	}
+
+	namespace bp = boost::posix_time;
+	namespace bg = boost::gregorian;
+	bp::ptime orig(bg::date(static_cast<unsigned short>(info.year), static_cast<unsigned short>(info.month),
+	                        static_cast<unsigned short>(info.day)),
+	               bp::time_duration(info.hour, info.minute, 0));
+
+	const auto valid = ParseTimeFromString(validtime, mask);
+
+	const auto td = valid - orig;
+
+	if (td.minutes() != 0)
+	{
+		info.timeUnit = 0;
+		info.fcst_per = td.minutes() + 60 * td.hours();
+	}
+	else
+	{
+		info.timeUnit = 1;  // hour
+		info.fcst_per = td.hours();
 	}
 }
 
@@ -238,12 +271,18 @@ void ReadTime(const std::map<std::string, std::string>& meta, fc_info& info)
 			mask = m.second;
 	}
 
-	if (origintime.empty())
+	if (mask.empty())
 	{
-		return;
+		mask = "%Y%m%d%H%M";
 	}
-
-	ParseTimeFromString(origintime, mask, info);
+	if (origintime.empty() == false && info.year == 0)
+	{
+		ParseAnalysisTimeFromString(origintime, mask, info);
+	}
+	if (validtime.empty() == false)
+	{
+		ParseValidTimeFromString(validtime, mask, info);
+	}
 }
 
 std::map<std::string, std::string> ParseMetadata(char** mdata, BDAPLoader& databaseLoader)
@@ -266,7 +305,6 @@ std::map<std::string, std::string> ParseMetadata(char** mdata, BDAPLoader& datab
 		const auto attribute = row[0];
 		const auto keyName = row[1];
 		const auto keyMask = row[2];
-		//		cionst bool isRegex = (row[2] == "true") ? true : false;
 		const char* m = CSLFetchNameValue(mdata, keyName.c_str());
 
 		if (m == nullptr)
@@ -310,6 +348,9 @@ std::map<std::string, std::string> ParseMetadata(char** mdata, BDAPLoader& datab
 
 bool GeoTIFFLoader::Load(const string& theInfile)
 {
+	g_failedParams = 0;
+	g_succeededParams = 0;
+
 	GDALRegister_GTiff();
 	GDALDataset* poDataset = reinterpret_cast<GDALDataset*>(GDALOpen(theInfile.c_str(), GA_ReadOnly));
 
@@ -342,12 +383,15 @@ bool GeoTIFFLoader::Load(const string& theInfile)
 			return false;
 		}
 
-		ParseTimeFromString(options.analysistime, "YYYYMMDDHH24", info);
+		std::string mask = "%Y%m%d%H";
+		if (options.analysistime.size() == 12)
+		{
+			mask += "%M";
+		}
+		ParseAnalysisTimeFromString(options.analysistime, mask, info);
 	}
-	else
-	{
-		ReadTime(meta, info);
-	}
+
+	ReadTime(meta, info);
 
 	info.producer_id = options.process;
 	ReadAreaAndGrid(poDataset, info);
@@ -361,7 +405,6 @@ bool GeoTIFFLoader::Load(const string& theInfile)
 
 	info.ednum = 5;  // 5 --> geotiff
 	info.level2 = -1;
-	info.timeUnit = 1;  // hour
 
 	set<string> analyzeTables;
 
