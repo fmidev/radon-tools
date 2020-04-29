@@ -488,7 +488,7 @@ bool NetCDFLoader::Load(const string& theInfile)
 
 		ss.str("");
 		ss << "UPDATE as_grid SET record_count = 1 WHERE schema_name = '" << tokens[0] << "' AND partition_name = '"
-		   << tokens[1] << "' AND analysis_time = to_timestamp('" + tokens[2] + "', 'yyyymmddh24miss')";
+		   << tokens[1] << "' AND analysis_time = to_timestamp('" + tokens[2] + "', 'yyyymmddhh24miss')";
 
 		if (options.verbose)
 		{
