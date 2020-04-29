@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.27
+Version:        20.4.29
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -102,6 +102,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-1.fmi
+- Fix update of as_grid for netcdf/geotiff
 * Mon Apr 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.27-1.fmi
 - Fix bug that caused early exit
 * Fri Apr 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.24-1.fmi
