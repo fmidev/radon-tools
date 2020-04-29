@@ -429,9 +429,9 @@ def CreatePartitioningTrigger(options, producerinfo, element):
 CREATE OR REPLACE FUNCTION %s_partitioning_f()
 RETURNS TRIGGER AS $$
 DECLARE
-	analysistime varchar(10);
+	analysistime varchar(12);
 BEGIN
-	analysistime := to_char(NEW.analysis_time, 'yyyymmddhh24');
+	analysistime := to_char(NEW.analysis_time, 'yyyymmddhh24mi');
 """ % (table_name)
 
 	partitions = ListPartitions(options, producerinfo, table_name)
@@ -443,7 +443,7 @@ BEGIN
 
 		if element['partitioning_period'] == "ANALYSISTIME":
 			for partition_name in partitions:
-				analysis_time = partition_name[-10:]
+				analysis_time = partition_name.split('_')[2]
 
 				ifelsif = "ELSIF"
 
@@ -474,7 +474,6 @@ BEGIN
 					period = partition_name[-8:]
 					period_start = datetime.datetime.strptime(period, '%Y%m%d')
 					delta = datetime.timedelta(days=1)
-
 
 				period_stop = period_start + delta
 
