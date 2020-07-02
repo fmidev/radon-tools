@@ -13,7 +13,7 @@
 #include <util.h>
 
 grid_to_radon::Options options;
-himan::logger logr("grid_to_radon");
+static himan::logger logr("grid_to_radon");
 
 bool parse_options(int argc, char* argv[])
 {

@@ -56,10 +56,11 @@ bool grid_to_radon::common::CheckDirectoryStructure(const boost::filesystem::pat
 
 	if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
 	{
-		printf(
+		himan::logger logr("common");
+		logr.Error(
 		    "File path must include analysistime and producer id "
-		    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib', got file '%s')\n",
-		    pathname.string().c_str());
+		    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib', got file '" +
+		    pathname.string() + "'");
 		return false;
 	}
 	return true;
@@ -108,7 +109,7 @@ void grid_to_radon::common::SaveSSStateInformation(std::shared_ptr<himan::config
                                                    std::set<std::string>& ssStateInformation,
                                                    std::shared_ptr<himan::plugin::radon>& r)
 {
-	const auto base_date = info->Time().OriginDateTime().String("%Y%m%d%H");
+	const auto base_date = info->Time().OriginDateTime().String("%Y-%m-%d %H:%M:%S");
 
 	std::string tableName;
 
@@ -124,8 +125,8 @@ void grid_to_radon::common::SaveSSStateInformation(std::shared_ptr<himan::config
 
 	std::stringstream ss;
 	ss << info->Producer().Id() << "/" << config->TargetGeomName() << "/" << info->Time().OriginDateTime().String()
-	   << "/" << info->Time().Step().String("%h:%M:%S") << "/" << static_cast<std::string>(info->ForecastType()) << "/"
-	   << tableName;
+	   << "/" << info->Time().Step().String("%h:%02M:%02S") << "/" << info->ForecastType().Type() << "/"
+	   << info->ForecastType().Value() << "/" << tableName;
 
 	{
 		std::lock_guard<std::mutex> lock(ssMutex);
@@ -152,7 +153,7 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 		ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
 		      "forecast_type_value, table_name) VALUES ("
 		   << tokens[0] << ", (SELECT id FROM geom WHERE name = '" << tokens[1] << "'), "
-		   << "'" << tokens[2] << "', " << tokens[3] << ", " << tokens[4] << ", " << tokens[5] << ", "
+		   << "'" << tokens[2] << "', '" << tokens[3] << "'::interval, " << tokens[4] << ", " << tokens[5] << ", "
 		   << "'" << tokens[6] << "')";
 
 		logr.Debug("Updating ss_state for " + ssInfo);
@@ -171,11 +172,11 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 			try
 			{
 				ss.str("");
-				ss << "UPDATE ss_state SET last_updated = now() WHERE "
+				ss << "UPDATE ss_state SET last_updated = now(), table_name = '" + tokens[6] + "' WHERE "
 				   << "producer_id = " << tokens[0] << " AND "
-				   << "geometry_id = " << tokens[1] << " AND "
+				   << "geometry_id = (SELECT id FROM geom WHERE name = '" << tokens[1] << "') AND "
 				   << "analysis_time = '" << tokens[2] << "' AND "
-				   << "forecast_period = " << tokens[3] << " AND "
+				   << "forecast_period = '" << tokens[3] << "' AND "
 				   << "forecast_type_id = " << tokens[4] << " AND "
 				   << "forecast_type_value = " << tokens[5];
 
@@ -183,7 +184,7 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 			}
 			catch (const pqxx::pqxx_exception& ee)
 			{
-				logr.Error("Updating ss_state information failed");
+				logr.Error("Updating ss_state information failed: " + std::string(e.what()));
 			}
 		}
 	}

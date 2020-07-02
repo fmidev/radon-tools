@@ -26,15 +26,17 @@ extern void UpdateSSState(const std::set<std::string>& ssStateInformation);
 extern std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<double>>> ReadMetadata(
     const NFmiGribMessage& message);
 
+static himan::logger logr("s3gribloader");
+
 S3Status responsePropertiesCallback(const S3ResponseProperties* properties, void* callbackData)
 {
-	printf("File size is %ld bytes\n", properties->contentLength);
+	logr.Info("File size is " + std::to_string(properties->contentLength) + " bytes");
 	FILE** fp = reinterpret_cast<FILE**>(callbackData);
 	(*fp) = fmemopen(NULL, properties->contentLength, "rb+");
 
 	if ((*fp) == NULL)
 	{
-		printf("fmemopen failed\n");
+		logr.Fatal("fmemopen failed");
 		exit(1);
 	}
 
@@ -66,7 +68,7 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 	NFmiGrib reader;
 	if (!reader.Open(std::move(fp)))
 	{
-		printf("Failed to open file from memory\n");
+		logr.Error("Failed to open file from memory");
 		return false;
 	}
 
@@ -134,13 +136,10 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 #endif
 		dbtimer.Stop();
 
-		if (options.verbose)
-		{
-			printf(
-			    "Thread 0: Message %d parameter %s at level %s forecast type %s database time=%ld, other = % ld ms\n",
-			    messageNo, info->Param().Name().c_str(), static_cast<std::string>(info->Level()).c_str(),
-			    static_cast<std::string>(info->ForecastType()).c_str(), dbtimer.GetTime(), othertimer.GetTime());
-		}
+		logr.Debug("Message " + std::to_string(messageNo) + " parameter " + info->Param().Name() + " at level " +
+		           static_cast<std::string>(info->Level()) + " forecast type " +
+		           static_cast<std::string>(info->ForecastType()) + " database time=" +
+		           std::to_string(dbtimer.GetTime()) + ", other=" + std::to_string(othertimer.GetTime()) + " ms");
 	}
 	return true;
 }

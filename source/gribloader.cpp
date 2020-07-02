@@ -41,9 +41,9 @@ bool grid_to_radon::GribLoader::Load(const string& theInfile)
 		t.join();
 	}
 
-	cout << "Success with " << g_success << " fields, "
-	     << "failed with " << g_failed << " fields, "
-	     << "skipped " << g_skipped << " fields" << std::endl;
+	himan::logger logr("gribloader");
+	logr.Info("Success with " + to_string(g_success) + " fields, " + "failed with " + to_string(g_failed) +
+	          " fields, " + "skipped " + to_string(g_skipped) + " fields");
 
 	grid_to_radon::common::UpdateSSState(ssStateInformation);
 
@@ -75,7 +75,8 @@ bool grid_to_radon::GribLoader::Load(const string& theInfile)
 
 void grid_to_radon::GribLoader::Run(short threadId)
 {
-	printf("Thread %d started\n", threadId);
+	himan::logger logr("gribloader#" + to_string(threadId));
+	logr.Info("Started");
 
 	NFmiGribMessage myMessage;
 	unsigned int messageNo;
@@ -85,7 +86,7 @@ void grid_to_radon::GribLoader::Run(short threadId)
 		Process(myMessage, threadId, messageNo);
 	}
 
-	printf("Thread %d stopped\n", threadId);
+	logr.Info("Stopped");
 }
 
 bool grid_to_radon::GribLoader::DistributeMessages(NFmiGribMessage& newMessage, unsigned int& messageNo)
@@ -120,8 +121,19 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 
 	if (gribpl->CreateInfoFromGrib<double>(opts, false, true, info, message, false) == false)
 	{
-		throw std::runtime_error("Failed to create info");
+		throw himan::kFileMetaDataNotFound;
 	}
+
+	auto radonpl = GET_PLUGIN(radon);
+	const auto geom = std::dynamic_pointer_cast<himan::regular_grid>(info->Grid());
+	if (!geom)
+	{
+		himan::Abort();
+	}
+
+	auto geomdef = radonpl->RadonDB().GetGeometryDefinition(
+	    geom->Ni(), geom->Nj(), geom->FirstPoint().Y(), geom->FirstPoint().X(), geom->Di(), geom->Dj(), geom->Type());
+	config->TargetGeomName(geomdef["name"]);
 
 	return make_pair(config, info);
 }
@@ -142,6 +154,7 @@ void WriteMessage(NFmiGribMessage& message, const std::string& theFileName)
 void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId, unsigned int messageNo)
 {
 	himan::timer msgtimer(true);
+	himan::logger logr("gribloader#" + to_string(threadId));
 
 	try
 	{
@@ -157,7 +170,7 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 		WriteMessage(message, theFileName);
 
 		tmr.Stop();
-		size_t writeTime = tmr.GetTime();
+		const size_t writeTime = tmr.GetTime();
 
 		tmr.Start();
 
@@ -171,25 +184,47 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 		finfo.file_location = theFileName;
 		finfo.file_type = static_cast<himan::HPFileType>(message.Edition());
 
-		grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation);
-
-		tmr.Stop();
-		size_t databaseTime = tmr.GetTime();
-
-		g_success++;
-
-		if (options.verbose)
+		if (info->Param().Name() != "XX-X" &&
+		    grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation))
 		{
+			tmr.Stop();
+			const size_t databaseTime = tmr.GetTime();
+
+			g_success++;
+			msgtimer.Stop();
+
 			const size_t messageTime = msgtimer.GetTime();
 			const size_t otherTime = messageTime - writeTime - databaseTime;
 
-			printf(
-			    "Thread %d: Message %d parameter %s at level %s forecast type %s write time=%ld, database time=%ld, "
-			    "other=%ld, "
-			    "total=%ld ms\n",
-			    threadId, messageNo, info->Param().Name().c_str(), static_cast<string>(info->Level()).c_str(),
-			    static_cast<string>(info->ForecastType()).c_str(), writeTime, databaseTime, otherTime, messageTime);
+			logr.Debug("Message " + to_string(messageNo) + " parameter " + info->Param().Name() + " at level " +
+			           static_cast<string>(info->Level()) + " forecast type " +
+			           static_cast<string>(info->ForecastType()) + " write time=" + to_string(writeTime) +
+			           ", database time=" + to_string(databaseTime) + ", other=" + to_string(otherTime) +
+			           " total=" + to_string(messageTime) + " ms");
 		}
+		else
+		{
+			g_failed++;
+		}
+	}
+	catch (const himan::HPExceptionType& e)
+	{
+		g_failed++;
+
+		if (e != himan::kFileMetaDataNotFound)
+		{
+			himan::Abort();
+		}
+	}
+	catch (const std::invalid_argument& e)
+	{
+		logr.Error(e.what());
+		g_failed++;
+	}
+	catch (const std::exception& e)
+	{
+		logr.Error(e.what());
+		himan::Abort();
 	}
 	catch (...)
 	{
