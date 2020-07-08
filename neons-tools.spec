@@ -6,23 +6,23 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.29
-Release:        2%{dist}.fmi
-Summary:        Tools for radon (used to be neons) environment
+Version:        20.7.8
+Release:        1%{dist}.fmi
+Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.3.18
-BuildRequires:  libfmidb-devel >= 20.4.6
+BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
-Requires:	libfmidb >= 20.4.6
+Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 18.5.3
 Requires:	netcdf-cxx
 Requires:	libpqxx
@@ -102,6 +102,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jul  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.8-1.fmi
+- New fmidb
 * Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-2.fmi
 - Proper time mask handling for geotiff
 * Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-1.fmi
