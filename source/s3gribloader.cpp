@@ -100,6 +100,7 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 			finfo.offset = reader.Offset(messageNo);
 			finfo.length = static_cast<unsigned long>(reader.Message().GetLongKey("totalLength"));
 			finfo.file_location = plainFilename;
+			finfo.file_type = static_cast<himan::HPFileType>(reader.Message().Edition());
 
 			grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation);
 
