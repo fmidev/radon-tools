@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python2
 # interactive tool to automatically create geometries from grib files
 
 import sys
