@@ -20,7 +20,7 @@ std::string grid_to_radon::common::CanonicalFileName(const std::string& inputFil
 	fs::path pathname(theFileName);
 	pathname = canonical(fs::system_complete(pathname));
 
-	if (options.directory_structure_check && CheckDirectoryStructure(pathname))
+	if (options.directory_structure_check && !CheckDirectoryStructure(pathname))
 	{
 		throw std::runtime_error("Directory structure check failed");
 	}
