@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.4.20
+Version:        20.7.15
 Release:        1%{dist}.fmi
 Summary:        Tools for radon (used to be neons) environment
 Group:          Applications/System
@@ -19,10 +19,13 @@ BuildRequires:  libfmidb-devel >= 20.4.6
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
+BuildRequires:  himan-lib-devel >= 20.7.15
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.4.6
 Requires:	libfminc >= 18.5.3
+Requires:	himan-lib >= 20.7.15
+Requires:	himan-plugins >= 20.7.13
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -35,13 +38,17 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
+BuildRequires:	gdal-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
+Requires:	gdal-libs
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
+BuildRequires:	gdal30-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
+Requires:	gdal30-libs
 
 %endif
 
@@ -100,6 +107,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jul 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.15-1.fmi
+- New version reusing himan components
 * Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
 - boost 1.69
 * Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi
