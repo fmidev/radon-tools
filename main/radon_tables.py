@@ -15,6 +15,7 @@ import shutil
 import time
 import logging
 import math
+import subprocess
 from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
@@ -552,8 +553,8 @@ def DropFromAsGrid(options, producer, row):
 	files = []
 
 	if options['unlink']:
-		query = "SELECT distinct file_location FROM %s.%s " % (schema_name, partition_name)
-		query += " WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s"
+		query = f"SELECT file_location,file_protocol_id FROM {schema_name}.{partition_name} "
+		query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2"
 
 		if options['show_sql']:
 			print(cur.mogrify(query, (geometry_id, analysis_time, producer['id'])))
@@ -585,24 +586,39 @@ def DropFromAsGrid(options, producer, row):
 
 	for row in files:
 		filename = row[0]
-		if not os.path.isfile(filename):
-			logging.error("File %s does not exist" % (filename,))
-			continue
+		fileprotocol = int(row[1])
+		if fileprotocol == 1:
+			# normal file
+			if not os.path.isfile(filename):
+				logging.error("File %s does not exist" % (filename,))
+				continue
 
-		count += 1
+			count += 1
 
-		if not options['dry_run']:
-			try:
-				os.remove(filename)
-			except OSError as e:
-				print(e)
+			if not options['dry_run']:
+				try:
+					os.remove(filename)
+				except OSError as e:
+					print(e)
+
+		elif fileprotocol == 2:
+			# s3
+			# use external program to delete file, although the boto3 library
+			# could be imported to this script as well
+
+			if not options['dry_run']:
+				subprocess.run(["aws", "s3", "rm", f"s3://{filename}"])
+
+			count += 1
+
 
 	stop = timer()
 	logging.info("Removed %d files in %.1f seconds" % (count, (stop-start)))
 
 	directories = []
 	for f in files:
-		directories.append(os.path.dirname(f[0]))
+		if f[1] == 1:
+			directories.append(os.path.dirname(f[0]))
 
 	directories = list(set(directories))
 
