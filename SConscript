@@ -8,9 +8,9 @@ import os
 env.Program(target = 'grid_to_radon', 
             source = [
                 'main/grid_to_radon.cpp',
-                'source/BDAPLoader.cpp',
-                'source/NetCDFLoader.cpp',
-                'source/GeoTIFFLoader.cpp',
-                'source/GribLoader.cpp',
-                'source/S3GribLoader.cpp'
+                'source/netcdfloader.cpp',
+                'source/geotiffloader.cpp',
+                'source/gribloader.cpp',
+                'source/s3gribloader.cpp',
+                'source/common.cpp'
             ])

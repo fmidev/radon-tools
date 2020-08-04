@@ -1,58 +1,52 @@
 #ifndef _OPTIONS_
 #define _OPTIONS_
 
+#include <string>
+#include <vector>
+
+namespace grid_to_radon
+{
 struct Options
 {
 	Options()
-	    : verbose(false),
-	      netcdf(false),
+	    : netcdf(false),
 	      grib(false),
-	      index(false),
 	      s3(false),
-	      center(86),
-	      process(0),
+	      producer(0),
 	      analysistime(""),
 	      infile(),
-	      parameters(""),
-	      keys(
-	          "level:i,indicatorOfParameter:i,centre:i,date:i,generatingProcessIdentifier:i,indicatorOfTypeOfLevel:i,"
-	          "step:i,time:i"),
 	      level(""),
 	      use_level_value(false),
 	      use_inverse_level_value(false),
 	      max_failures(-1),
 	      max_skipped(-1),
 	      dry_run(false),
-	      leveltypes(""),
 	      threadcount(2),
 	      ss_state_update(true),
 	      in_place_insert(false),
-	      directory_structure_check(true)
+	      directory_structure_check(true),
+	      ss_table_name("")
 	{
 	}
 
-	bool verbose;  // -v
-	bool netcdf;   // -n
-	bool grib;     // -g
-	bool index;
+	bool netcdf;               // -n
+	bool grib;                 // -g
 	bool s3;                   // -s
-	unsigned int center;       // -c
-	unsigned int process;      // -p
+	unsigned int producer;     // -p
 	std::string analysistime;  // -a
 	std::vector<std::string> infile;
-	std::string parameters;  // -P
-	std::string keys;
 	std::string level;               // -L
 	bool use_level_value;            // --use-level-value
 	bool use_inverse_level_value;    // --use-inverse-level-value
 	int max_failures;                // --max-failures
 	int max_skipped;                 // --max-skipped
 	bool dry_run;                    // -d;
-	std::string leveltypes;          // -l
 	short threadcount;               // -j
 	bool ss_state_update;            // -X
 	bool in_place_insert;            // -I
 	bool directory_structure_check;  // --no-directory-structure-check
+	std::string ss_table_name;       // --smartmet-server-table-name
 };
+}
 
 #endif

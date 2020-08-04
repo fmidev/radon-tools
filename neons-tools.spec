@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.7.29
+Version:        20.8.3
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -20,10 +20,15 @@ BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
+BuildRequires:  himan-lib >= 20.7.15
+BuildRequires:  himan-lib-devel >= 20.7.15
+BuildRequires:  himan-plugins-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 18.5.3
+Requires:	himan-lib >= 20.7.15
+Requires:	himan-plugins >= 20.7.13
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -37,13 +42,17 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
+BuildRequires:	gdal-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
+Requires:	gdal-libs
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
+BuildRequires:	gdal30-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
+Requires:	gdal30-libs
 
 %endif
 
@@ -102,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.3-1.fmi
+- Major refactoring using himan components
 * Wed Jul 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.29-1.fmi
 - Add support for removing files from s3
 * Wed Jul  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.8-1.fmi
