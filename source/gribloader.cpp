@@ -131,8 +131,22 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 		himan::Abort();
 	}
 
-	auto geomdef = radonpl->RadonDB().GetGeometryDefinition(
-	    geom->Ni(), geom->Nj(), geom->FirstPoint().Y(), geom->FirstPoint().X(), geom->Di(), geom->Dj(), geom->Type());
+	// FirstPoint always returns "normal" latitude and longitude, but in radon we have
+	// rotated coordinates as the first point for rotated_latitude_longitude
+
+	const himan::point fp =
+	    (geom->Type() == himan::kRotatedLatitudeLongitude)
+	        ? dynamic_pointer_cast<himan::rotated_latitude_longitude_grid>(geom)->Rotate(geom->FirstPoint())
+	        : geom->FirstPoint();
+
+	auto geomdef = radonpl->RadonDB().GetGeometryDefinition(geom->Ni(), geom->Nj(), fp.Y(), fp.X(), geom->Di(),
+	                                                        geom->Dj(), geom->Type());
+
+	if (geomdef.empty())
+	{
+		throw himan::kFileMetaDataNotFound;
+	}
+
 	config->TargetGeomName(geomdef["name"]);
 
 	return make_pair(config, info);
