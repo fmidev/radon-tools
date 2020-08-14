@@ -205,10 +205,9 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 
 #ifdef S3_DEFAULT_REGION
 
-	std::vector<std::string> tokens;
 	const char* region = nullptr;
 
-	if (itsHost.find("amazonaws") != std::string::npos)
+	if (std::string(itsHost).find("amazonaws") != std::string::npos)
 	{
 		// extract region name from host name, assuming
 		// "s3.us-east-1.amazonaws.com"
