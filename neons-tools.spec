@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.12
+Version:        20.8.17
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -21,7 +21,7 @@ BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
 BuildRequires:  himan-lib >= 20.7.15
-BuildRequires:  himan-lib-devel >= 20.7.15
+BuildRequires:  himan-lib-devel >= 20.8.17
 BuildRequires:  himan-plugins-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.17-1.fmi
+- Do not extract region from S3 hostname for non-AWS hosts
 * Wed Aug 12 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.12-1.fmi
 - Fix geometry query for rotated areas
 * Mon Aug  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.3-1.fmi
