@@ -125,7 +125,7 @@ void grid_to_radon::common::SaveSSStateInformation(std::shared_ptr<himan::config
 
 	std::stringstream ss;
 	ss << info->Producer().Id() << "/" << config->TargetGeomName() << "/" << info->Time().OriginDateTime().String()
-	   << "/" << info->Time().Step().String("%h:%02M:%02S") << "/" << info->ForecastType().Type() << "/"
+	   << "/" << info->Time().Step().String("%h:%02M:%02S") << "/" << static_cast<int> (info->ForecastType().Type()) << "/"
 	   << info->ForecastType().Value() << "/" << tableName;
 
 	{

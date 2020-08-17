@@ -205,17 +205,19 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 
 #ifdef S3_DEFAULT_REGION
 
-	// extract region name from host name, assuming aws
-	// s3.us-east-1.amazonaws.com
-	boost::split(tokens, itsHost, boost::is_any_of("."));
+	const char* region = nullptr;
 
-	if (tokens.size() == 3)
+	if (std::string(itsHost).find("amazonaws") != std::string::npos)
 	{
-		logr.Error("Hostname does not follow pattern s3.<regionname>.amazonaws.com");
-		return;
-	}
+		// extract region name from host name, assuming
+		// "s3.us-east-1.amazonaws.com"
+		boost::split(tokens, itsHost, boost::is_any_of("."));
 
-	const std::string region = tokens[1];
+		if (tokens.size() == 4)
+		{
+			region = tokens[1].c_str();
+		}
+	}
 
 	// libs3 boilerplate
 
@@ -230,7 +232,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 		itsAccessKey,
 		itsSecretKey,
 		itsSecurityToken,
-		region.c_str()
+		region
 	};
 #else
 	S3BucketContext bucketContext =
