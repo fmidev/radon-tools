@@ -346,8 +346,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 			}
 			else
 			{
-				auto levname = boost::to_upper_copy(options.level);
-				lvl = himan::level(himan::HPStringToLevelType.at(levname), 0);
+				lvl = himan::level(himan::HPStringToLevelType.at(boost::to_lower_copy(options.level)), 0);
 			}
 
 			if (!reader.HasDimension("z"))

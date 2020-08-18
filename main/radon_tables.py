@@ -553,8 +553,8 @@ def DropFromAsGrid(options, producer, row):
 	files = []
 
 	if options['unlink']:
-		query = f"SELECT file_location,file_protocol_id FROM {schema_name}.{partition_name} "
-		query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2"
+		query = f"SELECT file_location,file_protocol_id,file_server FROM {schema_name}.{partition_name} "
+		query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2,3"
 
 		if options['show_sql']:
 			print(cur.mogrify(query, (geometry_id, analysis_time, producer['id'])))
@@ -562,6 +562,8 @@ def DropFromAsGrid(options, producer, row):
 		cur.execute(query, (geometry_id, analysis_time, producer['id']))
 
 		files = cur.fetchall()
+
+		logging.info(f"Found {len(files)} distinct files to remove")
 
 	# First delete rows in ss_state, then remove files in disk, finally drop table partition
 
@@ -601,13 +603,24 @@ def DropFromAsGrid(options, producer, row):
 				except OSError as e:
 					print(e)
 
+			else:
+				logging.debug(f"rm {filename}")
 		elif fileprotocol == 2:
 			# s3
 			# use external program to delete file, although the boto3 library
 			# could be imported to this script as well
 
+			file_server = row[2]
+
+			cmd = None
+			if file_server.find('amazonaws.com') != -1:
+				cmd = ["aws", "s3", "rm", f"s3://{filename}"]
+			else:
+				cmd = ["aws", f"--endpoint=https://{file_server}", "s3", "rm", f"s3://{filename}"]
 			if not options['dry_run']:
-				subprocess.run(["aws", "s3", "rm", f"s3://{filename}"])
+				subprocess.run(cmd)
+			else:
+				logging.debug(' '.join(cmd))
 
 			count += 1
 

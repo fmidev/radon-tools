@@ -210,11 +210,11 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 			const size_t messageTime = msgtimer.GetTime();
 			const size_t otherTime = messageTime - writeTime - databaseTime;
 
-			logr.Debug("Message " + to_string(messageNo) + " parameter " + info->Param().Name() + " at level " +
-			           static_cast<string>(info->Level()) + " forecast type " +
-			           static_cast<string>(info->ForecastType()) + " write time=" + to_string(writeTime) +
-			           ", database time=" + to_string(databaseTime) + ", other=" + to_string(otherTime) +
-			           " total=" + to_string(messageTime) + " ms");
+			logr.Debug("Message " + to_string(messageNo) + " step " + static_cast<string>(info->Time().Step()) +
+			           " parameter " + info->Param().Name() + " at level " + static_cast<string>(info->Level()) +
+			           " forecast type " + static_cast<string>(info->ForecastType()) +
+			           " write time=" + to_string(writeTime) + ", database time=" + to_string(databaseTime) +
+			           ", other=" + to_string(otherTime) + " total=" + to_string(messageTime) + " ms");
 		}
 		else
 		{
@@ -230,15 +230,10 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 			himan::Abort();
 		}
 	}
-	catch (const std::invalid_argument& e)
-	{
-		logr.Error(e.what());
-		g_failed++;
-	}
 	catch (const std::exception& e)
 	{
 		logr.Error(e.what());
-		himan::Abort();
+		g_failed++;
 	}
 	catch (...)
 	{
