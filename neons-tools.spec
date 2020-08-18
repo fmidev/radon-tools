@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.17
+Version:        20.8.18
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Aug 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.18-1.fmi
+- Fix for handling command line argument -L
 * Mon Aug 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.17-1.fmi
 - Do not extract region from S3 hostname for non-AWS hosts
 * Wed Aug 12 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.12-1.fmi
