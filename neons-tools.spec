@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.18
+Version:        20.8.19
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -20,15 +20,15 @@ BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
-BuildRequires:  himan-lib >= 20.7.15
-BuildRequires:  himan-lib-devel >= 20.8.17
+BuildRequires:  himan-lib >= 20.8.19
+BuildRequires:  himan-lib-devel >= 20.8.19
 BuildRequires:  himan-plugins-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 18.5.3
-Requires:	himan-lib >= 20.7.15
-Requires:	himan-plugins >= 20.7.13
+Requires:	himan-lib >= 20.8.19
+Requires:	himan-plugins >= 20.8.19
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Aug 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.19-1.fmi
+- Change in himan::util::Split()
 * Tue Aug 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.18-1.fmi
 - Fix for handling command line argument -L
 * Mon Aug 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.17-1.fmi
