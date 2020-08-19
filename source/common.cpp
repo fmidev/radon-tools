@@ -147,7 +147,7 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 
 	for (const std::string& ssInfo : ssStateInformation)
 	{
-		std::vector<std::string> tokens = himan::util::Split(ssInfo, "/", false);
+		std::vector<std::string> tokens = himan::util::Split(ssInfo, "/");
 
 		std::stringstream ss;
 		ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
