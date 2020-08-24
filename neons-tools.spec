@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.19
+Version:        20.8.24
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.24-1.fmi
+- Fix for handling command line options for file type
 * Wed Aug 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.19-1.fmi
 - Change in himan::util::Split()
 * Tue Aug 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.18-1.fmi
