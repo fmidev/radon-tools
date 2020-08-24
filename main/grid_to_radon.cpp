@@ -158,7 +158,7 @@ int main(int argc, char** argv)
 
 		auto type = himan::util::FileType(infile);
 
-		if (type == himan::kNetCDF)
+		if (type == himan::kNetCDF || options.netcdf)
 		{
 			logr.Debug("File '" + infile + "' is NetCDF");
 
@@ -178,7 +178,7 @@ int main(int argc, char** argv)
 				retval = 1;
 			}
 		}
-		else if (type == himan::kGRIB1 || type == himan::kGRIB2 || type == himan::kGRIB)
+		else if (type == himan::kGRIB1 || type == himan::kGRIB2 || type == himan::kGRIB || options.grib)
 		{
 			logr.Debug("File '" + infile + "' is GRIB");
 
@@ -216,6 +216,12 @@ int main(int argc, char** argv)
 				retval = 1;
 			}
 		}
+		else
+		{
+			logr.Error("Unrecognized file type for '" + infile + "'");
+			retval = 1;
+		}
+
 		// early exit if needed
 		if (retval != 0)
 		{
