@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.24
+Version:        20.8.25
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -27,7 +27,7 @@ Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 18.5.3
-Requires:	himan-lib >= 20.8.19
+Requires:	himan-lib >= 20.8.25
 Requires:	himan-plugins >= 20.8.19
 Requires:	netcdf-cxx
 Requires:	libpqxx
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Aug 25 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.25-1.fmi
+- Fix for netcdf/grib file extensions
 * Mon Aug 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.24-1.fmi
 - Fix for handling command line options for file type
 * Wed Aug 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.19-1.fmi
