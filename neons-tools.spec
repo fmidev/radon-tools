@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.25
+Version:        20.8.27
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-1.fmi
+- Support stereographic projection with netcdf
 * Tue Aug 25 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.25-1.fmi
 - Fix for netcdf/grib file extensions
 * Mon Aug 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.24-1.fmi
