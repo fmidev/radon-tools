@@ -81,13 +81,6 @@ std::unique_ptr<himan::regular_grid> ReadAreaAndGrid(NFmiNetCDF& reader)
 
 	const himan::point first(lon, lat);
 
-	/*
-	    if (first.Y() == static_cast<int>(kFloatMissing))
-	    {
-	        std::cerr << "Unable to determine first grid point coordinates" << std::endl;
-	    }
-	*/
-
 	const double di = reader.XResolution();
 	const double dj = reader.YResolution();
 
@@ -96,25 +89,12 @@ std::unique_ptr<himan::regular_grid> ReadAreaAndGrid(NFmiNetCDF& reader)
 		return std::unique_ptr<himan::latitude_longitude_grid>(new himan::latitude_longitude_grid(
 		    himan::kBottomLeft, first, ni, nj, di, dj, himan::earth_shape<double>()));
 	}
-	/*
-	    else if (reader.Projection() == "rotated_latitude_longitude")
-	    {
-	        info.projection = "rll";
-	        info.gridtype = 10;
-	    }
-
-	    else if (reader.Projection() == "polar_stereographic")
-	    {
-	        info.projection = "polster";
-	        info.gridtype = 5;
-	    }
-
-	    else if (reader.Projection() == "lambert_conformal_conic")
-	    {
-	        info.projection = "lcc";
-	        info.gridtype = 3;
-	    }
-	*/
+	else if (reader.Projection() == "polar_stereographic")
+	{
+		return std::unique_ptr<himan::stereographic_grid>(
+		    new himan::stereographic_grid(himan::kBottomLeft, first, ni, nj, di, dj, reader.Orientation(),
+		                                  himan::earth_shape<double>(6371220.), false));
+	}
 	else
 	{
 		throw std::runtime_error("Unsupported projection: " + reader.Projection());
