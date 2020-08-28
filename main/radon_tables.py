@@ -17,6 +17,8 @@ import logging
 import math
 import subprocess
 import dotenv
+import boto3
+import botocore
 from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
@@ -169,9 +171,21 @@ def SourceEnv(options, hostname, bucketname):
 		logging.error(f"File {envfile} does not exist")
 		return False
 
-	dotenv.load_dotenv(dotenv_path=envfile)
+	dotenv.load_dotenv(dotenv_path=envfile, override=True)
 	logging.debug(f"Sourced file {envfile}")
 	return True
+
+
+def CreateClient(hostname):
+
+	session = boto3.session.Session()
+
+	return session.client(
+	    service_name='s3',
+	    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+	    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+	    endpoint_url=f"https://{hostname}"
+	)
 
 
 def GeomIds(producer_id, class_id, partitioning_period = None):
@@ -605,6 +619,11 @@ def DropFromAsGrid(options, producer, row):
 	start = timer()
 
 	last_server = None
+	client = None
+
+	# disable boto3 internal logging
+	logging.getLogger('boto3').setLevel(logging.CRITICAL)
+	logging.getLogger('botocore').setLevel(logging.CRITICAL)
 
 	for row in files:
 		filename = row[0]
@@ -625,31 +644,38 @@ def DropFromAsGrid(options, producer, row):
 
 			else:
 				logging.debug(f"rm {filename}")
+
 		elif fileprotocol == 2:
-			# s3
-			# use external program to delete file, although the boto3 library
-			# could be imported to this script as well
+			# use boto3 library to delete files, because command line line tool 'aws' is
+			# way too slow
+
+			filename = filename[1:] if filename[0] == '/' else filename
+			bucket = filename.split('/')[0]
+			key = '/'.join(filename.split('/')[1:])
 
 			file_server = row[2]
+
 			if last_server != file_server and options['s3_credentials_file'] is not None:
-				bucket = filename.split('/')[0]
 
 				if not SourceEnv(options, file_server, bucket):
 					continue
-				last_server = file_server
 
-			cmd = None
-			if file_server.find('amazonaws.com') != -1:
-				cmd = ["aws", "--cli-read-timeout=3", "--cli-connect-timeout=3", "s3", "rm", f"s3://{filename}"]
-			else:
-				cmd = ["aws", "--cli-read-timeout=3", "--cli-connect-timeout=3", f"--endpoint=https://{file_server}", "s3", "rm", f"s3://{filename}"]
+				last_server = file_server
+				client = None
+
+			if client is None:
+				client = CreateClient(file_server)
 
 			if not options['dry_run']:
-				subprocess.run(cmd)
-			else:
-				logging.debug(' '.join(cmd))
+				try:
+					client.delete_object(Bucket=bucket, Key=key)
+					count += 1
 
-			count += 1
+				except botocore.exceptions.ClientError as e:
+					logging.error("File removal failed with code %s" % e.response['Error']['Code'])
+
+			else:
+				logging.debug(f"rm s3://{bucket}/{key}")
 
 
 	stop = timer()
