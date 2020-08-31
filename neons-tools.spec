@@ -6,8 +6,8 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.27
-Release:        2%{dist}.fmi
+Version:        20.8.31
+Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug 31 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.31-1.fmi
+- Use boto3 for removing files from s3
 * Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-2.fmi
 - Fix for forecast_type_value @ss_state
 * Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-1.fmi
