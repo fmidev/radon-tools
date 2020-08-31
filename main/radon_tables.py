@@ -16,6 +16,9 @@ import time
 import logging
 import math
 import subprocess
+import dotenv
+import boto3
+import botocore
 from dateutil.relativedelta import relativedelta
 from timeit import default_timer as timer
 
@@ -82,6 +85,11 @@ def ReadCommandLine(argv):
 					  action="store_true",
 					  default=False,
 					  help="Physically unlink removed files")
+
+	parser.add_option("--s3-credentials-file",
+					  action="store",
+					  type="string",
+					  help="Full filename of S3 credentials file. Can be templated with {hostname} and {bucketname}. File consists of KEY=VALUE pairs")
 
 	databasegroup.add_option("--host",
 					action="store",
@@ -154,6 +162,30 @@ def ReadCommandLine(argv):
 		options.show_sql = True
 
 	return (vars(options),arguments)
+
+
+def SourceEnv(options, hostname, bucketname):
+	envfile = options['s3_credentials_file'].replace('{hostname}', hostname).replace('{bucketname}', bucketname)
+
+	if not os.path.isfile(envfile):
+		logging.error(f"File {envfile} does not exist")
+		return False
+
+	dotenv.load_dotenv(dotenv_path=envfile, override=True)
+	logging.debug(f"Sourced file {envfile}")
+	return True
+
+
+def CreateClient(hostname):
+
+	session = boto3.session.Session()
+
+	return session.client(
+	    service_name='s3',
+	    aws_access_key_id=os.environ['AWS_ACCESS_KEY_ID'],
+	    aws_secret_access_key=os.environ['AWS_SECRET_ACCESS_KEY'],
+	    endpoint_url=f"https://{hostname}"
+	)
 
 
 def GeomIds(producer_id, class_id, partitioning_period = None):
@@ -554,7 +586,7 @@ def DropFromAsGrid(options, producer, row):
 
 	if options['unlink']:
 		query = f"SELECT file_location,file_protocol_id,file_server FROM {schema_name}.{partition_name} "
-		query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2,3"
+		query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2,3 ORDER BY file_server"
 
 		if options['show_sql']:
 			print(cur.mogrify(query, (geometry_id, analysis_time, producer['id'])))
@@ -586,6 +618,13 @@ def DropFromAsGrid(options, producer, row):
 	count = 0
 	start = timer()
 
+	last_server = None
+	client = None
+
+	# disable boto3 internal logging
+	logging.getLogger('boto3').setLevel(logging.CRITICAL)
+	logging.getLogger('botocore').setLevel(logging.CRITICAL)
+
 	for row in files:
 		filename = row[0]
 		fileprotocol = int(row[1])
@@ -605,24 +644,38 @@ def DropFromAsGrid(options, producer, row):
 
 			else:
 				logging.debug(f"rm {filename}")
+
 		elif fileprotocol == 2:
-			# s3
-			# use external program to delete file, although the boto3 library
-			# could be imported to this script as well
+			# use boto3 library to delete files, because command line line tool 'aws' is
+			# way too slow
+
+			filename = filename[1:] if filename[0] == '/' else filename
+			bucket = filename.split('/')[0]
+			key = '/'.join(filename.split('/')[1:])
 
 			file_server = row[2]
 
-			cmd = None
-			if file_server.find('amazonaws.com') != -1:
-				cmd = ["aws", "s3", "rm", f"s3://{filename}"]
-			else:
-				cmd = ["aws", f"--endpoint=https://{file_server}", "s3", "rm", f"s3://{filename}"]
-			if not options['dry_run']:
-				subprocess.run(cmd)
-			else:
-				logging.debug(' '.join(cmd))
+			if last_server != file_server and options['s3_credentials_file'] is not None:
 
-			count += 1
+				if not SourceEnv(options, file_server, bucket):
+					continue
+
+				last_server = file_server
+				client = None
+
+			if client is None:
+				client = CreateClient(file_server)
+
+			if not options['dry_run']:
+				try:
+					client.delete_object(Bucket=bucket, Key=key)
+					count += 1
+
+				except botocore.exceptions.ClientError as e:
+					logging.error("File removal failed with code %s" % e.response['Error']['Code'])
+
+			else:
+				logging.debug(f"rm s3://{bucket}/{key}")
 
 
 	stop = timer()
