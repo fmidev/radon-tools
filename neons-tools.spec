@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        20.8.27
-Release:        1%{dist}.fmi
+Release:        2%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-2.fmi
+- Fix for forecast_type_value @ss_state
 * Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-1.fmi
 - Support stereographic projection with netcdf
 * Tue Aug 25 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.25-1.fmi
