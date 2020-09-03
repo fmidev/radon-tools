@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.8.31
+Version:        20.9.3
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Sep  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.3-1.fmi
+- Logging changes for radon_tables.py
 * Mon Aug 31 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.31-1.fmi
 - Use boto3 for removing files from s3
 * Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-2.fmi
