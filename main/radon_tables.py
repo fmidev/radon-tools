@@ -679,7 +679,8 @@ def DropFromAsGrid(options, producer, row):
 
 
 	stop = timer()
-	logging.info("Removed %d files in %.1f seconds" % (count, (stop-start)))
+	if count > 0:
+		logging.info("Removed %d files in %.1f seconds" % (count, (stop-start)))
 
 	directories = []
 	for f in files:
@@ -692,7 +693,7 @@ def DropFromAsGrid(options, producer, row):
 		newdirectories = []
 		for dirname in directories:
 			if not os.path.isdir(dirname):
-				print("Directory %s does not exist" % dirname)
+				logging.debug("Directory %s does not exist" % dirname)
 				continue
 
 			if dirname == "/" or dirname == os.environ['MASALA_PROCESSED_DATA_BASE'] or dirname == os.environ['MASALA_RAW_DATA_BASE']:
