@@ -7,7 +7,7 @@
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
 Version:        20.9.3
-Release:        1%{dist}.fmi
+Release:        2%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
@@ -19,7 +19,7 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 18.8.22
 BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
-BuildRequires:  libs3-devel
+BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 20.8.19
 BuildRequires:  himan-lib-devel >= 20.8.19
 BuildRequires:  himan-plugins-devel
@@ -32,7 +32,7 @@ Requires:	himan-plugins >= 20.8.19
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
-Requires:	libs3
+Requires:	libs3 >= 4.1
 Requires:	gdal
 
 %if %{defined suse_version}
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Sep  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.3-2.fmi
+- Compile with libs3 4.1
 * Thu Sep  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.3-1.fmi
 - Logging changes for radon_tables.py
 * Mon Aug 31 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.31-1.fmi
