@@ -6,30 +6,34 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.7.15
+Version:        20.9.3
 Release:        1%{dist}.fmi
-Summary:        Tools for radon (used to be neons) environment
+Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.3.18
-BuildRequires:  libfmidb-devel >= 20.4.6
+BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 18.8.22
+BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel
-BuildRequires:  himan-lib-devel >= 20.7.15
+BuildRequires:  himan-lib >= 20.8.19
+BuildRequires:  himan-lib-devel >= 20.8.19
+BuildRequires:  himan-plugins-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
-Requires:	libfmidb >= 20.4.6
+Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 18.5.3
-Requires:	himan-lib >= 20.7.15
-Requires:	himan-plugins >= 20.7.13
+Requires:	himan-lib >= 20.8.25
+Requires:	himan-plugins >= 20.8.19
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
 Requires:	libs3
+Requires:	gdal
 
 %if %{defined suse_version}
 BuildRequires:  boost-devel >= 1.53
@@ -107,8 +111,40 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Wed Jul 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.15-1.fmi
-- New version reusing himan components
+* Thu Sep  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.3-1.fmi
+- Logging changes for radon_tables.py
+* Mon Aug 31 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.31-1.fmi
+- Use boto3 for removing files from s3
+* Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-2.fmi
+- Fix for forecast_type_value @ss_state
+* Thu Aug 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.27-1.fmi
+- Support stereographic projection with netcdf
+* Tue Aug 25 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.25-1.fmi
+- Fix for netcdf/grib file extensions
+* Mon Aug 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.24-1.fmi
+- Fix for handling command line options for file type
+* Wed Aug 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.19-1.fmi
+- Change in himan::util::Split()
+* Tue Aug 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.18-1.fmi
+- Fix for handling command line argument -L
+* Mon Aug 17 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.17-1.fmi
+- Do not extract region from S3 hostname for non-AWS hosts
+* Wed Aug 12 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.12-1.fmi
+- Fix geometry query for rotated areas
+* Mon Aug  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.8.3-1.fmi
+- Major refactoring using himan components
+* Wed Jul 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.29-1.fmi
+- Add support for removing files from s3
+* Wed Jul  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.7.8-1.fmi
+- New fmidb
+* Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-2.fmi
+- Proper time mask handling for geotiff
+* Wed Apr 29 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.29-1.fmi
+- Fix update of as_grid for netcdf/geotiff
+* Mon Apr 27 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.27-1.fmi
+- Fix bug that caused early exit
+* Fri Apr 24 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.24-1.fmi
+- Initial support of geotiff
 * Mon Apr 20 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.20-1.fmi
 - boost 1.69
 * Mon Apr  6 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.4.6-1.fmi

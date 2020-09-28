@@ -37,6 +37,8 @@ if os.environ.get('INCLUDE') != None:
         includes.append(os.environ.get('INCLUDE').split(":"))
 
 includes.append('include')
+includes.append('/usr/include/himan')
+includes.append('/usr/include/himan/plugins')
 includes.append('/usr/include/gdal')
 
 env.Append(CPPPATH = includes)
