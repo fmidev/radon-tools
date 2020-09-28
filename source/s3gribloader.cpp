@@ -159,14 +159,16 @@ grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(0), itsAccessKey(0), itsSe
 		throw std::runtime_error("Environment variable S3_HOSTNAME not defined");
 	}
 
+	himan::logger logr("s3gribloader");
+
 	if (!itsAccessKey)
 	{
-		throw std::runtime_error("Environment variable S3_ACCESS_KEY_ID not defined");
+		logr.Info("Environment variable S3_ACCESS_KEY_ID not defined");
 	}
 
 	if (!itsSecretKey)
 	{
-		throw std::runtime_error("Environment variable S3_SECRET_ACCESS_KEY not defined");
+		logr.Info("Environment variable S3_SECRET_ACCESS_KEY not defined");
 	}
 
 	const auto ret = S3_initialize("s3", S3_INIT_ALL, itsHost);
