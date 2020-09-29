@@ -17,7 +17,6 @@ BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.3.18
 BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
-BuildRequires:  gdal-devel
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 20.8.19
@@ -33,7 +32,6 @@ Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
-Requires:	gdal
 
 %if %{defined suse_version}
 BuildRequires:  boost-devel >= 1.53
@@ -46,6 +44,7 @@ BuildRequires:	gdal-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
 Requires:	gdal-libs
+Requires:	gdal
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
