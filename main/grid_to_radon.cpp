@@ -104,7 +104,7 @@ bool parse_options(int argc, char* argv[])
 
 	if (verbose)
 	{
-		himan::logger::MainDebugState = himan::kDebugMsg;
+		himan::logger::MainDebugState = himan::kTraceMsg;
 	}
 	else
 	{
@@ -129,15 +129,17 @@ int main(int argc, char** argv)
 
 		if (isLocalFile && infile != "-" && !boost::filesystem::exists(infile))
 		{
-			std::cerr << "Input file '" << infile << "' does not exist" << std::endl;
+			log.Error("Input file '" + infile + "' does not exist");
 			continue;
 		}
+
+		logr.Info("Reading file '" + infile + "'");
 
 		if (isLocalFile == false)
 		{
 			if (options.grib == false)
 			{
-				std::cerr << "Only grib files are supported with s3" << std::endl;
+				logr.Error("Only grib files are supported with s3");
 				continue;
 			}
 
