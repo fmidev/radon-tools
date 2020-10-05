@@ -386,7 +386,8 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 		return himan::raw_time(dateTime, mask);
 	}
 
-	const std::string s1("(seconds|hours) since ([0-9]{4})-([0-9]{2})-([0-9]{2}) ([0-9]{2}):([0-9]{2}):([0-9]{2})");
+	const std::string s1(
+	    "(seconds?|hours?) since ([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})[\\sT]?([0-9]{2}):([0-9]{2}):([0-9]{2})Z?");
 	const boost::regex r1(s1);
 	boost::smatch what;
 
@@ -394,14 +395,25 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 	{
 		if (what.size() != 8)
 		{
-			//			cerr << "Unable to match mask " << mask << " with regex\n";
-			//			exit(1);
 			return himan::raw_time();
 		}
 
 		const auto timeUnit = what[1];
 
-		himan::raw_time base(what[2] + what[3] + what[4] + what[5] + what[6] + what[7], "%Y%m%d%H%M%S");
+		const auto year = what[2];
+		std::string month = what[3];
+		std::string day = what[4];
+
+		if (month.length() < 2)
+		{
+			month = "0" + month;
+		}
+		if (day.length() < 2)
+		{
+			day = "0" + day;
+		}
+
+		himan::raw_time base(year + month + day + what[5] + what[6] + what[7], "%Y%m%d%H%M%S");
 
 		double scale = 1;
 
