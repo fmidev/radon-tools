@@ -28,10 +28,13 @@ bool parse_options(int argc, char* argv[])
 	int max_failures = -1;
 	int max_skipped = -1;
 
+	int logLevel = -1;
+
 	// clang-format off
 	desc.add_options()
 		("help,h", "print out help message")
-		("verbose,v", po::bool_switch(&verbose), "set verbose mode on")
+		("verbose,v", po::bool_switch(&verbose), "set verbose mode on, equals to debug level 4")
+                ("debug-level,d", po::value(&logLevel), "set log level: 0(fatal) 1(error) 2(warning) 3(info) 4(debug) 5(trace)")
 		("netcdf,n", po::bool_switch(&options.netcdf), "force netcdf mode on")
 		("grib,g", po::bool_switch(&options.grib), "force grib mode on")
 		("version,V", "display version number")
@@ -102,13 +105,38 @@ bool parse_options(int argc, char* argv[])
 		return false;
 	}
 
+	himan::logger::MainDebugState = himan::kInfoMsg;
+
 	if (verbose)
 	{
 		himan::logger::MainDebugState = himan::kDebugMsg;
 	}
-	else
+
+	switch (logLevel)
 	{
-		himan::logger::MainDebugState = himan::kInfoMsg;
+		default:
+			std::cerr << "Invalid debug level: " << logLevel << std::endl;
+			exit(1);
+		case -1:
+			break;
+		case 0:
+			himan::logger::MainDebugState = himan::kFatalMsg;
+			break;
+		case 1:
+			himan::logger::MainDebugState = himan::kErrorMsg;
+			break;
+		case 2:
+			himan::logger::MainDebugState = himan::kWarningMsg;
+			break;
+		case 3:
+			himan::logger::MainDebugState = himan::kInfoMsg;
+			break;
+		case 4:
+			himan::logger::MainDebugState = himan::kDebugMsg;
+			break;
+		case 5:
+			himan::logger::MainDebugState = himan::kTraceMsg;
+			break;
 	}
 
 	return true;
@@ -129,15 +157,17 @@ int main(int argc, char** argv)
 
 		if (isLocalFile && infile != "-" && !boost::filesystem::exists(infile))
 		{
-			std::cerr << "Input file '" << infile << "' does not exist" << std::endl;
+			logr.Error("Input file '" + infile + "' does not exist");
 			continue;
 		}
+
+		logr.Info("Reading file '" + infile + "'");
 
 		if (isLocalFile == false)
 		{
 			if (options.grib == false)
 			{
-				std::cerr << "Only grib files are supported with s3" << std::endl;
+				logr.Error("Only grib files are supported with s3");
 				continue;
 			}
 
