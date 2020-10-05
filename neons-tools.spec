@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.9.28
+Version:        20.10.5
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -110,6 +110,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Oct  5 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.5-1.fmi
+- Changes in netcdf loading
 * Mon Sep 28 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.28-1.fmi
 - New fminc
 * Thu Sep  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.9.3-2.fmi
