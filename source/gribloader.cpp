@@ -114,6 +114,7 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 	config->WriteMode(himan::kSingleGridToAFile);
 	config->DatabaseType(himan::kRadon);
 	config->OutputFileType(static_cast<himan::HPFileType>(message.Edition()));
+	config->ProgramName(himan::kGridToRadon);
 
 	auto info = std::make_shared<himan::info<double>>();
 
