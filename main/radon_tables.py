@@ -95,19 +95,19 @@ def ReadCommandLine(argv):
 					action="store",
 					type="string",
 					default="radondb.fmi.fi",
-					help="Database hostname")
+					help="Database hostname (also env variable RADON_HOSTNAME)")
 
 	databasegroup.add_option("--port",
 					action="store",
 					type="string",
 					default="5432",
-					help="Database port")
+					help="Database port (also env variable RADON_PORT)")
 
 	databasegroup.add_option("--database",
 					action="store",
 					type="string",
 					default="radon",
-					help="Database name")
+					help="Database name  (also env variable RADON_DATABASENAME)")
 
 	databasegroup.add_option("--user",
 					action="store",
@@ -160,6 +160,21 @@ def ReadCommandLine(argv):
 
 	if options.dry_run:
 		options.show_sql = True
+
+	try:
+		options.host = os.environ["RADON_HOSTNAME"]
+	except KeyError as e:
+		pass
+
+	try:
+		options.port = os.environ["RADON_PORT"]
+	except KeyError as e:
+		pass
+
+	try:
+		options.database = os.environ["RADON_DATABASENAME"]
+	except KeyError as e:
+		pass
 
 	return (vars(options),arguments)
 
