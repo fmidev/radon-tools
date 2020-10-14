@@ -193,7 +193,7 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 
 		himan::file_information finfo;
 		finfo.storage_type = himan::kLocalFileSystem;
-		finfo.message_no = messageNo;
+		finfo.message_no = (options.in_place_insert) ? messageNo : 0;
 		finfo.offset = (options.in_place_insert) ? itsReader.Offset(messageNo) : 0UL;
 		finfo.length = static_cast<unsigned long>(message.GetLongKey("totalLength"));
 		finfo.file_location = theFileName;
