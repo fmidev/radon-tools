@@ -25,9 +25,13 @@ from timeit import default_timer as timer
 from pytz import timezone
 from optparse import OptionParser
 
-# ReadCommandLine()
-# 
-# Read and parse command line options
+def GetEnv(key):
+	# mask exception to None
+	try:
+		return os.environ[key]
+	except KeyError as e:
+		return None
+
 
 def ReadCommandLine(argv):
 
@@ -94,20 +98,17 @@ def ReadCommandLine(argv):
 	databasegroup.add_option("--host",
 					action="store",
 					type="string",
-					default="radondb.fmi.fi",
 					help="Database hostname (also env variable RADON_HOSTNAME)")
 
 	databasegroup.add_option("--port",
 					action="store",
 					type="string",
-					default="5432",
 					help="Database port (also env variable RADON_PORT)")
 
 	databasegroup.add_option("--database",
 					action="store",
 					type="string",
-					default="radon",
-					help="Database name  (also env variable RADON_DATABASENAME)")
+					help="Database name (also env variable RADON_DATABASENAME)")
 
 	databasegroup.add_option("--user",
 					action="store",
@@ -117,8 +118,14 @@ def ReadCommandLine(argv):
 
 	parser.add_option_group(databasegroup)
 
+	dbhost = GetEnv('RADON_HOSTNAME') if GetEnv('RADON_HOSTNAME') is not None else "radondb.fmi.fi"
+	dbport = GetEnv('RADON_PORT') if GetEnv('RADON_PORT') is not None else "5432"
+	dbname = GetEnv('RADON_DATABASENAME') if GetEnv('RADON_DATABASENAME') is not None else "radon"
+
+	parser.set_defaults(host = dbhost, port = dbport, database = dbname)
+
 	(options, arguments) = parser.parse_args()
-  
+
 	# Check requirements
 
 	if options.date != None and (not re.match("\d{8}", options.date) or len(options.date) != 8):
@@ -160,21 +167,6 @@ def ReadCommandLine(argv):
 
 	if options.dry_run:
 		options.show_sql = True
-
-	try:
-		options.host = os.environ["RADON_HOSTNAME"]
-	except KeyError as e:
-		pass
-
-	try:
-		options.port = os.environ["RADON_PORT"]
-	except KeyError as e:
-		pass
-
-	try:
-		options.database = os.environ["RADON_DATABASENAME"]
-	except KeyError as e:
-		pass
 
 	return (vars(options),arguments)
 
