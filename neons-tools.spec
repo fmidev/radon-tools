@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.10.14
+Version:        20.10.15
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,15 +19,15 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 20.10.8
-BuildRequires:  himan-lib-devel >= 20.10.8
+BuildRequires:  himan-lib >= 20.10.15
+BuildRequires:  himan-lib-devel >= 20.10.15
 BuildRequires:  himan-plugins-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 20.10.8
-Requires:	himan-plugins >= 20.10.8
+Requires:	himan-lib >= 20.10.15
+Requires:	himan-plugins >= 20.10.15
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -110,7 +110,9 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
-* Thu Oct  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.14-1.fmi
+* Wed Oct 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.15-1.fmi
+- Control masala_base directory environment variable name
+* Wed Oct 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.14-1.fmi
 - Fix for grib loading
 * Thu Oct  8 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.8-1.fmi
 - New himan libraries
