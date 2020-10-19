@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.10.15
+Version:        20.10.19
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,15 +19,16 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 20.10.15
-BuildRequires:  himan-lib-devel >= 20.10.15
+BuildRequires:  himan-lib >= 20.10.19
+BuildRequires:  himan-lib-devel >= 20.10.19
 BuildRequires:  himan-plugins-devel
+BuildRequires:  fmt-devel >= 6.0.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.3.18
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 20.10.15
-Requires:	himan-plugins >= 20.10.15
+Requires:	himan-lib >= 20.10.19
+Requires:	himan-plugins >= 20.10.19
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -110,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Oct 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.19-1.fmi
+- Add dependency to fmt (a string formatting library)
 * Wed Oct 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.15-1.fmi
 - Control masala_base directory environment variable name
 * Wed Oct 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.14-1.fmi

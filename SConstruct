@@ -79,7 +79,7 @@ env.Append(LIBS = boost_libraries)
 #if env['HAVE_CUDA']:
 #	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
 
-env.Append(LIBS = ['dl','rt'])
+env.Append(LIBS = ['fmt','dl','rt'])
 
 # CFLAGS
 
