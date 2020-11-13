@@ -171,6 +171,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 
 	if (!reader.Read(theInfile))
 	{
+		itsLogger.Error("Unable to read file '" + theInfile + "'");
 		return false;
 	}
 
