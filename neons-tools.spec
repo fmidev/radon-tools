@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.10.26
+Version:        20.11.18
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -14,7 +14,7 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 20.3.18
+BuildRequires:  libfmigrib-devel >= 20.10.16
 BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
@@ -22,9 +22,9 @@ BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 20.10.26
 BuildRequires:  himan-lib-devel >= 20.10.26
 BuildRequires:  himan-plugins-devel
-BuildRequires:  fmt-devel >= 6.0.0
+BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
-Requires:	libfmigrib >= 20.3.18
+Requires:	libfmigrib >= 20.10.16
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 20.10.26
@@ -111,11 +111,13 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Nov 18 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.11.18-1.fmi
+- fmt7
 * Mon Oct 26 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.26-1.fmi
 - himan header changes
 * Mon Oct 19 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.19-1.fmi
 - Add dependency to fmt (a string formatting library)
-* Wed Oct 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.15-1.fmi
+* Thu Oct 15 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.15-1.fmi
 - Control masala_base directory environment variable name
 * Wed Oct 14 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.10.14-1.fmi
 - Fix for grib loading
