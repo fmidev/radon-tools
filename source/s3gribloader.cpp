@@ -85,6 +85,8 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 
 		try
 		{
+			othertimer.Start();
+
 			auto ret = ReadMetadata(reader.Message());
 
 			othertimer.Stop();
