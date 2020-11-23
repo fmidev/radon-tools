@@ -69,6 +69,7 @@ libraries.append('s3')
 libraries.append('fmigrib')
 libraries.append('eccodes')
 libraries.append('gdal')
+libraries.append('fmt')
 
 env.Append(LIBS = libraries)
 
