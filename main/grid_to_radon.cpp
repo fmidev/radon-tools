@@ -51,7 +51,8 @@ bool parse_options(int argc, char* argv[])
 		("no-ss_state-update,X", po::bool_switch(&no_ss_state_switch), "do not update ss_state table information")
 	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)")
 	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "do not check for correct directory structure (in-place insert)")
-		("smartmet-server-table-name", po::value(&options.ss_table_name), "override table name for smartmet server");
+		("smartmet-server-table-name", po::value(&options.ss_table_name), "override table name for smartmet server")
+		("allow-multi-table-gribs", po::bool_switch(&options.allow_multi_table_gribs), "allow single grib file messages to be loaded to more than one radon table (in-place insert)");
 
 	// clang-format on
 
