@@ -121,7 +121,8 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 	himan::plugin::search_options opts(himan::forecast_time(), himan::param(), himan::level(), himan::producer(),
 	                                   std::make_shared<himan::plugin_configuration>(*config));
 
-	if (gribpl->CreateInfoFromGrib<double>(opts, false, true, info, message, false) == false)
+	if (gribpl->CreateInfoFromGrib<double>(opts, false, true, info, message, false) == false ||
+	    info->Producer().Id() == himan::kHPMissingInt)
 	{
 		throw himan::kFileMetaDataNotFound;
 	}
