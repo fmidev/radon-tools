@@ -24,6 +24,17 @@ grid_to_radon::GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0
 {
 }
 
+set<string> CheckForMultiTableGribs(const std::set<std::string>& ssStateInformation)
+{
+	set<string> tables;
+	for_each(ssStateInformation.begin(), ssStateInformation.end(), [&](const std::string& str) {
+		const vector<string> tokens = himan::util::Split(str, "/");
+		tables.insert(tokens[6]);
+	});
+
+	return tables;
+}
+
 bool grid_to_radon::GribLoader::Load(const string& theInfile)
 {
 	itsInputFileName = theInfile;
@@ -45,11 +56,26 @@ bool grid_to_radon::GribLoader::Load(const string& theInfile)
 	logr.Info("Success with " + to_string(g_success) + " fields, " + "failed with " + to_string(g_failed) +
 	          " fields, " + "skipped " + to_string(g_skipped) + " fields");
 
-	grid_to_radon::common::UpdateSSState(ssStateInformation);
+	bool retval = true;
+
+	if (options.in_place_insert)
+	{
+		const auto tables = CheckForMultiTableGribs(ssStateInformation);
+
+		if (options.allow_multi_table_gribs == false && tables.size() > 1)
+		{
+			logr.Error(
+			    fmt::format("Gribs in file '{}' are loaded to multiple tables: {}", theInfile, fmt::join(tables, ",")));
+			retval = false;
+		}
+	}
+	if (retval)
+	{
+		grid_to_radon::common::UpdateSSState(ssStateInformation);
+	}
 
 	// When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
 	// as something to be checked against.
-	bool retval = true;
 
 	if (options.max_failures >= 0 && g_failed > options.max_failures)
 	{
@@ -121,7 +147,8 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 	himan::plugin::search_options opts(himan::forecast_time(), himan::param(), himan::level(), himan::producer(),
 	                                   std::make_shared<himan::plugin_configuration>(*config));
 
-	if (gribpl->CreateInfoFromGrib<double>(opts, false, true, info, message, false) == false)
+	if (gribpl->CreateInfoFromGrib<double>(opts, false, true, info, message, false) == false ||
+	    info->Producer().Id() == himan::kHPMissingInt)
 	{
 		throw himan::kFileMetaDataNotFound;
 	}
