@@ -5,6 +5,7 @@
 #include "options.h"
 #include "plugin_factory.h"
 #include "timer.h"
+#include "util.h"
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <stdexcept>
@@ -207,6 +208,30 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 
 	const std::string key = boost::algorithm::join(tokens, "/");
 
+	S3Protocol protocol = S3ProtocolHTTP;
+
+	try
+	{
+		const auto envproto = himan::util::GetEnv("S3_PROTOCOL");
+		if (envproto == "https")
+		{
+			protocol = S3ProtocolHTTPS;
+		}
+		else if (envproto == "http")
+		{
+			protocol = S3ProtocolHTTP;
+		}
+		else
+		{
+			logr.Warning(fmt::format("Unrecognized value found from env variable S3_PROTOCOL: '{}'", envproto));
+		}
+	}
+	catch (const std::invalid_argument& e)
+	{
+	}
+
+	logr.Info(fmt::format("Using {} protocol to access data", protocol == S3ProtocolHTTP ? "http" : "https"));
+
 #ifdef S3_DEFAULT_REGION
 
 	const char* region = nullptr;
@@ -231,7 +256,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	{
 		itsHost,
 		bucket.c_str(),
-		S3ProtocolHTTP,
+		protocol,
 		S3UriStylePath,
 		itsAccessKey,
 		itsSecretKey,
@@ -243,7 +268,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	{
 		itsHost,
 		bucket.c_str(),
-		S3ProtocolHTTP,
+		protocol,
 		S3UriStylePath,
 		itsAccessKey,
 		itsSecretKey,
