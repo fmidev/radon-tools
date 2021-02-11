@@ -22,7 +22,6 @@ BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 20.11.23
 BuildRequires:  himan-lib-devel >= 20.11.23
 BuildRequires:  himan-plugins-devel
-BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 20.7.8
@@ -42,22 +41,20 @@ Requires:	libnetcdf4 >= 4.0.1
 %if %{defined el7}
 BuildRequires:  scons
 BuildRequires:	gdal-devel
+BuildRequires:  fmt-devel >= 7.1.0
 Requires:       python36-pytz
 Requires:       python36-dateutil
 Requires:	gdal-libs
 Requires:	gdal
-
 %else if %{defined el8}
 BuildRequires:  python3-scons
 BuildRequires:	gdal30-devel
+BuildRequires:  fmt-devel >= 6.2.0
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:	gdal30-libs
-
 %endif
-
 Requires:       python3-psycopg2
-
 BuildRequires:  boost169-devel
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
