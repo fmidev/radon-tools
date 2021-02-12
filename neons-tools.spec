@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        20.12.3
+Version:        21.2.12
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Feb 12 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.12-1.fmi
+- Add variable to specify S3 protocol
 * Thu Dec  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.12.3-1.fmi
 - Disallow in-place load to multiple tables
 * Wed Dec  2 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.12.2-1.fmi
