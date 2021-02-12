@@ -5,6 +5,7 @@
 #include "options.h"
 #include "plugin_factory.h"
 #include "timer.h"
+#include "util.h"
 #include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <stdexcept>
@@ -32,7 +33,7 @@ S3Status responsePropertiesCallback(const S3ResponseProperties* properties, void
 {
 	himan::logger logr("s3gribloader");
 
-	logr.Info("File size is " + std::to_string(properties->contentLength) + " bytes");
+	logr.Info(fmt::format("File size is {} bytes", properties->contentLength));
 	FILE** fp = reinterpret_cast<FILE**>(callbackData);
 	(*fp) = fmemopen(NULL, properties->contentLength, "rb+");
 
@@ -107,10 +108,10 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 			grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation);
 
 			dbtimer.Stop();
-			logr.Debug("Message " + std::to_string(messageNo) + " parameter " + info->Param().Name() + " at level " +
-			           static_cast<std::string>(info->Level()) + " forecast type " +
-			           static_cast<std::string>(info->ForecastType()) + " database time=" +
-			           std::to_string(dbtimer.GetTime()) + ", other=" + std::to_string(othertimer.GetTime()) + " ms");
+			logr.Debug(fmt::format("Message {} parameter {} level {} forecast type {} database time={} other={} ms",
+			                       messageNo, info->Param().Name(), static_cast<std::string>(info->Level()),
+			                       static_cast<std::string>(info->ForecastType()), dbtimer.GetTime(),
+			                       othertimer.GetTime()));
 
 			g_success++;
 		}
@@ -187,8 +188,7 @@ bool grid_to_radon::S3GribLoader::Load(const std::string& theFileName) const
 	g_failed = 0;
 	ReadFileStream(theFileName, 0, 0);
 	himan::logger logr("s3gribloader");
-	logr.Info("Success with " + std::to_string(g_success) + " fields, failed with " + std::to_string(g_failed) +
-	          " fields");
+	logr.Info(fmt::format("Success with {} fields, failed with {} fields", g_success, g_failed));
 
 	return true;
 }
@@ -206,6 +206,30 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	tokens.erase(std::begin(tokens), std::begin(tokens) + 3);
 
 	const std::string key = boost::algorithm::join(tokens, "/");
+
+	S3Protocol protocol = S3ProtocolHTTP;
+
+	try
+	{
+		const auto envproto = himan::util::GetEnv("S3_PROTOCOL");
+		if (envproto == "https")
+		{
+			protocol = S3ProtocolHTTPS;
+		}
+		else if (envproto == "http")
+		{
+			protocol = S3ProtocolHTTP;
+		}
+		else
+		{
+			logr.Warning(fmt::format("Unrecognized value found from env variable S3_PROTOCOL: '{}'", envproto));
+		}
+	}
+	catch (const std::invalid_argument& e)
+	{
+	}
+
+	logr.Info(fmt::format("Using {} protocol to access data", protocol == S3ProtocolHTTP ? "http" : "https"));
 
 #ifdef S3_DEFAULT_REGION
 
@@ -231,7 +255,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	{
 		itsHost,
 		bucket.c_str(),
-		S3ProtocolHTTP,
+		protocol,
 		S3UriStylePath,
 		itsAccessKey,
 		itsSecretKey,
@@ -243,7 +267,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	{
 		itsHost,
 		bucket.c_str(),
-		S3ProtocolHTTP,
+		protocol,
 		S3UriStylePath,
 		itsAccessKey,
 		itsSecretKey,
@@ -253,7 +277,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 
 	// clang-format on
 
-	logr.Info("Input file: '" + theFileName + "' host: '" + itsHost + "' bucket: '" + bucket + "' key: '" + key + "'");
+	logr.Info(fmt::format("Input file: '{}' host: '{}' bucket: '{}' key: '{}'", theFileName, itsHost, bucket, key));
 
 	S3ResponseHandler responseHandler = {&responsePropertiesCallback, &responseCompleteCallback};
 	S3GetObjectHandler getObjectHandler = {responseHandler, &getObjectDataCallbackStreamProcessing};
@@ -269,7 +293,7 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 #else
 		S3_get_object(&bucketContext, key.c_str(), NULL, startByte, byteCount, NULL, &getObjectHandler, &fp);
 #endif
-		logr.Debug("Stream-read file '" + theFileName + "' status: " + S3_get_status_name(statusG));
+		logr.Debug(fmt::format("Stream-read file '{}' status: {}", theFileName, S3_get_status_name(statusG)));
 
 		count++;
 
