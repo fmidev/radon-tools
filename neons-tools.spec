@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        21.2.12
+Version:        21.2.23
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,16 +19,16 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 20.11.23
-BuildRequires:  himan-lib-devel >= 20.11.23
+BuildRequires:  himan-lib >= 21.2.23
+BuildRequires:  himan-lib-devel >= 21.2.23
 BuildRequires:  himan-plugins-devel
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 20.7.8
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 20.11.23
-Requires:	himan-plugins >= 20.11.23
+Requires:	himan-lib >= 21.2.23
+Requires:	himan-plugins >= 21.2.23
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -41,18 +41,17 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
-BuildRequires:	gdal-devel
+BuildRequires:	gdal32-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
-Requires:	gdal-libs
-Requires:	gdal
+Requires:	gdal32-libs
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
-BuildRequires:	gdal30-devel
+BuildRequires:	gdal32-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
-Requires:	gdal30-libs
+Requires:	gdal32-libs
 
 %endif
 
@@ -111,6 +110,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-1.fmi
+- New himan-lib
 * Fri Feb 12 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.12-1.fmi
 - Add variable to specify S3 protocol
 * Thu Dec  3 2020 Mikko Partio <mikko.partio@fmi.fi> - 20.12.3-1.fmi
