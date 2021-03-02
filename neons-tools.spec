@@ -6,7 +6,7 @@
 
 %define PACKAGENAME neons-tools
 Name:           %{PACKAGENAME}
-Version:        21.2.23
+Version:        21.3.2
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,8 +19,8 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.2.23
-BuildRequires:  himan-lib-devel >= 21.2.23
+BuildRequires:  himan-lib >= 21.3.2
+BuildRequires:  himan-lib-devel >= 21.3.2
 BuildRequires:  himan-plugins-devel
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
@@ -110,6 +110,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Mar  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.3.2-1.fmi
+- New himan-lib
 * Tue Feb 23 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.23-1.fmi
 - New himan-lib
 * Fri Feb 12 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.2.12-1.fmi
