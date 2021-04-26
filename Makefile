@@ -1,4 +1,4 @@
-PROG = neons-tools
+PROG = radon-tools
 
 SCONS_FLAGS=-j $(shell nproc)
 

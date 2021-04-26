@@ -66,7 +66,7 @@ bool parse_options(int argc, char* argv[])
 
 	if (opt.count("version"))
 	{
-		std::cout << "grid_to_neons compiled at " << __DATE__ << ' ' << __TIME__ << std::endl;
+		std::cout << "grid_to_radon compiled at " << __DATE__ << ' ' << __TIME__ << std::endl;
 		return false;
 	}
 

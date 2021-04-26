@@ -4,9 +4,9 @@
 %define dist .sles11
 %endif
 
-%define PACKAGENAME neons-tools
+%define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.4.12
+Version:        21.4.26
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -73,6 +73,7 @@ Provides:	geom_to_radon.py
 %endif
 
 Provides:	grid_to_radon
+Obsoletes:	neons-tools
 
 AutoReqProv: no
 
@@ -110,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Apr 26 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.26-1.fmi
+- Renaming from neons-tools to radon-tools
 * Mon Apr 12 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.12-1.fmi
 - New himan-lib
 * Tue Apr  6 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.6-1.fmi
