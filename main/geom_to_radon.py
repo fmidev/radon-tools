@@ -1,4 +1,4 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # interactive tool to automatically create geometries from grib files
 
 import sys
@@ -14,7 +14,7 @@ def get_conn():
 		try:
 			password = os.environ["RADON_WETODB_PASSWORD"]
 		except:
-			print "password should be given with env variable RADON_WETODB_PASSWORD"
+			print ("password should be given with env variable RADON_WETODB_PASSWORD")
 			sys.exit(1)
 
 		dsn = "user=wetodb password=%s host=vorlon dbname=radon port=5432" % (password)
@@ -38,14 +38,14 @@ def update_table_meta_grid(grb, geom_id, name):
 	rows = cur.fetchall()
 	
 	if rows is None or len(rows) == 0:
-		print "No earlier rows for producer %s found from table table_meta_grid, returning" % (prod_id)
+		print(("No earlier rows for producer %s found from table table_meta_grid, returning" % (prod_id)))
 		return
 
 	for row in rows:
-		print "Found existing definition from table_meta_grid for this producer but different geometry:"
-		print "Producer: %s\nSchema: %s\nTable: %s\nRetention: %s\nPartitioning method: %s\nAnalysis_times: %s" % (row)
+		print("Found existing definition from table_meta_grid for this producer but different geometry:")
+		print(("Producer: %s\nSchema: %s\nTable: %s\nRetention: %s\nPartitioning method: %s\nAnalysis_times: %s" % (row)))
 
-		proceed = raw_input("Insert line for geometry %s using these same attributes? " % (name)) 
+		proceed = input("Insert line for geometry %s using these same attributes? " % (name)) 
 
 		if len(proceed) == 0:
 			return
@@ -58,7 +58,7 @@ def update_table_meta_grid(grb, geom_id, name):
 
 		break
 
-	print "Now run command 'radon_tables.py -r %s' to update as_grid" % (prod_id)
+	print(("Now run command 'radon_tables.py -r %s' to update as_grid" % (prod_id)))
 
 def producer_id(grb):
 	conn = get_conn()
@@ -104,7 +104,7 @@ def scanning_mode(grb):
 	elif not ineg and not jpos:
 		return "+x-y"
 	else:
-		print "unsupported scanning mode"
+		print("unsupported scanning mode")
 		sys.exit(1)
 
 def first_point(grb):
@@ -114,17 +114,17 @@ def first_point(grb):
 	return first_x,first_y
 
 def ask_for_name_and_desc():
-	name = raw_input("Give geometry name (return for abort): ")
+	name = input("Give geometry name (return for abort): ")
 
 	if len(name) == 0:
 		sys.exit(1)
 
-	desc = raw_input("Give geometry description (return for abort): ")
+	desc = input("Give geometry description (return for abort): ")
 	
 	if len(desc) == 0:
 		sys.exit(1)
 
-	print "Name: %s\nDescription: %s" % (name, desc)
+	print(("Name: %s\nDescription: %s" % (name, desc)))
 
 	return name,desc
 
@@ -143,14 +143,14 @@ def ll(grb):
 	row = cur.fetchone()
 
 	if row is not None:
-		print "Geometry already exists (%s %s)" % (row[0], row[1])
+		print(("Geometry already exists (%s %s)" % (row[0], row[1])))
 		return
 
-	print "First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s" % (lon, lat, ni, nj, di, dj, scmode)
+	print(("First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s" % (lon, lat, ni, nj, di, dj, scmode)))
 
 	name,desc = ask_for_name_and_desc()
 
-	proceed = raw_input("Proceed [y/n] (return for abort)? ")
+	proceed = input("Proceed [y/n] (return for abort)? ")
 
 	if len(proceed) == 0:
 		sys.exit(1)
@@ -170,7 +170,7 @@ def ll(grb):
 
 	conn.commit()
 
-	print "Geometry inserted: %s %s" % (geom_id, name)
+	print(("Geometry inserted: %s %s" % (geom_id, name)))
 
 	update_table_meta_grid(grb, geom_id, name)
 
@@ -193,14 +193,14 @@ def rll(grb):
 	row = cur.fetchone()
 
 	if row is not None:
-		print "Geometry already exists (%s %s)" % (row[0], row[1])
+		print(("Geometry already exists (%s %s)" % (row[0], row[1])))
 		return
 
-	print "First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nSouth pole: %s,%s" % (lon, lat, ni, nj, di, dj, scmode, splon, splat)
+	print(("First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nSouth pole: %s,%s" % (lon, lat, ni, nj, di, dj, scmode, splon, splat)))
 
 	name,desc = ask_for_name_and_desc()
 
-	proceed = raw_input("Proceed [y/n] (return for abort)? ")
+	proceed = input("Proceed [y/n] (return for abort)? ")
 
 	if len(proceed) == 0:
 		sys.exit(1)
@@ -220,7 +220,7 @@ def rll(grb):
 
 	conn.commit()
 
-	print "Geometry inserted: %s %s" % (geom_id, name)
+	print(("Geometry inserted: %s %s" % (geom_id, name)))
 
 	update_table_meta_grid(grb, geom_id, name)
 
@@ -242,14 +242,14 @@ def ps(grb):
 	row = cur.fetchone()
 
 	if row is not None:
-		print "Geometry already exists (%s %s)" % (row[0], row[1])
+		print(("Geometry already exists (%s %s)" % (row[0], row[1])))
 		return
 
-	print "First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nOrientation: %s" % (lon, lat, ni, nj, di, dj, scmode, orient)
+	print(("First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nOrientation: %s" % (lon, lat, ni, nj, di, dj, scmode, orient)))
 
 	name,desc = ask_for_name_and_desc()
 
-	proceed = raw_input("Proceed [y/n] (return for abort)? ")
+	proceed = input("Proceed [y/n] (return for abort)? ")
 
 	if len(proceed) == 0:
 		sys.exit(1)
@@ -269,7 +269,7 @@ def ps(grb):
 
 	conn.commit()
 
-	print "Geometry inserted: %s %s" % (geom_id, name)
+	print(("Geometry inserted: %s %s" % (geom_id, name)))
 
 	update_table_meta_grid(grb, geom_id, name)
 
@@ -294,14 +294,14 @@ def lcc(grb):
 	row = cur.fetchone()
 
 	if row is not None:
-		print "Geometry already exists (%s %s)" % (row[0], row[1])
+		print(("Geometry already exists (%s %s)" % (row[0], row[1])))
 		return
 
-	print "First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nOrientation: %s\nLatin1: %s\nLatin2: %s\nSouth pole: %s,%s\n" % (lon, lat, ni, nj, di, dj, scmode, orient, latin1, latin2, splon, splat)
+	print("First point: %s,%s\nNi: %d\nNj: %d\nDi: %s\nDj: %s\nScanning mode: %s\nOrientation: %s\nLatin1: %s\nLatin2: %s\nSouth pole: %s,%s\n" % (lon, lat, ni, nj, di, dj, scmode, orient, latin1, latin2, splon, splat))
 
 	name,desc = ask_for_name_and_desc()
 
-	proceed = raw_input("Proceed [y/n] (return for abort)? ")
+	proceed = input("Proceed [y/n] (return for abort)? ")
 
 	if len(proceed) == 0:
 		sys.exit(1)
@@ -321,12 +321,12 @@ def lcc(grb):
 
 	conn.commit()
 
-	print "Geometry inserted: %s %s" % (geom_id, name)
+	print("Geometry inserted: %s %s" % (geom_id, name))
 
 	update_table_meta_grid(grb, geom_id, name)
 
 def main(filename):
-	print "%s" % (filename)
+	print("%s" % (filename))
 
 	grbfile = open(filename)
 
@@ -347,13 +347,13 @@ def main(filename):
 		elif grid_type == "lambert":
 			lcc(grb)
 		else:
-			print "unsupported grid_type: %s" % (grid_type)
+			print("unsupported grid_type: %s" % (grid_type))
 
 
 if __name__ == "__main__":
 	if len(sys.argv) != 2:
-		print "usage: %s gribfile" % (sys.argv[0])
-		print "interactive tool to insert geometry information from grib to radon database"
+		print("usage: %s gribfile" % (sys.argv[0]))
+		print("interactive tool to insert geometry information from grib to radon database")
 		sys.exit()
 
 	main(sys.argv[1])
