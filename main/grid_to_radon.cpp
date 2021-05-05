@@ -182,7 +182,7 @@ void WriteMetadata(const grid_to_radon::records& recs)
 		return;
 	}
 
-	const std::strin VERSION = "20210505";
+	const std::string VERSION = "20210505";
 	std::ofstream out(options.metadata_file_name);
 
 	out << "{\n  " << quoted("version") << " : " << quoted(VERSION) << ", " << quoted("records") << " : [";

@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.4.30
+Version:        21.5.5
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -21,14 +21,14 @@ BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 21.4.12
 BuildRequires:  himan-lib-devel >= 21.4.12
-BuildRequires:  himan-plugins-devel
+BuildRequires:  himan-plugins-devel >= 21.5.5
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 21.3.31
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 21.4.12
-Requires:	himan-plugins >= 21.4.12
+Requires:	himan-plugins >= 21.5.5
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed May  5 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.5-1.fmi
+- Add option to write loaded metadata to file
 * Fri Apr 30 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.30-1.fmi
 - Change remainin python scripts to py3
 * Mon Apr 26 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.26-1.fmi
