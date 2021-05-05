@@ -1,5 +1,6 @@
 #include "common.h"
 #include "options.h"
+#include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <plugin_factory.h>
 #include <sstream>
@@ -10,7 +11,35 @@
 #undef HIMAN_AUXILIARY_INCLUDE
 
 extern grid_to_radon::Options options;
-std::mutex dirCreateMutex, ssMutex;
+std::mutex dirCreateMutex;
+
+bool CheckDirectoryStructure(const boost::filesystem::path& pathname);
+
+bool grid_to_radon::common::CheckForFailure(int g_failed, int g_skipped, int g_success)
+{
+	bool retval = true;
+
+	if (options.max_failures >= 0 && g_failed > options.max_failures)
+	{
+		retval = false;
+	}
+
+	if (options.max_skipped >= 0 && g_skipped > options.max_skipped)
+	{
+		retval = false;
+	}
+
+	// We need to check for 'total failure' if the user didn't specify a max_failures value.
+	if (options.max_failures == -1 && options.max_skipped == -1)
+	{
+		if (g_success == 0)
+		{
+			retval = false;
+		}
+	}
+
+	return retval;
+}
 
 std::string grid_to_radon::common::CanonicalFileName(const std::string& inputFileName)
 {
@@ -45,7 +74,7 @@ std::string grid_to_radon::common::MakeFileName(std::shared_ptr<himan::configura
 	}
 }
 
-bool grid_to_radon::common::CheckDirectoryStructure(const boost::filesystem::path& pathname)
+bool CheckDirectoryStructure(const boost::filesystem::path& pathname)
 {
 	// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
 	const auto atimedir = pathname.parent_path().filename();
@@ -83,59 +112,31 @@ void grid_to_radon::common::CreateDirectory(const std::string& theFileName)
 	}
 }
 
-bool grid_to_radon::common::SaveToDatabase(std::shared_ptr<himan::configuration>& config,
-                                           std::shared_ptr<himan::info<double>>& info,
-                                           std::shared_ptr<himan::plugin::radon>& r,
-                                           const himan::file_information& finfo,
-                                           std::set<std::string>& ssStateInformation)
+grid_to_radon::record Merge(std::shared_ptr<himan::configuration>& config, std::shared_ptr<himan::info<double>>& info,
+                            const himan::file_information& finfo, const himan::plugin::radon_record& rrec)
+{
+	return grid_to_radon::record(rrec.schema_name, rrec.table_name, finfo.file_location, config->OutputFileType(),
+	                             rrec.geometry_name, rrec.geometry_id, info->Producer(), info->ForecastType(),
+	                             info->Time(), info->Level(), info->Param());
+}
+
+std::pair<bool, grid_to_radon::record> grid_to_radon::common::SaveToDatabase(
+    std::shared_ptr<himan::configuration>& config, std::shared_ptr<himan::info<double>>& info,
+    std::shared_ptr<himan::plugin::radon>& r, const himan::file_information& finfo)
 {
 	if (!options.dry_run)
 	{
-		if (!r->Save<double>(*info, finfo, ""))
-		{
-			return false;
-		}
+		auto ret = r->Save<double>(*info, finfo, "");
 
-		if (options.ss_state_update)
+		if (ret.first)
 		{
-			SaveSSStateInformation(config, info, ssStateInformation, r);
+			return std::make_pair(true, Merge(config, info, finfo, ret.second));
 		}
 	}
-	return true;
+	return std::make_pair(true, grid_to_radon::record());
 }
 
-void grid_to_radon::common::SaveSSStateInformation(std::shared_ptr<himan::configuration>& config,
-                                                   std::shared_ptr<himan::info<double>>& info,
-                                                   std::set<std::string>& ssStateInformation,
-                                                   std::shared_ptr<himan::plugin::radon>& r)
-{
-	const auto base_date = info->Time().OriginDateTime().String("%Y-%m-%d %H:%M:%S");
-
-	std::string tableName;
-
-	if (options.ss_table_name.empty() == false)
-	{
-		tableName = options.ss_table_name;
-	}
-	else
-	{
-		auto tableinfo = r->RadonDB().GetTableName(info->Producer().Id(), base_date, config->TargetGeomName());
-		tableName = tableinfo["schema_name"] + "." + tableinfo["table_name"];
-	}
-
-	std::stringstream ss;
-	ss << info->Producer().Id() << "/" << config->TargetGeomName() << "/" << info->Time().OriginDateTime().String()
-	   << "/" << info->Time().Step().String("%h:%02M:%02S") << "/" << static_cast<int>(info->ForecastType().Type())
-	   << "/" << ((info->ForecastType().Value() == himan::kHPMissingValue) ? -1 : info->ForecastType().Value()) << "/"
-	   << tableName;
-
-	{
-		std::lock_guard<std::mutex> lock(ssMutex);
-		ssStateInformation.insert(ss.str());
-	}
-}
-
-void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateInformation)
+void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 {
 	if (!options.ss_state_update)
 	{
@@ -146,18 +147,16 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 
 	himan::logger logr("common");
 
-	for (const std::string& ssInfo : ssStateInformation)
+	for (const grid_to_radon::record& rec : recs)
 	{
-		std::vector<std::string> tokens = himan::util::Split(ssInfo, "/");
+		const std::string atime = rec.ftime.OriginDateTime().ToSQLTime();
+		const std::string period = rec.ftime.Step().String("%h:%02M:%02S");
 
-		std::stringstream ss;
-		ss << "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id, "
-		      "forecast_type_value, table_name) VALUES ("
-		   << tokens[0] << ", (SELECT id FROM geom WHERE name = '" << tokens[1] << "'), "
-		   << "'" << tokens[2] << "', '" << tokens[3] << "'::interval, " << tokens[4] << ", " << tokens[5] << ", "
-		   << "'" << tokens[6] << "')";
-
-		logr.Debug("Updating ss_state for " + ssInfo);
+		std::string query = fmt::format(
+		    "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id,"
+		    "forecast_type_value, table_name) VALUES ({}, {}, '{}', '{}', {}, {}, '{}.{}')",
+		    rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), rec.ftype.Value(), rec.schema_name,
+		    rec.table_name);
 
 		if (options.dry_run)
 		{
@@ -166,22 +165,19 @@ void grid_to_radon::common::UpdateSSState(const std::set<std::string>& ssStateIn
 
 		try
 		{
-			ldr->RadonDB().Execute(ss.str());
+			ldr->RadonDB().Execute(query);
 		}
 		catch (const pqxx::unique_violation& e)
 		{
 			try
 			{
-				ss.str("");
-				ss << "UPDATE ss_state SET last_updated = now(), table_name = '" + tokens[6] + "' WHERE "
-				   << "producer_id = " << tokens[0] << " AND "
-				   << "geometry_id = (SELECT id FROM geom WHERE name = '" << tokens[1] << "') AND "
-				   << "analysis_time = '" << tokens[2] << "' AND "
-				   << "forecast_period = '" << tokens[3] << "' AND "
-				   << "forecast_type_id = " << tokens[4] << " AND "
-				   << "forecast_type_value = " << tokens[5];
-
-				ldr->RadonDB().Execute(ss.str());
+				query = fmt::format(
+				    "UPDATE ss_state SET last_updated = now(), table_name = '{}.{}' WHERE producer_id = {} AND "
+				    "geometry_id = {} AND analysis_time = '{}' AND forecast_period = '{}' AND forecast_type_id = {} "
+				    "AND forecast_type_value = {}",
+				    rec.schema_name, rec.table_name, rec.producer.Id(), rec.geometry_id, atime, period,
+				    rec.ftype.Type(), rec.ftype.Value());
+				ldr->RadonDB().Execute(query);
 			}
 			catch (const pqxx::pqxx_exception& ee)
 			{

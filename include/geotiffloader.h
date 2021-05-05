@@ -1,3 +1,4 @@
+#include "record.h"
 #include <string>
 
 namespace grid_to_radon
@@ -8,6 +9,6 @@ class GeoTIFFLoader
 	GeoTIFFLoader() = default;
 	~GeoTIFFLoader() = default;
 
-	bool Load(const std::string& theInfile);
+	std::pair<bool, records> Load(const std::string& theInfile) const;
 };
 }

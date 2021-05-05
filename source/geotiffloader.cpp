@@ -11,7 +11,7 @@
 
 extern grid_to_radon::Options options;
 
-bool grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile)
+std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile) const
 {
 	auto geotiffpl = GET_PLUGIN(geotiff);
 
@@ -44,7 +44,7 @@ bool grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile)
 	if (infos.empty())
 	{
 		logr.Warning("No valid data read from file");
-		return false;
+		return std::make_pair(false, grid_to_radon::records{});
 	}
 
 	logr.Info("Read metadata in " + std::to_string(t.GetTime()) + " ms");
@@ -52,17 +52,21 @@ bool grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile)
 	auto radon = GET_PLUGIN(radon);
 
 	int success = 0, failed = 0;
+	grid_to_radon::records recs;
 
 	int bandNo = 1;
 	for (auto& info : infos)
 	{
 		t.Start();
 		const std::string theFileName = grid_to_radon::common::MakeFileName(config, info, theInfile);
-		std::set<std::string> x;
 		finfo.message_no = bandNo;
-		if (grid_to_radon::common::SaveToDatabase(config, info, radon, finfo, x))
+
+		const auto ret = grid_to_radon::common::SaveToDatabase(config, info, radon, finfo);
+
+		if (ret.first)
 		{
 			success++;
+			recs.push_back(ret.second);
 		}
 		else
 		{
@@ -77,21 +81,7 @@ bool grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile)
 	logr.Info("Success with " + std::to_string(success) + " fields, " + "failed with " + std::to_string(failed) +
 	          " fields");
 
-	bool retval = true;
+	const bool retval = common::CheckForFailure(failed, 0, success);
 
-	if (options.max_failures >= 0 && failed > options.max_failures)
-	{
-		retval = false;
-	}
-
-	// We need to check for 'total failure' if the user didn't specify a max_failures value.
-	if (options.max_failures == -1)
-	{
-		if (success == 0)
-		{
-			retval = false;
-		}
-	}
-
-	return retval;
+	return std::make_pair(retval, recs);
 }

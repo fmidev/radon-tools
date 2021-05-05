@@ -26,7 +26,8 @@ struct Options
 	      in_place_insert(false),
 	      directory_structure_check(true),
 	      ss_table_name(""),
-	      allow_multi_table_gribs(false)
+	      allow_multi_table_gribs(false),
+	      metadata_file_name()
 	{
 	}
 
@@ -48,6 +49,7 @@ struct Options
 	bool directory_structure_check;  // --no-directory-structure-check
 	std::string ss_table_name;       // --smartmet-server-table-name
 	bool allow_multi_table_gribs;    // --allow-multi-table-gribs
+	std::string metadata_file_name;  // --metadata-file-name, -m
 };
 }
 

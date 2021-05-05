@@ -20,8 +20,6 @@
 
 thread_local S3Status statusG = S3StatusOK;
 
-thread_local std::set<std::string> ssStateInformation;
-
 extern grid_to_radon::Options options;
 extern std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<double>>> ReadMetadata(
     const NFmiGribMessage& message);
@@ -52,7 +50,7 @@ static void responseCompleteCallback(S3Status status, const S3ErrorDetails* erro
 	return;
 }
 
-bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
+grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::string& filename)
 {
 	auto StripProtocol = [](const std::string& fullFilename) {
 		std::string ret = fullFilename;
@@ -69,11 +67,13 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 	himan::timer othertimer(true);
 	himan::logger logr("s3gribloader");
 
+	grid_to_radon::records recs;
+
 	NFmiGrib reader;
 	if (!reader.Open(std::move(fp)))
 	{
 		logr.Error("Failed to open file from memory");
-		return false;
+		return recs;
 	}
 
 	int messageNo = -1;
@@ -88,12 +88,12 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 		{
 			othertimer.Start();
 
-			auto ret = ReadMetadata(reader.Message());
+			auto metadata = ReadMetadata(reader.Message());
 
 			othertimer.Stop();
 
-			auto config = ret.first;
-			auto info = ret.second;
+			auto config = metadata.first;
+			auto info = metadata.second;
 
 			himan::timer dbtimer(true);
 
@@ -105,15 +105,20 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 			finfo.file_location = plainFilename;
 			finfo.file_type = static_cast<himan::HPFileType>(reader.Message().Edition());
 
-			grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation);
+			auto ret = grid_to_radon::common::SaveToDatabase(config, info, r, finfo);
 
 			dbtimer.Stop();
-			logr.Debug(fmt::format("Message {} parameter {} level {} forecast type {} database time={} other={} ms",
-			                       messageNo, info->Param().Name(), static_cast<std::string>(info->Level()),
-			                       static_cast<std::string>(info->ForecastType()), dbtimer.GetTime(),
-			                       othertimer.GetTime()));
 
-			g_success++;
+			if (ret.first)
+			{
+				logr.Debug(fmt::format("Message {} parameter {} level {} forecast type {} database time={} other={} ms",
+				                       messageNo, info->Param().Name(), static_cast<std::string>(info->Level()),
+				                       static_cast<std::string>(info->ForecastType()), dbtimer.GetTime(),
+				                       othertimer.GetTime()));
+
+				g_success++;
+				recs.push_back(ret.second);
+			}
 		}
 		catch (const himan::HPExceptionType& e)
 		{
@@ -139,7 +144,7 @@ bool ProcessGribMessage(std::unique_ptr<FILE> fp, const std::string& filename)
 			g_failed++;
 		}
 	}
-	return true;
+	return recs;
 }
 
 static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char* buffer, void* callbackData)
@@ -182,19 +187,24 @@ grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(0), itsAccessKey(0), itsSe
 	}
 }
 
-bool grid_to_radon::S3GribLoader::Load(const std::string& theFileName) const
+std::pair<bool, grid_to_radon::records> grid_to_radon::S3GribLoader::Load(const std::string& theFileName) const
 {
 	g_success = 0;
 	g_failed = 0;
-	ReadFileStream(theFileName, 0, 0);
+	grid_to_radon::records recs = ReadFileStream(theFileName, 0, 0);
+
+	common::UpdateSSState(recs);
+
 	himan::logger logr("s3gribloader");
 	logr.Info(fmt::format("Success with {} fields, failed with {} fields", g_success, g_failed));
 
-	return true;
+	bool retval = common::CheckForFailure(g_failed, 0, g_success);
+
+	return std::make_pair(retval, recs);
 }
 
-void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startByte,
-                                                 size_t byteCount) const
+grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName, size_t startByte,
+                                                                   size_t byteCount) const
 {
 	himan::logger logr("s3gribloader");
 	// example: s3://noaa-gefs-pds/gefs.20170101/00/gep07.t00z.pgrb2bf036
@@ -302,20 +312,18 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 	if (fp == NULL)
 	{
 		logr.Error("Read failed");
-		return;
+		return {};
 	}
 
 	rewind(fp);
 	std::unique_ptr<FILE> ufp;
 	ufp.reset(fp);
 
-	ProcessGribMessage(std::move(ufp), theFileName);
+	auto records = ProcessGribFile(std::move(ufp), theFileName);
 
 	switch (statusG)
 	{
 		case S3StatusOK:
-			common::UpdateSSState(ssStateInformation);
-			ssStateInformation.clear();
 			break;
 		case S3StatusInternalError:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is there a proxy blocking the connection?"
@@ -336,4 +344,6 @@ void grid_to_radon::S3GribLoader::ReadFileStream(const std::string& theFileName,
 		default:
 			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << std::endl;
 	}
+
+	return records;
 }
