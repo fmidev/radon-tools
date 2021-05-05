@@ -19,23 +19,21 @@ extern grid_to_radon::Options options;
 using namespace std;
 
 bool grib1CacheInitialized = false, grib2CacheInitialized = false;
+std::mutex recordUpdateMutex;
 
 grid_to_radon::GribLoader::GribLoader() : g_success(0), g_skipped(0), g_failed(0)
 {
 }
 
-set<string> CheckForMultiTableGribs(const std::set<std::string>& ssStateInformation)
+set<string> CheckForMultiTableGribs(const grid_to_radon::records& recs)
 {
 	set<string> tables;
-	for_each(ssStateInformation.begin(), ssStateInformation.end(), [&](const std::string& str) {
-		const vector<string> tokens = himan::util::Split(str, "/");
-		tables.insert(tokens[6]);
-	});
+	for_each(recs.begin(), recs.end(), [&](const grid_to_radon::record& rec) { tables.insert(rec.table_name); });
 
 	return tables;
 }
 
-bool grid_to_radon::GribLoader::Load(const string& theInfile)
+pair<bool, grid_to_radon::records> grid_to_radon::GribLoader::Load(const string& theInfile)
 {
 	itsInputFileName = theInfile;
 	itsReader.Open(theInfile);
@@ -56,47 +54,25 @@ bool grid_to_radon::GribLoader::Load(const string& theInfile)
 	logr.Info("Success with " + to_string(g_success) + " fields, " + "failed with " + to_string(g_failed) +
 	          " fields, " + "skipped " + to_string(g_skipped) + " fields");
 
-	bool retval = true;
-
 	if (options.in_place_insert)
 	{
-		const auto tables = CheckForMultiTableGribs(ssStateInformation);
+		const auto tables = CheckForMultiTableGribs(itsRecords);
 
 		if (options.allow_multi_table_gribs == false && tables.size() > 1)
 		{
-			logr.Error(
+			throw std::runtime_error(
 			    fmt::format("Gribs in file '{}' are loaded to multiple tables: {}", theInfile, fmt::join(tables, ",")));
-			retval = false;
 		}
 	}
+
+	const bool retval = common::CheckForFailure(g_skipped, g_failed, g_success);
+
 	if (retval)
 	{
-		grid_to_radon::common::UpdateSSState(ssStateInformation);
+		grid_to_radon::common::UpdateSSState(itsRecords);
 	}
 
-	// When dealing with options.max_failures and options.max_skipped, we regard -1 as "don't care" and all values >= 0
-	// as something to be checked against.
-
-	if (options.max_failures >= 0 && g_failed > options.max_failures)
-	{
-		retval = false;
-	}
-
-	if (options.max_skipped >= 0 && g_skipped > options.max_skipped)
-	{
-		retval = false;
-	}
-
-	// We need to check for 'total failure' if the user didn't specify a max_failures value.
-	if (options.max_failures == -1 && options.max_skipped == -1)
-	{
-		if (g_success == 0)
-		{
-			retval = false;
-		}
-	}
-
-	return retval;
+	return make_pair(retval, itsRecords);
 }
 
 void grid_to_radon::GribLoader::Run(short threadId)
@@ -201,10 +177,10 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 
 	try
 	{
-		auto ret = ReadMetadata(message);
+		auto metadata = ReadMetadata(message);
 
-		auto config = ret.first;
-		auto info = ret.second;
+		auto config = metadata.first;
+		auto info = metadata.second;
 
 		const string theFileName = grid_to_radon::common::MakeFileName(config, info, itsInputFileName);
 
@@ -227,23 +203,36 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 		finfo.file_location = theFileName;
 		finfo.file_type = static_cast<himan::HPFileType>(message.Edition());
 
-		if (info->Param().Name() != "XX-X" &&
-		    grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation))
+		if (info->Param().Name() != "XX-X")
 		{
-			tmr.Stop();
-			const size_t databaseTime = tmr.GetTime();
+			auto ret = grid_to_radon::common::SaveToDatabase(config, info, r, finfo);
 
-			g_success++;
-			msgtimer.Stop();
+			if (ret.first)
+			{
+				tmr.Stop();
+				const size_t databaseTime = tmr.GetTime();
 
-			const size_t messageTime = msgtimer.GetTime();
-			const size_t otherTime = messageTime - writeTime - databaseTime;
+				g_success++;
+				msgtimer.Stop();
 
-			logr.Debug("Message " + to_string(messageNo) + " step " + static_cast<string>(info->Time().Step()) +
-			           " parameter " + info->Param().Name() + " at level " + static_cast<string>(info->Level()) +
-			           " forecast type " + static_cast<string>(info->ForecastType()) +
-			           " write time=" + to_string(writeTime) + ", database time=" + to_string(databaseTime) +
-			           ", other=" + to_string(otherTime) + " total=" + to_string(messageTime) + " ms");
+				const size_t messageTime = msgtimer.GetTime();
+				const size_t otherTime = messageTime - writeTime - databaseTime;
+
+				logr.Debug("Message " + to_string(messageNo) + " step " + static_cast<string>(info->Time().Step()) +
+				           " parameter " + info->Param().Name() + " at level " + static_cast<string>(info->Level()) +
+				           " forecast type " + static_cast<string>(info->ForecastType()) +
+				           " write time=" + to_string(writeTime) + ", database time=" + to_string(databaseTime) +
+				           ", other=" + to_string(otherTime) + " total=" + to_string(messageTime) + " ms");
+
+				{
+					std::lock_guard<std::mutex> lock(recordUpdateMutex);
+					itsRecords.push_back(ret.second);
+				}
+			}
+			else
+			{
+				g_failed++;
+			}
 		}
 		else
 		{

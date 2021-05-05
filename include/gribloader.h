@@ -2,6 +2,7 @@
 
 #include "NFmiGrib.h"
 #include "options.h"
+#include "record.h"
 #include <atomic>
 #include <boost/thread.hpp>
 #include <mutex>
@@ -15,7 +16,7 @@ class GribLoader
 	GribLoader();
 	virtual ~GribLoader() = default;
 
-	bool Load(const std::string& theInfile);
+	std::pair<bool, records> Load(const std::string& theInfile);
 
    protected:
 	void Run(short threadId);
@@ -33,7 +34,7 @@ class GribLoader
 
 	std::mutex distMutex;
 
-	std::set<std::string> ssStateInformation;
+	records itsRecords;
 	std::string itsHostName;
 	std::string itsInputFileName;
 };

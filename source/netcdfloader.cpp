@@ -165,14 +165,14 @@ himan::param ReadParam(NFmiNetCDF& reader, const himan::producer& prod)
 	*/
 }
 
-bool NetCDFLoader::Load(const std::string& theInfile)
+std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 {
 	NFmiNetCDF reader;
 
 	if (!reader.Read(theInfile))
 	{
 		itsLogger.Error("Unable to read file '" + theInfile + "'");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	// reader.AnalysisTime(options.analysistime);
@@ -180,13 +180,13 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 	if (options.analysistime.empty())
 	{
 		itsLogger.Error("Analysistime not specified");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	if (!reader.IsConvention())
 	{
 		itsLogger.Error("File '" + theInfile + "' is not CF conforming NetCDF");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	itsLogger.Debug("Read " + std::to_string(reader.SizeZ()) + " levels,\n" + +"     " +
@@ -199,7 +199,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 	if (options.producer == 0)
 	{
 		itsLogger.Error("producer_id value not found");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	const himan::producer prod(options.producer);
@@ -208,7 +208,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 	{
 		itsLogger.Error("Invalid format for analysistime: " + options.analysistime);
 		itsLogger.Error("Use YYYYMMDDHH24[MI]");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	const himan::raw_time originTime = ReadTime(options.analysistime);
@@ -223,7 +223,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 	if (geomdef.empty())
 	{
 		itsLogger.Error("Did not find geometry from database");
-		return false;
+		return make_pair(false, records{});
 	}
 
 	auto config = std::make_shared<himan::configuration>();
@@ -255,7 +255,7 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 		return info;
 	};
 
-	auto Write = [&](std::shared_ptr<himan::info<double>>& info) -> bool {
+	auto Write = [&](std::shared_ptr<himan::info<double>>& info) -> std::pair<bool, record> {
 		const std::string theFileName = common::MakeFileName(config, info, "");
 
 		himan::file_information finfo;
@@ -272,22 +272,29 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 			if (!reader.WriteSlice(finfo.file_location))
 			{
 				itsLogger.Error("Write to file failed");
-				return false;
+				return std::make_pair(false, record());
 			}
 
-			if (!grid_to_radon::common::SaveToDatabase(config, info, r, finfo, ssStateInformation))
+			const auto ret = grid_to_radon::common::SaveToDatabase(config, info, r, finfo);
+
+			if (!ret.first)
 			{
 				itsLogger.Error("Write to radon failed");
-				return false;
+				return std::make_pair(false, record());
 			}
+
 			itsLogger.Debug("Wrote " + info->Param().Name() + " level " + static_cast<std::string>(info->Level()) +
 			                " to file '" + finfo.file_location + "'");
+
+			return std::make_pair(true, ret.second);
 		}
 
-		return true;
+		return std::make_pair(false, record());
 	};
 
 	const himan::forecast_type ftype(himan::kDeterministic);
+
+	records recs;
 
 	for (reader.ResetTime(); reader.NextTime();)
 	{
@@ -337,7 +344,11 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 
 				auto info =
 				    CreateInfo(ftype, ftime, lvl, himan::util::GetParameterInfoFromDatabaseName(prod, par, lvl));
-				Write(info);
+				const auto ret = Write(info);
+				if (ret.first)
+				{
+					recs.push_back(ret.second);
+				}
 			}
 			else
 			{
@@ -359,7 +370,11 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 					auto info =
 					    CreateInfo(ftype, ftime, lvl, himan::util::GetParameterInfoFromDatabaseName(prod, par, lvl));
 
-					Write(info);
+					const auto ret = Write(info);
+					if (ret.first)
+					{
+						recs.push_back(ret.second);
+					}
 				}
 			}
 			g_succeededParams++;
@@ -368,16 +383,9 @@ bool NetCDFLoader::Load(const std::string& theInfile)
 	itsLogger.Info("Success with " + std::to_string(g_succeededParams) + " params, failed with " +
 	               std::to_string(g_failedParams) + " params");
 
-	// We need to check for 'total failure' if the user didn't specify a max_failures value.
-	if (options.max_failures == -1 && options.max_skipped == -1)
-	{
-		if (g_succeededParams == 0)
-		{
-			return false;
-		}
-	}
+	const bool retval = common::CheckForFailure(g_failedParams, 0, g_succeededParams);
 
-	return true;
+	return std::make_pair(retval, recs);
 }
 
 himan::raw_time StringToTime(const std::string& dateTime, const std::string& mask)

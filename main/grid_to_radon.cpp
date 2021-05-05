@@ -52,7 +52,8 @@ bool parse_options(int argc, char* argv[])
 	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)")
 	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "do not check for correct directory structure (in-place insert)")
 		("smartmet-server-table-name", po::value(&options.ss_table_name), "override table name for smartmet server")
-		("allow-multi-table-gribs", po::bool_switch(&options.allow_multi_table_gribs), "allow single grib file messages to be loaded to more than one radon table (in-place insert)");
+		("allow-multi-table-gribs", po::bool_switch(&options.allow_multi_table_gribs), "allow single grib file messages to be loaded to more than one radon table (in-place insert)")
+		("metadata,m", po::value(&options.metadata_file_name), "write metadata of successful fields to this file (json)");
 
 	// clang-format on
 
@@ -143,6 +144,63 @@ bool parse_options(int argc, char* argv[])
 	return true;
 }
 
+// std::quoted is c++14
+std::string quoted(const std::string& v)
+{
+	return fmt::format("\"{}\"", v);
+}
+
+std::string RecordToJSON(const grid_to_radon::record& rec)
+{
+	// If this gets any more complicated an actual JSON
+	// library should be used?
+
+	// clang-format off
+	std::string json = fmt::format("{{ {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {}, {} : {} }}",
+		quoted("schema_name"), quoted(rec.schema_name),
+		quoted("table_name"), quoted(rec.table_name),
+		quoted("file_name"), quoted(rec.file_name),
+		quoted("file_type"), rec.file_type,
+		quoted("geometry_name"), quoted(rec.geometry_name),
+		quoted("producer_id"), rec.producer.Id(),
+		quoted("forecast_type_id"), rec.ftype.Type(),
+		quoted("forecast_type_value"), rec.ftype.Value(),
+		quoted("analysis_time"), quoted(rec.ftime.OriginDateTime().ToSQLTime()),
+		quoted("forecast_period"), quoted(rec.ftime.Step().String("%h:%02M:%02S")),
+		quoted("level_id"), rec.level.Type(),
+		quoted("level_value"), rec.level.Value(),
+		quoted("level_value2"), rec.level.Value2(),
+		quoted("param_name"), quoted(rec.param.Name()));
+	// clang-format on
+	return json;
+}
+
+void WriteMetadata(const grid_to_radon::records& recs)
+{
+	if (options.metadata_file_name.empty())
+	{
+		return;
+	}
+
+	const std::strin VERSION = "20210505";
+	std::ofstream out(options.metadata_file_name);
+
+	out << "{\n  " << quoted("version") << " : " << quoted(VERSION) << ", " << quoted("records") << " : [";
+
+	size_t i = 0;
+	for (const auto& rec : recs)
+	{
+		out << "    " << RecordToJSON(rec);
+		if (++i != recs.size())
+			out << ",\n";
+	}
+
+	out << "  ]\n}";
+	out.close();
+
+	logr.Info(fmt::format("Wrote metadata to '{}'", options.metadata_file_name));
+}
+
 int main(int argc, char** argv)
 {
 	if (!parse_options(argc, argv))
@@ -151,6 +209,8 @@ int main(int argc, char** argv)
 	}
 
 	int retval = 0;
+
+	grid_to_radon::records all_records;
 
 	for (const std::string& infile : options.infile)
 	{
@@ -175,10 +235,9 @@ int main(int argc, char** argv)
 			grid_to_radon::S3GribLoader ldr;
 			options.s3 = true;
 
-			if (!ldr.Load(infile))
-			{
-				retval = 1;
-			}
+			const auto ret = ldr.Load(infile);
+			retval = static_cast<int>(!ret.first);
+			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
 
 			continue;
 		}
@@ -203,22 +262,18 @@ int main(int argc, char** argv)
 			options.ss_state_update = false;
 
 			grid_to_radon::NetCDFLoader ncl;
-
-			if (!ncl.Load(infile))
-			{
-				retval = 1;
-			}
+			const auto ret = ncl.Load(infile);
+			retval = static_cast<int>(!ret.first);
+			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
 		}
 		else if (type == himan::kGRIB1 || type == himan::kGRIB2 || type == himan::kGRIB || options.grib)
 		{
 			logr.Debug("File '" + infile + "' is GRIB");
 
 			grid_to_radon::GribLoader g;
-
-			if (!g.Load(infile))
-			{
-				retval = 1;
-			}
+			const auto ret = g.Load(infile);
+			retval = static_cast<int>(!ret.first);
+			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
 		}
 		else if (type == himan::kGeoTIFF)
 		{
@@ -241,11 +296,9 @@ int main(int argc, char** argv)
 
 			options.in_place_insert = true;
 
-			if (!g.Load(infile))
-			{
-				logr.Error("Load failed");
-				retval = 1;
-			}
+			const auto ret = g.Load(infile);
+			retval = static_cast<int>(!ret.first);
+			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
 		}
 		else
 		{
@@ -256,9 +309,11 @@ int main(int argc, char** argv)
 		// early exit if needed
 		if (retval != 0)
 		{
+			WriteMetadata(all_records);
 			return retval;
 		}
 	}
 
+	WriteMetadata(all_records);
 	return retval;
 }

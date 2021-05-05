@@ -1,4 +1,5 @@
-#include <logger.h>
+#include "logger.h"
+#include "record.h"
 #include <string>
 
 namespace grid_to_radon
@@ -9,11 +10,10 @@ class NetCDFLoader
 	NetCDFLoader();
 	~NetCDFLoader() = default;
 
-	bool Load(const std::string& theInfile);
+	std::pair<bool, records> Load(const std::string& theInfile) const;
 
    private:
 	std::string itsHostName;
 	himan::logger itsLogger;
-	std::set<std::string> ssStateInformation;
 };
 }
