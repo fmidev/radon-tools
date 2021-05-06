@@ -324,7 +324,7 @@ WHERE
 	
 	commit_chunk = 200 
 
-	reader = csv.reader(open(infile, 'rb'), delimiter=',')
+	reader = csv.reader(open(infile, 'r'), delimiter=',')
 
 	buff = []
 
