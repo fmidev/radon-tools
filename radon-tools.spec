@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.5.5
+Version:        21.5.6
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu May  6 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.6-1.fmi
+- Fix for previ_to_radon.py
 * Wed May  5 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.5-1.fmi
 - Add option to write loaded metadata to file
 * Fri Apr 30 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.4.30-1.fmi
