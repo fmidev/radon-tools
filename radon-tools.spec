@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.5.6
+Version:        21.5.11
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,8 +19,8 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.4.12
-BuildRequires:  himan-lib-devel >= 21.4.12
+BuildRequires:  himan-lib >= 21.5.11
+BuildRequires:  himan-lib-devel >= 21.5.11
 BuildRequires:  himan-plugins-devel >= 21.5.5
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue May 11 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.11-1.fmi
+- New himan-lib
 * Thu May  6 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.6-1.fmi
 - Fix for previ_to_radon.py
 * Wed May  5 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.5-1.fmi
