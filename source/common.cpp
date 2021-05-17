@@ -152,10 +152,17 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 		const std::string atime = rec.ftime.OriginDateTime().ToSQLTime();
 		const std::string period = rec.ftime.Step().String("%h:%02M:%02S");
 
+		double ftypeValue = rec.ftype.Value();
+
+		if (ftypeValue == himan::kHPMissingValue)
+		{
+			ftypeValue = -1;
+		}
+
 		std::string query = fmt::format(
 		    "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id,"
 		    "forecast_type_value, table_name) VALUES ({}, {}, '{}', '{}', {}, {}, '{}.{}')",
-		    rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), rec.ftype.Value(), rec.schema_name,
+		    rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), ftypeValue, rec.schema_name,
 		    rec.table_name);
 
 		if (options.dry_run)
@@ -176,7 +183,7 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 				    "geometry_id = {} AND analysis_time = '{}' AND forecast_period = '{}' AND forecast_type_id = {} "
 				    "AND forecast_type_value = {}",
 				    rec.schema_name, rec.table_name, rec.producer.Id(), rec.geometry_id, atime, period,
-				    rec.ftype.Type(), rec.ftype.Value());
+				    rec.ftype.Type(), ftypeValue);
 				ldr->RadonDB().Execute(query);
 			}
 			catch (const pqxx::pqxx_exception& ee)
