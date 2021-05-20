@@ -108,6 +108,7 @@ rm -rf %{buildroot}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
 %{_bindir}/geom_to_radon.py
+%{_bindir}/calc_hybrid_level_height.py
 %endif
 
 %changelog

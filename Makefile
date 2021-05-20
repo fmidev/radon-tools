@@ -43,9 +43,10 @@ install:
 	$(INSTALL_PROG) build/release/grid_to_radon $(bindir)
 
 	if [ $(shell grep -ic suse /etc/issue) -eq 0 ]; then \
-		$(INSTALL_PROG) main/radon_tables.py $(bindir) ; \
-		$(INSTALL_PROG) main/previ_to_radon.py $(bindir) ; \
-		$(INSTALL_PROG) main/geom_to_radon.py $(bindir) ; \
+		$(INSTALL_PROG) python/radon_tables.py $(bindir) ; \
+		$(INSTALL_PROG) python/previ_to_radon.py $(bindir) ; \
+		$(INSTALL_PROG) python/geom_to_radon.py $(bindir) ; \
+		$(INSTALL_PROG) python/calc_hybrid_level_height.py $(bindir) ; \
 	fi;
 
 test:	debug
