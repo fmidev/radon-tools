@@ -149,6 +149,11 @@ std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<dou
 
 	if (geomdef.empty())
 	{
+		himan::logger logr("gribloader");
+		logr.Warning(fmt::format("Geometry not found from radon: type '{}' first point {},{} ni/nj {} {} di/dj {} {}",
+		                         himan::HPGridTypeToString.at(geom->Type()), fp.X(), fp.Y(), geom->Ni(), geom->Nj(),
+		                         geom->Di(), geom->Dj()));
+
 		throw himan::kFileMetaDataNotFound;
 	}
 
