@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.5.17
+Version:        21.6.10
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,16 +19,16 @@ BuildRequires:  libfmidb-devel >= 20.7.8
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.5.11
-BuildRequires:  himan-lib-devel >= 21.5.11
-BuildRequires:  himan-plugins-devel >= 21.5.5
+BuildRequires:  himan-lib >= 21.6.2
+BuildRequires:  himan-lib-devel >= 21.6.2
+BuildRequires:  himan-plugins-devel >= 21.6.10
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 21.3.31
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 21.5.11
-Requires:	himan-plugins >= 21.5.5
+Requires:	himan-lib >= 21.6.2
+Requires:	himan-plugins >= 21.6.10
 Requires:	netcdf-cxx
 Requires:	libpqxx
 Requires:	eccodes
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Thu Jun 10 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.6.10-1.fmi
+- New himan-plugins
 * Mon May 17 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.17-1.fmi
 - Correct forecast type value for ss_state
 * Tue May 11 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.11-1.fmi
