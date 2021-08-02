@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.6.10
+Version:        21.8.2
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -15,22 +15,21 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 20.12.2
-BuildRequires:  libfmidb-devel >= 20.7.8
+BuildRequires:  libfmidb-devel >= 21.7.23
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.6.2
-BuildRequires:  himan-lib-devel >= 21.6.2
-BuildRequires:  himan-plugins-devel >= 21.6.10
+BuildRequires:  himan-lib >= 21.8.2
+BuildRequires:  himan-lib-devel >= 21.8.2
+BuildRequires:  himan-plugins-devel >= 21.8.2
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
-Requires:	libfmidb >= 21.3.31
+Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 21.6.2
 Requires:	himan-plugins >= 21.6.10
 Requires:	netcdf-cxx
-Requires:	libpqxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
 
@@ -45,6 +44,7 @@ BuildRequires:	gdal32-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
 Requires:	gdal32-libs
+Requires:	libpqxx > 5
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
@@ -52,7 +52,7 @@ BuildRequires:	gdal32-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:	gdal32-libs
-
+Requires:	libpqxx > 7
 %endif
 
 Requires:       python3-psycopg2
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi
+- New libpqxx & himan
 * Thu Jun 10 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.6.10-1.fmi
 - New himan-plugins
 * Mon May 17 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.5.17-1.fmi

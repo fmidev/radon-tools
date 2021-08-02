@@ -186,10 +186,17 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 				    rec.ftype.Type(), ftypeValue);
 				ldr->RadonDB().Execute(query);
 			}
+#if PQXX_VERSION_MAJOR < 7
 			catch (const pqxx::pqxx_exception& ee)
 			{
-				logr.Error("Updating ss_state information failed: " + std::string(e.what()));
+				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.what()));
 			}
+#else
+		        catch (const pqxx::failure& ee)
+		        {
+				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.what()));
+		        }
+#endif
 		}
 	}
 }
