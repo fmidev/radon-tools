@@ -189,7 +189,7 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 #if PQXX_VERSION_MAJOR < 7
 			catch (const pqxx::pqxx_exception& ee)
 			{
-				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.what()));
+				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.base().what()));
 			}
 #else
 		        catch (const pqxx::failure& ee)
