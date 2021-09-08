@@ -383,6 +383,8 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 	itsLogger.Info("Success with " + std::to_string(g_succeededParams) + " params, failed with " +
 	               std::to_string(g_failedParams) + " params");
 
+	common::UpdateSSState(recs);
+
 	const bool retval = common::CheckForFailure(g_failedParams, 0, g_succeededParams);
 
 	return std::make_pair(retval, recs);

@@ -259,8 +259,6 @@ int main(int argc, char** argv)
 				continue;
 			}
 
-			options.ss_state_update = false;
-
 			grid_to_radon::NetCDFLoader ncl;
 			const auto ret = ncl.Load(infile);
 			retval = static_cast<int>(!ret.first);
