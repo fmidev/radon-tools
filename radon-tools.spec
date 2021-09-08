@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.8.11
+Version:        21.9.8
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -112,6 +112,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.8-1.fmi
+- Update ss_state with information about loaded netcdf fields
 * Wed Aug 11 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.11-1.fmi
 - New himan lib & plugins
 * Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi
