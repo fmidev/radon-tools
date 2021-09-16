@@ -91,8 +91,9 @@ std::unique_ptr<himan::regular_grid> ReadAreaAndGrid(NFmiNetCDF& reader)
 	}
 	else if (reader.Projection() == "polar_stereographic")
 	{
+		// fminc returns di/dj in km, radon holds meters
 		return std::unique_ptr<himan::stereographic_grid>(
-		    new himan::stereographic_grid(himan::kBottomLeft, first, ni, nj, di, dj, reader.Orientation(),
+		    new himan::stereographic_grid(himan::kBottomLeft, first, ni, nj, 1000 * di, 1000 * dj, reader.Orientation(),
 		                                  himan::earth_shape<double>(6371220.), false));
 	}
 	else
