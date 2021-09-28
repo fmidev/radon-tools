@@ -111,10 +111,11 @@ grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::stri
 
 			if (ret.first)
 			{
-				logr.Debug(fmt::format("Message {} parameter {} level {} forecast type {} database time={} other={} ms",
-				                       messageNo, info->Param().Name(), static_cast<std::string>(info->Level()),
-				                       static_cast<std::string>(info->ForecastType()), dbtimer.GetTime(),
-				                       othertimer.GetTime()));
+				logr.Debug(fmt::format(
+				    "Message {} step {} parameter {} level {} forecast type {} database time={} other={} ms", messageNo,
+				    static_cast<std::string>(info->Time().Step()), info->Param().Name(),
+				    static_cast<std::string>(info->Level()), static_cast<std::string>(info->ForecastType()),
+				    dbtimer.GetTime(), othertimer.GetTime()));
 
 				g_success++;
 				recs.push_back(ret.second);
