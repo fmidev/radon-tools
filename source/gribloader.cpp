@@ -51,8 +51,8 @@ pair<bool, grid_to_radon::records> grid_to_radon::GribLoader::Load(const string&
 	}
 
 	himan::logger logr("gribloader");
-	logr.Info("Success with " + to_string(g_success) + " fields, " + "failed with " + to_string(g_failed) +
-	          " fields, " + "skipped " + to_string(g_skipped) + " fields");
+	logr.Info(fmt::format("Success with {} fields, failed with {} fields, skipped {} fields", g_success, g_failed,
+	                      g_skipped));
 
 	if (options.in_place_insert)
 	{
@@ -223,11 +223,12 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 				const size_t messageTime = msgtimer.GetTime();
 				const size_t otherTime = messageTime - writeTime - databaseTime;
 
-				logr.Debug("Message " + to_string(messageNo) + " step " + static_cast<string>(info->Time().Step()) +
-				           " parameter " + info->Param().Name() + " at level " + static_cast<string>(info->Level()) +
-				           " forecast type " + static_cast<string>(info->ForecastType()) +
-				           " write time=" + to_string(writeTime) + ", database time=" + to_string(databaseTime) +
-				           ", other=" + to_string(otherTime) + " total=" + to_string(messageTime) + " ms");
+				logr.Debug(fmt::format(
+				    "Message {} step {} parameter {} level {} forecast type {} write time={} database time={} other={} "
+				    "total={} ms",
+				    messageNo, static_cast<string>(info->Time().Step()), info->Param().Name(),
+				    static_cast<string>(info->Level()), static_cast<string>(info->ForecastType()), writeTime,
+				    databaseTime, otherTime, messageTime));
 
 				{
 					std::lock_guard<std::mutex> lock(recordUpdateMutex);

@@ -133,7 +133,7 @@ std::pair<bool, grid_to_radon::record> grid_to_radon::common::SaveToDatabase(
 			return std::make_pair(true, Merge(config, info, finfo, ret.second));
 		}
 	}
-	return std::make_pair(true, grid_to_radon::record());
+	return std::make_pair(false, grid_to_radon::record());
 }
 
 void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
