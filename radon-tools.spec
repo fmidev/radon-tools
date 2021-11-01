@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.9.8
+Version:        21.9.28
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -112,6 +112,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Sep 28 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.28-1.fmi
+- Fix crash when loading too old data
+* Thu Sep 16 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.16-1.fmi
+- Bugfix when reading stereographic grid information
 * Wed Sep  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.8-1.fmi
 - Update ss_state with information about loaded netcdf fields
 * Wed Aug 11 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.11-1.fmi
