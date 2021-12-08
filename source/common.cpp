@@ -63,15 +63,18 @@ std::string grid_to_radon::common::MakeFileName(std::shared_ptr<himan::configura
                                                 std::shared_ptr<himan::info<double>>& info,
                                                 const std::string& inputFileName)
 {
+	if (options.s3)
+	{
+		return inputFileName;
+	}
+
 	if (options.in_place_insert)
 	{
 		return CanonicalFileName(inputFileName);
 	}
-	else
-	{
-		himan::plugin_configuration pconfig(*config);
-		return himan::util::MakeFileName(*info, pconfig);
-	}
+
+	himan::plugin_configuration pconfig(*config);
+	return himan::util::MakeFileName(*info, pconfig);
 }
 
 bool CheckDirectoryStructure(const boost::filesystem::path& pathname)

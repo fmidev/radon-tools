@@ -11,6 +11,7 @@ struct Options
 	Options()
 	    : netcdf(false),
 	      grib(false),
+	      geotiff(false),
 	      s3(false),
 	      producer(0),
 	      analysistime(""),
@@ -33,6 +34,7 @@ struct Options
 
 	bool netcdf;               // -n
 	bool grib;                 // -g
+	bool geotiff;              // -G
 	bool s3;                   // -s
 	unsigned int producer;     // -p
 	std::string analysistime;  // -a
@@ -51,6 +53,6 @@ struct Options
 	bool allow_multi_table_gribs;    // --allow-multi-table-gribs
 	std::string metadata_file_name;  // --metadata-file-name, -m
 };
-}
+}  // namespace grid_to_radon
 
 #endif
