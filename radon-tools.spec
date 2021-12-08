@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.9.28
+Version:        21.12.8
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -112,6 +112,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Dec  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.12.8-1.fmi
+- Support loading geotiff data from s3
 * Tue Sep 28 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.28-1.fmi
 - Fix crash when loading too old data
 * Thu Sep 16 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.16-1.fmi
