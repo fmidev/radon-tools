@@ -17,12 +17,21 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 
 	options.ss_state_update = false;
 	himan::file_information finfo;
-	finfo.storage_type = himan::kLocalFileSystem;
 	finfo.message_no = boost::none;
 	finfo.offset = boost::none;
 	finfo.length = boost::none;
-	finfo.file_location = common::CanonicalFileName(theInfile);
 	finfo.file_type = himan::kGeoTIFF;
+
+	if (options.s3)
+	{
+		finfo.storage_type = himan::kS3ObjectStorageSystem;
+		finfo.file_location = theInfile;
+	}
+	else
+	{
+		finfo.storage_type = himan::kLocalFileSystem;
+		finfo.file_location = common::CanonicalFileName(theInfile);
+	}
 
 	auto config = std::make_shared<himan::configuration>();
 

@@ -37,6 +37,7 @@ bool parse_options(int argc, char* argv[])
                 ("debug-level,d", po::value(&logLevel), "set log level: 0(fatal) 1(error) 2(warning) 3(info) 4(debug) 5(trace)")
 		("netcdf,n", po::bool_switch(&options.netcdf), "force netcdf mode on")
 		("grib,g", po::bool_switch(&options.grib), "force grib mode on")
+		("geotiff,G", po::bool_switch(&options.geotiff), "force geotiff mode on")
 		("version,V", "display version number")
 		("infile,i", po::value<std::vector<std::string>>(&options.infile), "input file(s), - for stdin")
 		("producer,p", po::value(&options.producer), "producer id")
@@ -226,20 +227,22 @@ int main(int argc, char** argv)
 
 		if (isLocalFile == false)
 		{
-			if (options.grib == false)
-			{
-				logr.Error("Only grib files are supported with s3");
-				continue;
-			}
-
-			grid_to_radon::S3GribLoader ldr;
 			options.s3 = true;
 
-			const auto ret = ldr.Load(infile);
-			retval = static_cast<int>(!ret.first);
-			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
+			if (options.grib)
+			{
+				grid_to_radon::S3GribLoader ldr;
 
-			continue;
+				const auto ret = ldr.Load(infile);
+				retval = static_cast<int>(!ret.first);
+				all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
+				continue;
+			}
+			else if (options.geotiff == false)
+			{
+				logr.Error("Only grib&geotiff files are supported with s3");
+				continue;
+			}
 		}
 		else
 		{
