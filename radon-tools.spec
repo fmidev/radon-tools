@@ -40,19 +40,19 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
-BuildRequires:	gdal32-devel
+BuildRequires:	gdal33-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
-Requires:	gdal32-libs
+Requires:	gdal33-libs
 Requires:	libpqxx > 5
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
-BuildRequires:	gdal32-devel
+BuildRequires:	gdal33-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
-Requires:	gdal32-libs
-Requires:	libpqxx > 7
+Requires:	gdal33-libs
+Requires:	libpqxx >= 7.6
 %endif
 
 Requires:       python3-psycopg2
@@ -60,7 +60,6 @@ Requires:       python3-psycopg2
 BuildRequires:  boost169-devel
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-Requires:       libpqxx
 Requires:       boost169-system
 Requires:       boost169-filesystem
 Requires:       boost169-program-options
