@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        21.12.8
+Version:        22.1.17
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,16 +19,16 @@ BuildRequires:  libfmidb-devel >= 21.7.23
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.8.11
-BuildRequires:  himan-lib-devel >= 21.8.11
-BuildRequires:  himan-plugins-devel >= 21.8.11
+BuildRequires:  himan-lib >= 22.1.17
+BuildRequires:  himan-lib-devel >= 22.1.17
+BuildRequires:  himan-plugins-devel >= 22.1.17
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 21.8.11
-Requires:	himan-plugins >= 21.8.11
+Requires:	himan-lib >= 22.1.17
+Requires:	himan-plugins >= 22.1.17
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
@@ -52,7 +52,7 @@ BuildRequires:	gdal33-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:	gdal33-libs
-Requires:	libpqxx >= 7.6
+Requires:	libpqxx >= 7.6.0
 %endif
 
 Requires:       python3-psycopg2
@@ -111,6 +111,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jan 17 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.17-1.fmi
+- Updated himan-libs
+* Fri Jan 14 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.14-1.fmi
+- New gdal and pqxx
 * Wed Dec  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.12.8-1.fmi
 - Support loading geotiff data from s3
 * Tue Sep 28 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.28-1.fmi
