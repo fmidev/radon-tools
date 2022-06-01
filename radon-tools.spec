@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.2.1
+Version:        22.6.1
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jun  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.1-1.fmi
+- Update to previ_to_radon.py
 * Tue Feb  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.2.1-1.fmi
 - gdal34
 * Mon Jan 17 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.17-1.fmi

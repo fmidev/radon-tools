@@ -15,6 +15,10 @@ conn = None
 cur = None
 tableCache = {}
 stations = {}
+firstTable = None
+madePlans = False
+insertcur = None
+updatecur = None
 
 # ReadCommandLine()
 # 
@@ -241,10 +245,17 @@ FROM STDIN WITH CSV %s DELIMITER AS ','"""
 
 def LoadFile(options, infile, stations):
 
+	global firstTable
+	global madePlans
 	tableInfo = None
 
 	try:
 		tableInfo = GetTableInfo(options, options.producer_id, options.analysis_time)
+		if firstTable is None:
+			firstTable = '{}.{}'.format(tableInfo['schema_name'], tableInfo['partition_name'])
+		else:
+			assert(firstTable == '{}.{}'.format(tableInfo['schema_name'], tableInfo['partition_name']))
+
 	except ValueError as e:
 		print(e)
 		return
@@ -260,13 +271,16 @@ def LoadFile(options, infile, stations):
 			return True
 
 		print("Insert with COPY failed, switching to INSERT")
+
+	if madePlans == False:
+		MakePlans(tableInfo)
+		madePlans = True
+
 	Insert(infile, tableInfo, stations)
 
-def Insert(infile, tableInfo, stations):
-	
-	inserts = 0
-	updates = 0
-
+def MakePlans(tableInfo):
+	global insertcur
+	global updatecur
 	# prepared statements for insert and update
 
 	query = """
@@ -313,6 +327,13 @@ WHERE
 	updatecur = conn.cursor()
 
 	updatecur.execute(query)
+
+def Insert(infile, tableInfo, stations):
+	global insertcur
+	global updatecur
+
+	inserts = 0
+	updates = 0
 
 	# prepared statements are faster when inserting data, but they
 	# can only be used when analysis time is static (specified from
