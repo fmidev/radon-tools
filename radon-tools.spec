@@ -19,16 +19,16 @@ BuildRequires:  libfmidb-devel >= 21.7.23
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 21.8.11
-BuildRequires:  himan-lib-devel >= 21.8.11
-BuildRequires:  himan-plugins-devel >= 21.8.11
+BuildRequires:  himan-lib >= 22.2.1
+BuildRequires:  himan-lib-devel >= 22.2.1
+BuildRequires:  himan-plugins-devel >= 22.2.1
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 20.12.2
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 21.8.11
-Requires:	himan-plugins >= 21.8.11
+Requires:	himan-lib >= 22.2.1
+Requires:	himan-plugins >= 22.2.1
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
@@ -40,19 +40,19 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
-BuildRequires:	gdal33-devel
+BuildRequires:	gdal34-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
-Requires:	gdal33-libs
+Requires:	gdal34-libs
 Requires:	libpqxx > 5
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
-BuildRequires:	gdal33-devel
+BuildRequires:	gdal34-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
-Requires:	gdal33-libs
-Requires:	libpqxx >= 7.6
+Requires:	gdal34-libs
+Requires:	libpqxx >= 7.6.0
 %endif
 
 Requires:       python3-psycopg2
@@ -113,6 +113,20 @@ rm -rf %{buildroot}
 %changelog
 * Wed Jun  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.1-1.fmi
 - Update to previ_to_radon.py
+* Tue Feb  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.2.1-1.fmi
+- gdal34
+* Mon Jan 17 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.17-1.fmi
+- Updated himan-libs
+* Fri Jan 14 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.1.14-1.fmi
+- New gdal and pqxx
+* Wed Dec  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.12.8-1.fmi
+- Support loading geotiff data from s3
+* Tue Sep 28 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.28-1.fmi
+- Fix crash when loading too old data
+* Thu Sep 16 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.16-1.fmi
+- Bugfix when reading stereographic grid information
+* Wed Sep  8 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.9.8-1.fmi
+- Update ss_state with information about loaded netcdf fields
 * Wed Aug 11 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.11-1.fmi
 - New himan lib & plugins
 * Mon Aug  2 2021 Mikko Partio <mikko.partio@fmi.fi> - 21.8.2-1.fmi
