@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.6.1
+Version:        22.8.24
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -52,7 +52,7 @@ BuildRequires:	gdal34-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:	gdal34-libs
-Requires:	libpqxx >= 7.6.0
+Requires:	libpqxx >= 7.7.0
 %endif
 
 Requires:       python3-psycopg2
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Aug 24 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.8.24-1.fmi
+- pqxx 7.7
 * Wed Jun  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.1-1.fmi
 - Update to previ_to_radon.py
 * Tue Feb  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.2.1-1.fmi
