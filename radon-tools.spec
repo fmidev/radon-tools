@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.8.24
+Version:        22.11.9
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Nov  9 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.9-1.fmi
+- SQL query optimization
 * Wed Aug 24 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.8.24-1.fmi
 - pqxx 7.7
 * Wed Jun  1 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.6.1-1.fmi
