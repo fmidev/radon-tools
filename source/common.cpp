@@ -150,6 +150,9 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 
 	himan::logger logr("common");
 
+	std::set<std::string> handled;
+	int skippedCount = 0;
+
 	for (const grid_to_radon::record& rec : recs)
 	{
 		const std::string atime = rec.ftime.OriginDateTime().ToSQLTime();
@@ -161,6 +164,16 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 		{
 			ftypeValue = -1;
 		}
+		const std::string uniqueId = fmt::format("{}_{}_{}_{}_{}_{}", rec.producer.Id(), rec.geometry_id, atime, period,
+		                                         rec.ftype.Type(), ftypeValue);
+
+		if (std::find(handled.begin(), handled.end(), uniqueId) != handled.end())
+		{
+			skippedCount++;
+			continue;
+		}
+
+		handled.insert(uniqueId);
 
 		std::string query = fmt::format(
 		    "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id,"
@@ -195,11 +208,14 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.base().what()));
 			}
 #else
-		        catch (const pqxx::failure& ee)
-		        {
+			catch (const pqxx::failure& ee)
+			{
 				logr.Error(fmt::format("Updating ss_state information failed: {}", ee.what()));
-		        }
+			}
 #endif
 		}
 	}
+
+	logr.Trace(fmt::format("Skipped {} duplicate ss_state entries", skippedCount));
+
 }
