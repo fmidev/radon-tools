@@ -218,7 +218,7 @@ def ReadCommandLine(argv):
 def SourceEnv(options, hostname, bucketname):
     envfile = (
         options["s3_credentials_file"]
-        .replace("{hostname}", hostname)
+        .replace("{hostname}", hostname.strip("https://").strip("http://"))
         .replace("{bucketname}", bucketname)
     )
 
@@ -234,12 +234,14 @@ def SourceEnv(options, hostname, bucketname):
 def CreateClient(hostname):
 
     session = boto3.session.Session()
-
+    hostname_ = (
+        f"https://{hostname}" if hostname.startswith("http") is False else hostname
+    )
     return session.client(
         service_name="s3",
         aws_access_key_id=os.environ["AWS_ACCESS_KEY_ID"],
         aws_secret_access_key=os.environ["AWS_SECRET_ACCESS_KEY"],
-        endpoint_url=f"https://{hostname}",
+        endpoint_url=hostname_,
     )
 
 
