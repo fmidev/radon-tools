@@ -11,9 +11,11 @@
 
 extern grid_to_radon::Options options;
 
-std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile) const
+std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const std::string& theInfile_) const
 {
 	auto geotiffpl = GET_PLUGIN(geotiff);
+
+	const auto theInfile = common::StripProtocol(theInfile_);
 
 	options.ss_state_update = false;
 	himan::file_information finfo;

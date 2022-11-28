@@ -9,7 +9,7 @@ namespace plugin
 {
 class radon;
 }
-}
+}  // namespace himan
 
 namespace grid_to_radon
 {
@@ -26,5 +26,6 @@ std::string MakeFileName(std::shared_ptr<himan::configuration>& config, std::sha
                          const std::string& inputFileName);
 void CreateDirectory(const std::string& theFileName);
 bool CheckForFailure(int g_failed, int g_skipped, int g_success);
-}
-}
+std::string StripProtocol(const std::string& str);
+}  // namespace common
+}  // namespace grid_to_radon
