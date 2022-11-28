@@ -52,18 +52,6 @@ static void responseCompleteCallback(S3Status status, const S3ErrorDetails* erro
 
 grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::string& filename)
 {
-	auto StripProtocol = [](const std::string& fullFilename) {
-		std::string ret = fullFilename;
-		size_t start_pos = ret.find("s3://");
-
-		if (start_pos != std::string::npos)
-		{
-			ret.erase(start_pos, 5);
-		}
-
-		return ret;
-	};
-
 	himan::timer othertimer(true);
 	himan::logger logr("s3gribloader");
 
@@ -79,7 +67,7 @@ grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::stri
 	int messageNo = -1;
 	auto r = GET_PLUGIN(radon);
 
-	const auto plainFilename = StripProtocol(filename);
+	const auto plainFilename = grid_to_radon::common::StripProtocol(filename);
 	while (reader.NextMessage())
 	{
 		messageNo++;

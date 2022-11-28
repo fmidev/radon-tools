@@ -3,6 +3,7 @@
 #include <boost/filesystem.hpp>
 #include <boost/regex.hpp>
 #include <plugin_factory.h>
+#include <regex>
 #include <sstream>
 #include <util.h>
 
@@ -14,6 +15,13 @@ extern grid_to_radon::Options options;
 std::mutex dirCreateMutex;
 
 bool CheckDirectoryStructure(const boost::filesystem::path& pathname);
+
+std::string grid_to_radon::common::StripProtocol(const std::string& str)
+{
+	const static std::regex r("^(https)|(http)|(s3)*://");
+
+	return regex_replace(str, r, "");
+}
 
 bool grid_to_radon::common::CheckForFailure(int g_failed, int g_skipped, int g_success)
 {
@@ -217,5 +225,4 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 	}
 
 	logr.Trace(fmt::format("Skipped {} duplicate ss_state entries", skippedCount));
-
 }
