@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.11.25
+Version:        22.11.28
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Nov 28 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.28-1.fmi
+- Minor change to geotiff loading
 * Fri Nov 25 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.25-1.fmi
 - Bugfix for radon_tables.py
 * Wed Nov  9 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.9-1.fmi
