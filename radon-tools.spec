@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.11.28
+Version:        22.12.19
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Dec 19 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.12.19-1.fmi
+- Fix s3 reading if hostname has protocol
 * Mon Nov 28 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.28-1.fmi
 - Minor change to geotiff loading
 * Fri Nov 25 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.25-1.fmi
