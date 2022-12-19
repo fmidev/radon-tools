@@ -144,7 +144,7 @@ static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char
 	return ((wrote < static_cast<size_t>(bufferSize)) ? S3StatusAbortedByCallback : S3StatusOK);
 }
 
-grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(0), itsAccessKey(0), itsSecretKey(0)
+grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(nullptr), itsAccessKey(nullptr), itsSecretKey(nullptr)
 {
 	itsAccessKey = getenv("S3_ACCESS_KEY_ID");
 	itsSecretKey = getenv("S3_SECRET_ACCESS_KEY");
@@ -219,16 +219,10 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
 		{
 			protocol = S3ProtocolHTTP;
 		}
-		else
-		{
-			logr.Warning(fmt::format("Unrecognized value found from env variable S3_PROTOCOL: '{}'", envproto));
-		}
 	}
 	catch (const std::invalid_argument& e)
 	{
 	}
-
-	logr.Info(fmt::format("Using {} protocol to access data", protocol == S3ProtocolHTTP ? "http" : "https"));
 
 #ifdef S3_DEFAULT_REGION
 
@@ -248,11 +242,12 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
 
 	// libs3 boilerplate
 
+	const auto host = common::StripProtocol(std::string(itsHost));
 	// clang-format off
 
 	S3BucketContext bucketContext =
 	{
-		itsHost,
+		host.c_str(),
 		bucket.c_str(),
 		protocol,
 		S3UriStylePath,
@@ -264,7 +259,7 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
 #else
 	S3BucketContext bucketContext =
 	{
-		itsHost,
+		host.c_str(),
 		bucket.c_str(),
 		protocol,
 		S3UriStylePath,
