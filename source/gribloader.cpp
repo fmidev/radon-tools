@@ -223,12 +223,16 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 				const size_t messageTime = msgtimer.GetTime();
 				const size_t otherTime = messageTime - writeTime - databaseTime;
 
-				logr.Debug(fmt::format(
-				    "Message {} step {} parameter {} level {} forecast type {} write time={} database time={} other={} "
+				string logmsg = fmt::format(
+				    "Message {} producer {} analysis time {} step {} parameter {} level {} forecast type {} write "
+				    "time={} "
+				    "database time={} other={} "
 				    "total={} ms",
-				    messageNo, static_cast<string>(info->Time().Step()), info->Param().Name(),
-				    static_cast<string>(info->Level()), static_cast<string>(info->ForecastType()), writeTime,
-				    databaseTime, otherTime, messageTime));
+				    messageNo, info->Producer().Id(), static_cast<string>(info->Time().OriginDateTime()),
+				    static_cast<string>(info->Time().Step()), info->Param().Name(), static_cast<string>(info->Level()),
+				    static_cast<string>(info->ForecastType()), writeTime, databaseTime, otherTime, messageTime);
+
+				logr.Debug(logmsg);
 
 				{
 					std::lock_guard<std::mutex> lock(recordUpdateMutex);

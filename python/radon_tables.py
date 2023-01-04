@@ -685,7 +685,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER VOLATILE"""
         cur.execute(query)
 
 
-def UpdateSSState(options, producer, geometry_id, analysis_time):
+def DropFromSSState(options, producer, row):
+    geometry_id = row[8]
+    analysis_time = row[4]
+
     query = "DELETE FROM ss_state WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
 
     if options["show_sql"]:
@@ -698,43 +701,11 @@ def UpdateSSState(options, producer, geometry_id, analysis_time):
             logging.error(e)
 
 
-def DropFromAsGrid(options, producer, row):
-    schema_name = row[1]
-    table_name = row[2]
-    partition_name = row[3]
-    analysis_time = row[4]
-    age = row[7]
+def DropFromSSForecastStatus(options, producer, row):
     geometry_id = row[8]
+    analysis_time = row[4]
 
-    logging.info(
-        "Deleting from partition %s using (analysis time %s geometry %d) age is %s"
-        % (partition_name, analysis_time, geometry_id, age)
-    )
-
-    files = []
-
-    if options["unlink"]:
-        query = f"SELECT file_location,file_protocol_id,file_server FROM {schema_name}.{partition_name} "
-        query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2,3 ORDER BY file_server"
-
-        if options["show_sql"]:
-            print(cur.mogrify(query, (geometry_id, analysis_time, producer["id"])))
-
-        cur.execute(query, (geometry_id, analysis_time, producer["id"]))
-
-        files = cur.fetchall()
-
-        logging.info(f"Found {len(files)} distinct files to remove")
-
-    # First delete rows in ss_state, then remove files in disk, finally drop table partition
-
-    query = (
-        "DELETE FROM "
-        + schema_name
-        + "."
-        + partition_name
-        + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
-    )
+    query = "DELETE FROM ss_forecast_status WHERE producer_id = %s AND (geometry_id = %s OR geometry_id IS NULL) AND analysis_time = %s"
 
     if options["show_sql"]:
         print(cur.mogrify(query, (producer["id"], geometry_id, analysis_time)))
@@ -742,20 +713,13 @@ def DropFromAsGrid(options, producer, row):
     if not options["dry_run"]:
         try:
             cur.execute(query, (producer["id"], geometry_id, analysis_time))
-            UpdateSSState(options, producer, geometry_id, analysis_time)
-
-            conn.commit()  # commit at this point as file delete might take a long
-            # time sometimes
-
         except psycopg2.ProgrammingError as e:
-            logging.error(
-                "Table %s.%s does not exist although listed in %s"
-                % (schema_name, partition_name, as_table)
-            )
+            logging.error(e)
+
+
+def RemoveFiles(options, files):
 
     count = 0
-    start = timer()
-
     last_server = None
     client = None
 
@@ -820,7 +784,64 @@ def DropFromAsGrid(options, producer, row):
             else:
                 logging.debug(f"rm s3://{bucket}/{key}")
 
+    return count
+
+
+def DropFromAsGrid(options, producer, row):
+    schema_name = row[1]
+    table_name = row[2]
+    partition_name = row[3]
+    analysis_time = row[4]
+    age = row[7]
+    geometry_id = row[8]
+
+    logging.info(
+        "Deleting from partition %s using (analysis time %s geometry %d) age is %s"
+        % (partition_name, analysis_time, geometry_id, age)
+    )
+
+    files = []
+
+    if options["unlink"]:
+        query = f"SELECT file_location,file_protocol_id,file_server FROM {schema_name}.{partition_name} "
+        query += "WHERE geometry_id = %s AND analysis_time = %s AND producer_id = %s GROUP BY 1,2,3 ORDER BY file_server"
+
+        if options["show_sql"]:
+            print(cur.mogrify(query, (geometry_id, analysis_time, producer["id"])))
+
+        cur.execute(query, (geometry_id, analysis_time, producer["id"]))
+
+        files = cur.fetchall()
+
+        logging.info(f"Found {len(files)} distinct files to remove")
+
+    # First delete rows in ss_state, then remove files in disk, finally drop table partition
+
+    query = (
+        "DELETE FROM "
+        + schema_name
+        + "."
+        + partition_name
+        + " WHERE producer_id = %s AND geometry_id = %s AND analysis_time = %s"
+    )
+
+    if options["show_sql"]:
+        print(cur.mogrify(query, (producer["id"], geometry_id, analysis_time)))
+
+    if not options["dry_run"]:
+        try:
+            cur.execute(query, (producer["id"], geometry_id, analysis_time))
+
+        except psycopg2.ProgrammingError as e:
+            logging.error(
+                "Table %s.%s does not exist although listed in %s"
+                % (schema_name, partition_name, as_table)
+            )
+
+    start = timer()
+    count = RemoveFiles(options, files)
     stop = timer()
+
     if count > 0:
         logging.info("Removed %d files in %.1f seconds" % (count, (stop - start)))
 
@@ -856,6 +877,31 @@ def DropFromAsGrid(options, producer, row):
         directories = newdirectories
 
 
+def GetTablesForProducer(options, producer):
+    as_table = "as_grid"
+
+    if producer["class_id"] == 3:
+        as_table = "as_previ"
+
+    query = ""
+
+    args = (producer["id"],)
+
+    query = "SELECT id, schema_name, table_name, partition_name, analysis_time, min_analysis_time, max_analysis_time, now()-delete_time"
+
+    if as_table == "as_grid":
+        query += ", geometry_id"
+
+    query += " FROM " + as_table + " WHERE producer_id = %s AND delete_time < now()"
+
+    if options["show_sql"]:
+        print("%s, %s" % (query, args))
+
+    cur.execute(query, args)
+
+    return as_table, cur.fetchall()
+
+
 def DropTables(options):
 
     producers = []
@@ -867,28 +913,7 @@ def DropTables(options):
 
     for producer in producers:
 
-        as_table = "as_grid"
-
-        if producer["class_id"] == 3:
-            as_table = "as_previ"
-
-        query = ""
-
-        args = (producer["id"],)
-
-        query = "SELECT id, schema_name, table_name, partition_name, analysis_time, min_analysis_time, max_analysis_time, now()-delete_time"
-
-        if as_table == "as_grid":
-            query += ", geometry_id"
-
-        query += " FROM " + as_table + " WHERE producer_id = %s AND delete_time < now()"
-
-        if options["show_sql"]:
-            print("%s, %s" % (query, args))
-
-        cur.execute(query, args)
-
-        rows = cur.fetchall()
+        as_table, rows = GetTablesForProducer(options, producer)
 
         if len(rows) == 0:
             logging.info("Producer: %d No tables expired" % (producer["id"]))
@@ -908,6 +933,8 @@ def DropTables(options):
 
             if as_table == "as_grid":
                 DropFromAsGrid(options, producer, row)
+                DropFromSSForecastStatus(options, producer, row)
+                DropFromSSState(options, producer, row)
 
             elif as_table == "as_previ":
                 logging.info(
@@ -1378,6 +1405,11 @@ def CreateTables(options, element, date):
 
     if not options["dry_run"]:
         conn.commit()
+
+
+def get_radon_version(cur):
+    cur.execute("SELECT radon_version_f()")
+    return int(cur.fetchone()[0])
 
 
 if __name__ == "__main__":
