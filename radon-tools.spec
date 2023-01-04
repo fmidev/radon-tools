@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        22.12.19
+Version:        23.1.4
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -77,7 +77,7 @@ Obsoletes:	neons-tools
 AutoReqProv: no
 
 %description
-Neons-tools includes programs for loading data to radon DB.
+radon-tools includes programs for loading data to radon DB.
 Table creation tools are also included.
 
 %prep
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Jan  4 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.1.4-1.fmi
+- Clean table ss_forecast_status
 * Mon Dec 19 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.12.19-1.fmi
 - Fix s3 reading if hostname has protocol
 * Mon Nov 28 2022 Mikko Partio <mikko.partio@fmi.fi> - 22.11.28-1.fmi
