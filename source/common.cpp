@@ -183,11 +183,17 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 
 		handled.insert(uniqueId);
 
+		auto table_name = options.ss_table_name;
+
+		if (table_name.empty())
+		{
+			table_name = fmt::format("{}.{}", rec.schema_name, rec.table_name);
+		}
+
 		std::string query = fmt::format(
 		    "INSERT INTO ss_state (producer_id, geometry_id, analysis_time, forecast_period, forecast_type_id,"
-		    "forecast_type_value, table_name) VALUES ({}, {}, '{}', '{}', {}, {}, '{}.{}')",
-		    rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), ftypeValue, rec.schema_name,
-		    rec.table_name);
+		    "forecast_type_value, table_name) VALUES ({}, {}, '{}', '{}', {}, {}, '{}')",
+		    rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), ftypeValue, table_name);
 
 		if (options.dry_run)
 		{
@@ -203,11 +209,10 @@ void grid_to_radon::common::UpdateSSState(const grid_to_radon::records& recs)
 			try
 			{
 				query = fmt::format(
-				    "UPDATE ss_state SET last_updated = now(), table_name = '{}.{}' WHERE producer_id = {} AND "
+				    "UPDATE ss_state SET last_updated = now(), table_name = '{}' WHERE producer_id = {} AND "
 				    "geometry_id = {} AND analysis_time = '{}' AND forecast_period = '{}' AND forecast_type_id = {} "
 				    "AND forecast_type_value = {}",
-				    rec.schema_name, rec.table_name, rec.producer.Id(), rec.geometry_id, atime, period,
-				    rec.ftype.Type(), ftypeValue);
+				    table_name, rec.producer.Id(), rec.geometry_id, atime, period, rec.ftype.Type(), ftypeValue);
 				ldr->RadonDB().Execute(query);
 			}
 #if PQXX_VERSION_MAJOR < 7
