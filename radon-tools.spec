@@ -14,7 +14,7 @@ License:        FMI
 URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
-BuildRequires:  libfmigrib-devel >= 20.12.2
+BuildRequires:  libfmigrib-devel >= 23.1.27
 BuildRequires:  libfmidb-devel >= 21.7.23
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
@@ -24,7 +24,7 @@ BuildRequires:  himan-lib-devel >= 22.2.1
 BuildRequires:  himan-plugins-devel >= 22.2.1
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
-Requires:	libfmigrib >= 20.12.2
+Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 22.2.1

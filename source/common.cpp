@@ -1,6 +1,6 @@
 #include "common.h"
 #include "options.h"
-#include <boost/filesystem.hpp>
+#include <filesystem>
 #include <boost/regex.hpp>
 #include <plugin_factory.h>
 #include <regex>
@@ -14,7 +14,7 @@
 extern grid_to_radon::Options options;
 std::mutex dirCreateMutex;
 
-bool CheckDirectoryStructure(const boost::filesystem::path& pathname);
+bool CheckDirectoryStructure(const std::filesystem::path& pathname);
 
 std::string grid_to_radon::common::StripProtocol(const std::string& str)
 {
@@ -52,10 +52,10 @@ bool grid_to_radon::common::CheckForFailure(int g_failed, int g_skipped, int g_s
 std::string grid_to_radon::common::CanonicalFileName(const std::string& inputFileName)
 {
 	auto theFileName = inputFileName;
-	namespace fs = boost::filesystem;
+	namespace fs = std::filesystem;
 
 	fs::path pathname(theFileName);
-	pathname = canonical(fs::system_complete(pathname));
+	pathname = fs::canonical(fs::absolute(pathname));
 
 	if (options.directory_structure_check && !CheckDirectoryStructure(pathname))
 	{
@@ -85,7 +85,7 @@ std::string grid_to_radon::common::MakeFileName(std::shared_ptr<himan::configura
 	return himan::util::MakeFileName(*info, pconfig);
 }
 
-bool CheckDirectoryStructure(const boost::filesystem::path& pathname)
+bool CheckDirectoryStructure(const std::filesystem::path& pathname)
 {
 	// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
 	const auto atimedir = pathname.parent_path().filename();
@@ -108,7 +108,7 @@ bool CheckDirectoryStructure(const boost::filesystem::path& pathname)
 
 void grid_to_radon::common::CreateDirectory(const std::string& theFileName)
 {
-	namespace fs = boost::filesystem;
+	namespace fs = std::filesystem;
 
 	fs::path pathname(theFileName);
 
