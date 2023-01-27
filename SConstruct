@@ -68,6 +68,7 @@ libraries.append('fmigrib')
 libraries.append('eccodes')
 libraries.append('gdal')
 libraries.append('fmt')
+libraries.append('stdc++fs')
 
 env.Append(LIBS = libraries)
 

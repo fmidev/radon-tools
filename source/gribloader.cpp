@@ -98,6 +98,7 @@ bool grid_to_radon::GribLoader::DistributeMessages(NFmiGribMessage& newMessage, 
 	if (itsReader.NextMessage())
 	{
 		messageNo = static_cast<unsigned int>(itsReader.CurrentMessageIndex());
+		newMessage.DeleteHandle();
 		newMessage = NFmiGribMessage(itsReader.Message());
 		return true;
 	}
