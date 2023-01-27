@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.1.20
+Version:        23.1.27
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Fri Jan 27 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.1.27-1.fmi
+- Fix memory leak when reading gribs
 * Fri Jan 20 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.1.20-1.fmi
 - Fix command line option --smartmet-server-table-name
 * Mon Jan 16 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.1.16-1.fmi
