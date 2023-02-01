@@ -1,7 +1,7 @@
 #ifndef _FC_INFO_
 #define _FC_INFO_
 
-#include <boost/optional.hpp>
+#include <optional>
 const float kFloatMissing = 32700.f;
 
 struct fc_info
@@ -76,9 +76,9 @@ struct fc_info
 	double dj_meters;
 	long geom_id;
 	std::string geom_name;
-	boost::optional<unsigned int> messageNo;
-	boost::optional<unsigned long> offset;
-	boost::optional<unsigned long> length;
+	std::optional<unsigned int> messageNo;
+	std::optional<unsigned long> offset;
+	std::optional<unsigned long> length;
 };
 
 #endif

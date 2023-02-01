@@ -4,7 +4,6 @@
 #include "options.h"
 #include "record.h"
 #include <atomic>
-#include <boost/thread.hpp>
 #include <mutex>
 #include <string>
 

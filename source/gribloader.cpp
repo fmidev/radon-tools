@@ -8,6 +8,7 @@
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>
+#include <thread>
 
 #define HIMAN_AUXILIARY_INCLUDE
 #include "grib.h"
@@ -38,11 +39,11 @@ pair<bool, grid_to_radon::records> grid_to_radon::GribLoader::Load(const string&
 	itsInputFileName = theInfile;
 	itsReader.Open(theInfile);
 
-	vector<boost::thread> threadgroup;
+	vector<std::thread> threadgroup;
 
 	for (short i = 0; i < options.threadcount; i++)
 	{
-		threadgroup.push_back(boost::thread(&GribLoader::Run, this, i));
+		threadgroup.push_back(std::thread(&GribLoader::Run, this, i));
 	}
 
 	for (auto& t : threadgroup)

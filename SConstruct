@@ -72,7 +72,7 @@ libraries.append('stdc++fs')
 
 env.Append(LIBS = libraries)
 
-boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams', 'boost_thread' ]
+boost_libraries = [ 'boost_program_options', 'boost_filesystem', 'boost_system', 'boost_regex', 'boost_iostreams' ]
 
 env.Append(LIBS = boost_libraries)
 
