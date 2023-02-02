@@ -263,9 +263,9 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 		finfo.file_type = himan::kNetCDF;
 		finfo.file_location = theFileName;
 		finfo.file_server = itsHostName;
-		finfo.message_no = boost::none;
-		finfo.offset = boost::none;
-		finfo.length = boost::none;
+		finfo.message_no = std::nullopt;
+		finfo.offset = std::nullopt;
+		finfo.length = std::nullopt;
 		finfo.storage_type = himan::kLocalFileSystem;
 
 		if (!options.dry_run)

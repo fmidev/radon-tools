@@ -19,9 +19,9 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 
 	options.ss_state_update = false;
 	himan::file_information finfo;
-	finfo.message_no = boost::none;
-	finfo.offset = boost::none;
-	finfo.length = boost::none;
+	finfo.message_no = std::nullopt;
+	finfo.offset = std::nullopt;
+	finfo.length = std::nullopt;
 	finfo.file_type = himan::kGeoTIFF;
 
 	if (options.s3)
