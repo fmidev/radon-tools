@@ -47,7 +47,7 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 	                                   std::make_shared<himan::plugin_configuration>(*config));
 
 	himan::timer t(true);
-	std::vector<std::shared_ptr<himan::info<double>>> infos = geotiffpl->FromFile(finfo, opts, false, false);
+	std::vector<std::shared_ptr<himan::info<double>>> infos = geotiffpl->FromFile(finfo, opts, false);
 	t.Stop();
 
 	himan::logger logr("geotiffloader");
