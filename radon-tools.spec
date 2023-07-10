@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.3.9
+Version:        23.7.10
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -21,14 +21,14 @@ BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 23.3.9
 BuildRequires:  himan-lib-devel >= 23.3.9
-BuildRequires:  himan-plugins-devel >= 23.3.9
+BuildRequires:  himan-plugins-devel >= 23.7.10
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 23.2.21
-Requires:	himan-plugins >= 23.3.9
+Requires:	himan-plugins >= 23.7.10
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
