@@ -399,7 +399,7 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 	}
 
 	const std::string s1(
-	    "(seconds?|hours?) since ([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})[\\sT]?([0-9]{2}):([0-9]{2}):([0-9]{2})Z?");
+	    "(seconds?|hours?|days?) since ([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})[\\sT]?([0-9]{2}):([0-9]{2}):([0-9]{2})Z?");
 	const boost::regex r1(s1);
 	boost::smatch what;
 
@@ -427,11 +427,15 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 
 		himan::raw_time base(year + month + day + what[5] + what[6] + what[7], "%Y%m%d%H%M%S");
 
-		double scale = 1;
+		double scale = 1; // hours
 
 		if (timeUnit == "seconds")
 		{
 			scale = 1 / 3600.;
+		}
+		else if (timeUnit == "days")
+		{
+			scale = 24;
 		}
 
 		base.Adjust(himan::kHourResolution, static_cast<int>(scale * std::stod(dateTime)));
