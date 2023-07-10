@@ -135,15 +135,13 @@ std::pair<bool, grid_to_radon::record> grid_to_radon::common::SaveToDatabase(
     std::shared_ptr<himan::configuration>& config, std::shared_ptr<himan::info<double>>& info,
     std::shared_ptr<himan::plugin::radon>& r, const himan::file_information& finfo)
 {
-	if (!options.dry_run)
-	{
-		auto ret = r->Save<double>(*info, finfo, "");
+	auto ret = r->Save<double>(*info, finfo, "", options.dry_run);
 
-		if (ret.first)
-		{
-			return std::make_pair(true, Merge(config, info, finfo, ret.second));
-		}
+	if (ret.first)
+	{
+		return std::make_pair(true, Merge(config, info, finfo, ret.second));
 	}
+
 	return std::make_pair(false, grid_to_radon::record());
 }
 
