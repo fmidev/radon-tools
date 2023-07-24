@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.7.10
+Version:        23.7.24
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -19,16 +19,16 @@ BuildRequires:  libfmidb-devel >= 21.7.23
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 23.3.9
-BuildRequires:  himan-lib-devel >= 23.3.9
-BuildRequires:  himan-plugins-devel >= 23.7.10
+BuildRequires:  himan-lib >= 23.7.24
+BuildRequires:  himan-lib-devel >= 23.7.24
+BuildRequires:  himan-plugins-devel >= 23.7.24
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 23.2.21
-Requires:	himan-plugins >= 23.7.10
+Requires:	himan-lib >= 23.7.24
+Requires:	himan-plugins >= 23.7.24
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
@@ -40,18 +40,18 @@ Requires:	libnetcdf4 >= 4.0.1
 %else
 %if %{defined el7}
 BuildRequires:  scons
-BuildRequires:	gdal34-devel
+BuildRequires:	gdal35-devel
 Requires:       python36-pytz
 Requires:       python36-dateutil
-Requires:	gdal34-libs
+Requires:	gdal35-libs
 Requires:	libpqxx > 5
 
 %else if %{defined el8}
 BuildRequires:  python3-scons
-BuildRequires:	gdal34-devel
+BuildRequires:	gdal35-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
-Requires:	gdal34-libs
+Requires:	gdal35-libs
 Requires:	libpqxx >= 7.7.0
 %endif
 
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Jul 24 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
+- gdal35
 * Thu Mar  9 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.3.9-1.fmi
 - Newer himan libraries
 * Thu Feb 23 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.2.23-1.fmi

@@ -36,7 +36,7 @@ if os.environ.get('INCLUDE') != None:
 includes.append('include')
 includes.append('/usr/include/himan')
 includes.append('/usr/include/himan/plugins')
-includes.append('/usr/gdal34/include')
+includes.append('/usr/gdal35/include')
 
 env.Append(CPPPATH = includes)
 
@@ -48,7 +48,7 @@ if os.environ.get('LIBRARYPATH') != None:
         librarypaths.append(os.environ.get('LIBRARYPATH').split(":"))
 
 librarypaths.append('/usr/lib64')
-librarypaths.append('/usr/gdal34/lib')
+librarypaths.append('/usr/gdal35/lib')
 librarypaths.append('/usr/lib64/boost169')
 
 env.Append(LIBPATH = librarypaths)
