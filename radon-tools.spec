@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.7.24
+Version:        23.8.1
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -15,7 +15,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 23.1.27
-BuildRequires:  libfmidb-devel >= 21.7.23
+BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
@@ -25,7 +25,7 @@ BuildRequires:  himan-plugins-devel >= 23.7.24
 BuildRequires:  fmt-devel >= 7.1.0
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
-Requires:	libfmidb >= 21.7.23
+Requires:	libfmidb >= 23.7.27
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 23.7.24
 Requires:	himan-plugins >= 23.7.24
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
+- New fmidb
 * Mon Jul 24 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
 - gdal35
 * Thu Mar  9 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.3.9-1.fmi
