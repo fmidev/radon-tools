@@ -206,7 +206,7 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
 
 	const std::string key = boost::algorithm::join(tokens, "/");
 
-	S3Protocol protocol = S3ProtocolHTTP;
+	S3Protocol protocol = S3ProtocolHTTPS;
 
 	try
 	{
