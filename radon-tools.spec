@@ -6,7 +6,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.8.1
+Version:        23.9.13
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -111,6 +111,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 13 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.13-1.fmi
+- Detect file type from s3 based files
 * Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
 - New fmidb
 * Mon Jul 24 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
