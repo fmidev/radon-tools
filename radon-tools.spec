@@ -27,7 +27,7 @@ Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 21.7.23
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 23.7.24
+Requires:	himan-lib >= 23.9.13
 Requires:	himan-plugins >= 23.7.24
 Requires:	netcdf-cxx
 Requires:	eccodes

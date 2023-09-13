@@ -217,39 +217,27 @@ int main(int argc, char** argv)
 	{
 		const bool isLocalFile = (infile.substr(0, 5) != "s3://");
 
-		if (isLocalFile && infile != "-" && !std::filesystem::exists(infile))
+		if (isLocalFile)
 		{
-			logr.Error("Input file '" + infile + "' does not exist");
-			continue;
-		}
-
-		logr.Info("Reading file '" + infile + "'");
-
-		if (isLocalFile == false)
-		{
-			options.s3 = true;
-
-			if (options.grib)
+			if (infile != "-" && !std::filesystem::exists(infile))
 			{
-				grid_to_radon::S3GribLoader ldr;
-
-				const auto ret = ldr.Load(infile);
-				retval = static_cast<int>(!ret.first);
-				all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
-				continue;
-			}
-			else if (options.geotiff == false)
-			{
-				logr.Error("Only grib&geotiff files are supported with s3");
+				logr.Error(fmt::format("Input file '{}' does not exist", infile));
 				continue;
 			}
 		}
 		else
 		{
-			options.s3 = false;
+			options.s3 = true;
 		}
 
-		auto type = himan::util::FileType(infile);
+		logr.Info("Reading file '" + infile + "'");
+
+		himan::HPFileType type = himan::kUnknownFile;
+
+		if (options.netcdf == false && options.grib == false && options.geotiff == false)
+		{
+			type = himan::util::FileType(infile);
+		}
 
 		if (type == himan::kNetCDF || options.netcdf)
 		{
@@ -258,6 +246,12 @@ int main(int argc, char** argv)
 			if (options.in_place_insert)
 			{
 				logr.Error("In-place insert not possible for netcdf");
+				retval = 1;
+				continue;
+			}
+			else if (options.s3)
+			{
+				logr.Error("s3 loading not possible for netcdf");
 				retval = 1;
 				continue;
 			}
@@ -271,14 +265,25 @@ int main(int argc, char** argv)
 		{
 			logr.Debug("File '" + infile + "' is GRIB");
 
-			grid_to_radon::GribLoader g;
-			const auto ret = g.Load(infile);
+			std::pair<bool, std::vector<grid_to_radon::record>> ret;
+
+			if (options.s3)
+			{
+				grid_to_radon::S3GribLoader ldr;
+				ret = ldr.Load(infile);
+			}
+			else
+			{
+				grid_to_radon::GribLoader ldr;
+				ret = ldr.Load(infile);
+			}
+
 			retval = static_cast<int>(!ret.first);
 			all_records.insert(std::end(all_records), std::begin(ret.second), std::end(ret.second));
 		}
-		else if (type == himan::kGeoTIFF)
+		else if (type == himan::kGeoTIFF || options.geotiff)
 		{
-			logr.Debug("File '" + infile + "' is GeoTIFF");
+			logr.Debug(fmt::format("File '{}' is GeoTIFF", infile));
 
 			if (options.producer == 0)
 			{
@@ -303,7 +308,7 @@ int main(int argc, char** argv)
 		}
 		else
 		{
-			logr.Error("Unrecognized file type for '" + infile + "'");
+			logr.Error(fmt::format("Unrecognized file type for '{}' and none of: -n -g -G defined", infile));
 			retval = 1;
 		}
 
