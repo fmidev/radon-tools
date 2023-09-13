@@ -1,6 +1,6 @@
 #include "unistd.h"
-#include <boost/filesystem/operations.hpp>
 #include <boost/program_options.hpp>
+#include <filesystem>
 #include <fstream>
 #include <iostream>
 
@@ -217,7 +217,7 @@ int main(int argc, char** argv)
 	{
 		const bool isLocalFile = (infile.substr(0, 5) != "s3://");
 
-		if (isLocalFile && infile != "-" && !boost::filesystem::exists(infile))
+		if (isLocalFile && infile != "-" && !std::filesystem::exists(infile))
 		{
 			logr.Error("Input file '" + infile + "' does not exist");
 			continue;
