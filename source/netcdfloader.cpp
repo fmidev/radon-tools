@@ -8,10 +8,10 @@
 #include <algorithm>
 #include <atomic>
 #include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
 #include <ctime>
 #include <iomanip>
 #include <ogr_spatialref.h>
+#include <regex>
 #include <sstream>
 #include <stdexcept>
 #include <util.h>
@@ -237,7 +237,8 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 
 	auto CreateInfo = [&geom, &prod](const himan::forecast_type& ftype, const himan::forecast_time& ftime,
 	                                 const himan::level& lvl,
-	                                 const himan::param& par) -> std::shared_ptr<himan::info<double>> {
+	                                 const himan::param& par) -> std::shared_ptr<himan::info<double>>
+	{
 		auto info = std::make_shared<himan::info<double>>(ftype, ftime, lvl, par);
 		info->Producer(prod);
 
@@ -256,7 +257,8 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 		return info;
 	};
 
-	auto Write = [&](std::shared_ptr<himan::info<double>>& info) -> std::pair<bool, record> {
+	auto Write = [&](std::shared_ptr<himan::info<double>>& info) -> std::pair<bool, record>
+	{
 		const std::string theFileName = common::MakeFileName(config, info, "");
 
 		himan::file_information finfo;
@@ -400,21 +402,21 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 
 	const std::string s1(
 	    "(seconds?|hours?|days?) since ([0-9]{4})-([0-9]{1,2})-([0-9]{1,2})[\\sT]?([0-9]{2}):([0-9]{2}):([0-9]{2})Z?");
-	const boost::regex r1(s1);
-	boost::smatch what;
+	const std::regex r1(s1);
+	std::smatch what;
 
-	if (boost::regex_match(mask, what, r1))
+	if (std::regex_match(mask, what, r1))
 	{
 		if (what.size() != 8)
 		{
 			return himan::raw_time();
 		}
 
-		const auto timeUnit = what[1];
+		const auto timeUnit = what.str(1);
 
-		const auto year = what[2];
-		std::string month = what[3];
-		std::string day = what[4];
+		const auto year = what.str(2);
+		std::string month = what.str(3);
+		std::string day = what.str(4);
 
 		if (month.length() < 2)
 		{
@@ -425,9 +427,9 @@ himan::raw_time StringToTime(const std::string& dateTime, const std::string& mas
 			day = "0" + day;
 		}
 
-		himan::raw_time base(year + month + day + what[5] + what[6] + what[7], "%Y%m%d%H%M%S");
+		himan::raw_time base(year + month + day + what.str(5) + what.str(6) + what.str(7), "%Y%m%d%H%M%S");
 
-		double scale = 1; // hours
+		double scale = 1;  // hours
 
 		if (timeUnit == "seconds")
 		{

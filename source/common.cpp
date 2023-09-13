@@ -1,7 +1,6 @@
 #include "common.h"
 #include "options.h"
 #include <filesystem>
-#include <boost/regex.hpp>
 #include <plugin_factory.h>
 #include <regex>
 #include <sstream>
@@ -91,10 +90,10 @@ bool CheckDirectoryStructure(const std::filesystem::path& pathname)
 	const auto atimedir = pathname.parent_path().filename();
 	const auto proddir = pathname.parent_path().parent_path().filename();
 
-	const boost::regex r1("\\d+");
-	const boost::regex r2("\\d{12}");
+	const std::regex r1("\\d+");
+	const std::regex r2("\\d{12}");
 
-	if (boost::regex_match(proddir.string(), r1) == false || boost::regex_match(atimedir.string(), r2) == false)
+	if (std::regex_match(proddir.string(), r1) == false || std::regex_match(atimedir.string(), r2) == false)
 	{
 		himan::logger logr("common");
 		logr.Error(
