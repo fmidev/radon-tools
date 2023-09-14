@@ -33,6 +33,7 @@ Requires:	eccodes
 Requires:	libs3 >= 4.1
 Requires:       python3-pytz
 Requires:       python3-dateutil
+Requires:       python3-boto3
 Requires:	gdal35-libs
 Requires:	libpqxx >= 7.7.0
 Requires:       python3-psycopg2
