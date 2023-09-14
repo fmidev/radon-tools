@@ -150,6 +150,14 @@ def ReadCommandLine(argv):
         help="Database username",
     )
 
+    databasegroup.add_option(
+        "--sslmode",
+        action="store",
+        type="string",
+        default="prefer",
+        help="Set sslmode (default: prefer)",
+    )
+
     parser.add_option_group(databasegroup)
 
     dbhost = (
@@ -1439,12 +1447,13 @@ if __name__ == "__main__":
         )
         sys.exit(1)
 
-    dsn = "user=%s password=%s host=%s dbname=%s port=%s" % (
+    dsn = "user=%s password=%s host=%s dbname=%s port=%s sslmode=%s" % (
         options["user"],
         password,
         options["host"],
         options["database"],
         options["port"],
+        options["sslmode"],
     )
     conn = psycopg2.connect(dsn)
 
