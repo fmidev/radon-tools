@@ -1,12 +1,8 @@
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
-%if %{defined suse_version}
-%define dist .sles11
-%endif
-
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.9.13
+Version:        23.9.14
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -23,6 +19,9 @@ BuildRequires:  himan-lib >= 23.7.24
 BuildRequires:  himan-lib-devel >= 23.7.24
 BuildRequires:  himan-plugins-devel >= 23.7.24
 BuildRequires:  fmt-devel >= 7.1.0
+BuildRequires:  python3-scons
+BuildRequires:	gdal35-devel
+BuildRequires:  boost169-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 23.7.27
@@ -32,32 +31,12 @@ Requires:	himan-plugins >= 23.7.24
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
-
-%if %{defined suse_version}
-BuildRequires:  boost-devel >= 1.53
-Requires:	libjasper
-Requires:	libnetcdf4 >= 4.0.1
-%else
-%if %{defined el7}
-BuildRequires:  scons
-BuildRequires:	gdal35-devel
-Requires:       python36-pytz
-Requires:       python36-dateutil
-Requires:	gdal35-libs
-Requires:	libpqxx > 5
-
-%else if %{defined el8}
-BuildRequires:  python3-scons
-BuildRequires:	gdal35-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:	gdal35-libs
 Requires:	libpqxx >= 7.7.0
-%endif
-
 Requires:       python3-psycopg2
-
-BuildRequires:  boost169-devel
+Requires:	python3-dotenv
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:       boost169-system
@@ -69,7 +48,6 @@ Requires:	boost169-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
-%endif
 
 Provides:	grid_to_radon
 Obsoletes:	neons-tools
