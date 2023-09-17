@@ -2,7 +2,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.9.14
+Version:        23.9.18
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -15,8 +15,8 @@ BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 23.7.24
-BuildRequires:  himan-lib-devel >= 23.7.24
+BuildRequires:  himan-lib >= 23.9.17
+BuildRequires:  himan-lib-devel >= 23.9.17
 BuildRequires:  himan-plugins-devel >= 23.7.24
 BuildRequires:  fmt-devel >= 7.1.0
 BuildRequires:  python3-scons
@@ -26,7 +26,7 @@ Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 23.7.27
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 23.9.13
+Requires:	himan-lib >= 23.9.17
 Requires:	himan-plugins >= 23.7.24
 Requires:	netcdf-cxx
 Requires:	eccodes
@@ -90,6 +90,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Mon Sep 18 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.18-1.fmi
+- Add option --wait-timeout to grid_to_radon
 * Wed Sep 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.14-1.fmi
 - Allow explicit setting of sslmode
 * Wed Sep 13 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.13-1.fmi
