@@ -28,7 +28,8 @@ struct Options
 	      directory_structure_check(true),
 	      ss_table_name(""),
 	      allow_multi_table_gribs(false),
-	      metadata_file_name()
+	      metadata_file_name(),
+	      wait_timeout(0)
 	{
 	}
 
@@ -52,6 +53,7 @@ struct Options
 	std::string ss_table_name;       // --smartmet-server-table-name
 	bool allow_multi_table_gribs;    // --allow-multi-table-gribs
 	std::string metadata_file_name;  // --metadata-file-name, -m
+	unsigned int wait_timeout;       // --wait-timeout, -w
 };
 }  // namespace grid_to_radon
 

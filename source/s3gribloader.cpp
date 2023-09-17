@@ -1,9 +1,9 @@
 #include "s3gribloader.h"
 #include "NFmiGrib.h"
 #include "common.h"
-#include "libs3.h"
 #include "options.h"
 #include "plugin_factory.h"
+#include "s3.h"
 #include "timer.h"
 #include "util.h"
 #include <boost/algorithm/string.hpp>
@@ -18,37 +18,12 @@
 #include "radon.h"
 #undef HIMAN_AUXILIARY_INCLUDE
 
-thread_local S3Status statusG = S3StatusOK;
-
 extern grid_to_radon::Options options;
 extern std::pair<std::shared_ptr<himan::configuration>, std::shared_ptr<himan::info<double>>> ReadMetadata(
     const NFmiGribMessage& message);
 
 static int g_success = 0;
 static int g_failed = 0;
-
-S3Status responsePropertiesCallback(const S3ResponseProperties* properties, void* callbackData)
-{
-	himan::logger logr("s3gribloader");
-
-	logr.Info(fmt::format("File size is {} bytes", properties->contentLength));
-	FILE** fp = reinterpret_cast<FILE**>(callbackData);
-	(*fp) = fmemopen(NULL, properties->contentLength, "rb+");
-
-	if ((*fp) == NULL)
-	{
-		logr.Fatal("fmemopen failed");
-		exit(1);
-	}
-
-	return S3StatusOK;
-}
-
-static void responseCompleteCallback(S3Status status, const S3ErrorDetails* error, void* callbackData)
-{
-	statusG = status;
-	return;
-}
 
 grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::string& filename)
 {
@@ -136,14 +111,6 @@ grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::stri
 	return recs;
 }
 
-static S3Status getObjectDataCallbackStreamProcessing(int bufferSize, const char* buffer, void* callbackData)
-{
-	FILE** fp = reinterpret_cast<FILE**>(callbackData);
-	size_t wrote = fwrite(buffer, 1, bufferSize, *fp);
-	fflush(*fp);
-	return ((wrote < static_cast<size_t>(bufferSize)) ? S3StatusAbortedByCallback : S3StatusOK);
-}
-
 grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(nullptr), itsAccessKey(nullptr), itsSecretKey(nullptr)
 {
 	itsAccessKey = getenv("S3_ACCESS_KEY_ID");
@@ -167,13 +134,6 @@ grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(nullptr), itsAccessKey(nul
 	{
 		logr.Info("Environment variable S3_SECRET_ACCESS_KEY not defined");
 	}
-
-	const auto ret = S3_initialize("s3", S3_INIT_ALL, itsHost);
-
-	if (ret != S3StatusOK)
-	{
-		throw std::runtime_error("S3 initialization failed");
-	}
 }
 
 std::pair<bool, grid_to_radon::records> grid_to_radon::S3GribLoader::Load(const std::string& theFileName) const
@@ -196,138 +156,21 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
                                                                    size_t byteCount) const
 {
 	himan::logger logr("s3gribloader");
-	// example: s3://noaa-gefs-pds/gefs.20170101/00/gep07.t00z.pgrb2bf036
-	std::vector<std::string> tokens;
-	boost::split(tokens, theFileName, boost::is_any_of("/"));
 
-	const std::string bucket = tokens[2];
+	himan::file_information finfo;
+	finfo.message_no = std::nullopt;
+	finfo.offset = startByte;
+	finfo.length = byteCount;
+	finfo.storage_type = himan::kS3ObjectStorageSystem;
+	finfo.file_location = theFileName;
+	finfo.file_server = itsHost;
 
-	tokens.erase(std::begin(tokens), std::begin(tokens) + 3);
+	auto buffer = himan::s3::ReadFile(finfo);
 
-	const std::string key = boost::algorithm::join(tokens, "/");
-
-	S3Protocol protocol = S3ProtocolHTTPS;
-
-	try
-	{
-		const auto envproto = himan::util::GetEnv("S3_PROTOCOL");
-		if (envproto == "https")
-		{
-			protocol = S3ProtocolHTTPS;
-		}
-		else if (envproto == "http")
-		{
-			protocol = S3ProtocolHTTP;
-		}
-	}
-	catch (const std::invalid_argument& e)
-	{
-	}
-
-#ifdef S3_DEFAULT_REGION
-
-	const char* region = nullptr;
-
-	if (std::string(itsHost).find("amazonaws") != std::string::npos)
-	{
-		// extract region name from host name, assuming
-		// "s3.us-east-1.amazonaws.com"
-		boost::split(tokens, itsHost, boost::is_any_of("."));
-
-		if (tokens.size() == 4)
-		{
-			region = tokens[1].c_str();
-		}
-	}
-
-	// libs3 boilerplate
-
-	const auto host = common::StripProtocol(std::string(itsHost));
-	// clang-format off
-
-	S3BucketContext bucketContext =
-	{
-		host.c_str(),
-		bucket.c_str(),
-		protocol,
-		S3UriStylePath,
-		itsAccessKey,
-		itsSecretKey,
-		itsSecurityToken,
-		region
-	};
-#else
-	S3BucketContext bucketContext =
-	{
-		host.c_str(),
-		bucket.c_str(),
-		protocol,
-		S3UriStylePath,
-		itsAccessKey,
-		itsSecretKey,
-		itsSecurityToken
-	};
-#endif
-
-	// clang-format on
-
-	logr.Info(fmt::format("Input file: '{}' host: '{}' bucket: '{}' key: '{}'", theFileName, itsHost, bucket, key));
-
-	S3ResponseHandler responseHandler = {&responsePropertiesCallback, &responseCompleteCallback};
-	S3GetObjectHandler getObjectHandler = {responseHandler, &getObjectDataCallbackStreamProcessing};
-
-	int count = 0;
-	FILE* fp = NULL;
-
-	do
-	{
-		sleep(count);
-#ifdef S3_DEFAULT_REGION
-		S3_get_object(&bucketContext, key.c_str(), NULL, startByte, byteCount, NULL, 0, &getObjectHandler, &fp);
-#else
-		S3_get_object(&bucketContext, key.c_str(), NULL, startByte, byteCount, NULL, &getObjectHandler, &fp);
-#endif
-		logr.Debug(fmt::format("Stream-read file '{}' status: {}", theFileName, S3_get_status_name(statusG)));
-
-		count++;
-
-	} while (S3_status_is_retryable(statusG) && count < 3);
-
-	if (fp == NULL)
-	{
-		logr.Error("Read failed");
-		return {};
-	}
-
-	rewind(fp);
+	char read_mode = 'r';
 	std::unique_ptr<FILE> ufp;
+	FILE* fp = fmemopen(buffer.data, buffer.length, &read_mode);
 	ufp.reset(fp);
-
-	auto records = ProcessGribFile(std::move(ufp), theFileName);
-
-	switch (statusG)
-	{
-		case S3StatusOK:
-			break;
-		case S3StatusInternalError:
-			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is there a proxy blocking the connection?"
-			          << std::endl;
-			break;
-		case S3StatusFailedToConnect:
-			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": is proxy required but not set?" << std::endl;
-			break;
-		case S3StatusErrorInvalidAccessKeyId:
-			std::cerr << "ERROR S3 " << S3_get_status_name(statusG)
-			          << ": are Temporary Security Credentials used without security token (env: S3_SESSION_TOKEN)?"
-			          << std::endl;
-			break;
-		case S3StatusErrorPermanentRedirect:
-			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << ": S3_HOSTNAME has wrong region?" << std::endl;
-			break;
-
-		default:
-			std::cerr << "ERROR S3 " << S3_get_status_name(statusG) << std::endl;
-	}
-
-	return records;
+	// auto ufp = std::make_unique<FILE>(fmemopen(buffer.data, buffer.length, &read_mode));
+	return ProcessGribFile(std::move(ufp), theFileName);
 }
