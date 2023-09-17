@@ -1,12 +1,8 @@
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
-%if %{defined suse_version}
-%define dist .sles11
-%endif
-
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.7.24
+Version:        23.9.14
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -15,7 +11,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 23.1.27
-BuildRequires:  libfmidb-devel >= 21.7.23
+BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
@@ -23,41 +19,25 @@ BuildRequires:  himan-lib >= 23.7.24
 BuildRequires:  himan-lib-devel >= 23.7.24
 BuildRequires:  himan-plugins-devel >= 23.7.24
 BuildRequires:  fmt-devel >= 7.1.0
+BuildRequires:  python3-scons
+BuildRequires:	gdal35-devel
+BuildRequires:  boost169-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
-Requires:	libfmidb >= 21.7.23
+Requires:	libfmidb >= 23.7.27
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 23.9.13
 Requires:	himan-plugins >= 23.7.24
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
-
-%if %{defined suse_version}
-BuildRequires:  boost-devel >= 1.53
-Requires:	libjasper
-Requires:	libnetcdf4 >= 4.0.1
-%else
-%if %{defined el7}
-BuildRequires:  scons
-BuildRequires:	gdal35-devel
-Requires:       python36-pytz
-Requires:       python36-dateutil
-Requires:	gdal35-libs
-Requires:	libpqxx > 5
-
-%else if %{defined el8}
-BuildRequires:  python3-scons
-BuildRequires:	gdal35-devel
 Requires:       python3-pytz
 Requires:       python3-dateutil
+Requires:       python3-boto3
 Requires:	gdal35-libs
 Requires:	libpqxx >= 7.7.0
-%endif
-
 Requires:       python3-psycopg2
-
-BuildRequires:  boost169-devel
+Requires:	python3-dotenv
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:       boost169-system
@@ -69,7 +49,6 @@ Requires:	boost169-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
-%endif
 
 Provides:	grid_to_radon
 Obsoletes:	neons-tools
@@ -111,6 +90,10 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Wed Sep 13 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.13-1.fmi
+- Detect file type from s3 based files
+* Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
+- New fmidb
 * Mon Jul 24 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.7.24-1.fmi
 - gdal35
 * Thu Mar  9 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.3.9-1.fmi
