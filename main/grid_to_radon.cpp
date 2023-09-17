@@ -1,17 +1,19 @@
-#include "unistd.h"
-#include <boost/program_options.hpp>
-#include <filesystem>
-#include <fstream>
-#include <iostream>
-
 #include "geotiffloader.h"
 #include "gribloader.h"
 #include "netcdfloader.h"
 #include "options.h"
+#include "s3.h"
 #include "s3gribloader.h"
+#include "unistd.h"
+#include <boost/program_options.hpp>
+#include <chrono>
+#include <filesystem>
+#include <fmt/chrono.h>
+#include <fstream>
+#include <iostream>
 #include <logger.h>
+#include <thread>
 #include <util.h>
-
 grid_to_radon::Options options;
 static himan::logger logr("grid_to_radon");
 
@@ -54,7 +56,9 @@ bool parse_options(int argc, char* argv[])
 	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "do not check for correct directory structure (in-place insert)")
 		("smartmet-server-table-name", po::value(&options.ss_table_name), "override table name for smartmet server")
 		("allow-multi-table-gribs", po::bool_switch(&options.allow_multi_table_gribs), "allow single grib file messages to be loaded to more than one radon table (in-place insert)")
-		("metadata,m", po::value(&options.metadata_file_name), "write metadata of successful fields to this file (json)");
+		("metadata,m", po::value(&options.metadata_file_name), "write metadata of successful fields to this file (json)")
+		("wait-timeout,w", po::value(&options.wait_timeout), "wait for file to to appear for this many seconds (default: 0)")
+		;
 
 	// clang-format on
 
@@ -142,6 +146,11 @@ bool parse_options(int argc, char* argv[])
 			break;
 	}
 
+	if (options.wait_timeout > 0 && options.wait_timeout < 10)
+	{
+		logr.Warning("wait_timeout minimum value is 10, changing");
+		options.wait_timeout = 10;
+	}
 	return true;
 }
 
@@ -202,6 +211,53 @@ void WriteMetadata(const grid_to_radon::records& recs)
 	logr.Info(fmt::format("Wrote metadata to '{}'", options.metadata_file_name));
 }
 
+bool file_exists(const std::string& file)
+{
+	auto exists = [&](const std::string& file_)
+	{
+		if (options.s3 == false)
+		{
+			return std::filesystem::exists(file_);
+		}
+		return himan::s3::Exists(file_);
+	};
+
+	if (options.wait_timeout == 0)
+	{
+		return exists(file);
+	}
+
+	namespace ch = std::chrono;
+
+	const auto start = std::chrono::system_clock::now();
+
+	// times are casted to milliseconds, otherwise wait loop might be ran one extra time
+	// because time are truncated to second
+	const ch::milliseconds wait_timeout(1000 * options.wait_timeout);
+
+	// sleep time is 10% of wait time, between 10..60 seconds
+	ch::milliseconds sleep_time =
+	    ch::milliseconds(1000 * std::max(10, std::min(60, static_cast<int>(options.wait_timeout / 10))));
+
+	ch::milliseconds cum_sleep(0);
+
+	while (ch::duration_cast<ch::milliseconds>(ch::system_clock::now() - start) <= wait_timeout)
+	{
+		if (exists(file))
+		{
+			return true;
+		}
+		sleep_time = std::min(sleep_time, wait_timeout - cum_sleep);
+		cum_sleep += sleep_time;
+		logr.Info(fmt::format("File {} not present, waiting {} of {}", file, ch::duration_cast<ch::seconds>(cum_sleep),
+		                      ch::duration_cast<ch::seconds>((wait_timeout))));
+		std::this_thread::sleep_for(sleep_time);
+	}
+
+	// one more chance for file to appear
+	return exists(file);
+}
+
 int main(int argc, char** argv)
 {
 	if (!parse_options(argc, argv))
@@ -217,17 +273,16 @@ int main(int argc, char** argv)
 	{
 		const bool isLocalFile = (infile.substr(0, 5) != "s3://");
 
-		if (isLocalFile)
-		{
-			if (infile != "-" && !std::filesystem::exists(infile))
-			{
-				logr.Error(fmt::format("Input file '{}' does not exist", infile));
-				continue;
-			}
-		}
-		else
+		if (!isLocalFile)
 		{
 			options.s3 = true;
+		}
+
+		if (infile != "-" && file_exists(infile) == false)
+		{
+			logr.Error(fmt::format("Input file '{}' does not exist", infile));
+			retval = 1;
+			continue;
 		}
 
 		logr.Info("Reading file '" + infile + "'");
