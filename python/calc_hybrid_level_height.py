@@ -41,7 +41,11 @@ def get_forecast_type_id(producer_id):
 def insert_to_radon(producer_id, geometry_name, analysis_time, data):
     press = data[412]
     heigh = data[421]
+    if len(press.keys()) != len(heigh.keys()):
+        print("Mismatch between pressure and height data amounts")
+        return
 
+    num = 0
     for i, level in enumerate(press):
         p = press[level]
         h = heigh[level]
@@ -82,7 +86,11 @@ def insert_to_radon(producer_id, geometry_name, analysis_time, data):
             ),
         )
 
+        num += 1
+
     conn.commit()
+
+    return num
 
 
 def read_data(files):
@@ -144,19 +152,37 @@ def read_files(producer_id, geometry_name):
     row = cur.fetchone()
 
     if row is None:
-        print("No data found from radon")
+        print("No data found from as_grid")
         sys.exit(1)
 
+    schema = row[0]
+    table = row[1]
     analysis_time = row[2]
 
-    sql = f"SELECT param_id,file_location,message_no,byte_offset,byte_length,level_value::int,file_protocol_id FROM {row[0]}.{row[1]} WHERE forecast_type_id = %s AND forecast_period <= '24:00:00' AND param_id IN %s AND level_id = 3 AND geometry_id = (SELECT id FROM geom WHERE name = %s) ORDER by param_id, level_value"
+    level_id = 3
+
+    sql = "SELECT id FROM level WHERE name = (SELECT upper(value) FROM producer_meta WHERE producer_id = %s AND attribute = 'hybrid level type')"
+    cur.execute(sql, (producer_id,))
+    row = cur.fetchone()
+
+    if len(row) > 0:
+        level_id = int(row[0])
+
+    sql = f"SELECT param_id,file_location,message_no,byte_offset,byte_length,level_value::int,file_protocol_id FROM {schema}.{table} WHERE forecast_type_id = %s AND forecast_period <= '24:00:00' AND param_id IN %s AND level_id = %s AND geometry_id = (SELECT id FROM geom WHERE name = %s) ORDER by param_id, level_value"
+
     cur.execute(
-        sql, (get_forecast_type_id(producer_id), tuple(params.values()), geometry_name)
+        sql,
+        (
+            get_forecast_type_id(producer_id),
+            tuple(params.values()),
+            level_id,
+            geometry_name,
+        ),
     )
     rows = cur.fetchall()
 
     if len(rows) == 0:
-        print("No data found from radon")
+        print(f"No data found from table {schema}.{table}")
         sys.exit(1)
 
     return (analysis_time, rows)
@@ -186,5 +212,5 @@ if __name__ == "__main__":
     print(f"producer: {producer_id} geometry: {geom_name}")
     analysis_time, files = read_files(producer_id, geom_name)
     data = read_data(files)
-    insert_to_radon(producer_id, geom_name, analysis_time, data)
-    print("Finished")
+    inserts = insert_to_radon(producer_id, geom_name, analysis_time, data)
+    print("Inserted {} rows to database".format(inserts))
