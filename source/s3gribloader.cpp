@@ -111,28 +111,13 @@ grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::stri
 	return recs;
 }
 
-grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(nullptr), itsAccessKey(nullptr), itsSecretKey(nullptr)
+grid_to_radon::S3GribLoader::S3GribLoader() : itsHost(nullptr)
 {
-	itsAccessKey = getenv("S3_ACCESS_KEY_ID");
-	itsSecretKey = getenv("S3_SECRET_ACCESS_KEY");
 	itsHost = getenv("S3_HOSTNAME");
-	itsSecurityToken = getenv("S3_SESSION_TOKEN");
 
 	if (!itsHost)
 	{
 		throw std::runtime_error("Environment variable S3_HOSTNAME not defined");
-	}
-
-	himan::logger logr("s3gribloader");
-
-	if (!itsAccessKey)
-	{
-		logr.Info("Environment variable S3_ACCESS_KEY_ID not defined");
-	}
-
-	if (!itsSecretKey)
-	{
-		logr.Info("Environment variable S3_SECRET_ACCESS_KEY not defined");
 	}
 }
 
@@ -167,10 +152,6 @@ grid_to_radon::records grid_to_radon::S3GribLoader::ReadFileStream(const std::st
 
 	auto buffer = himan::s3::ReadFile(finfo);
 
-	char read_mode = 'r';
-	std::unique_ptr<FILE> ufp;
-	FILE* fp = fmemopen(buffer.data, buffer.length, &read_mode);
-	ufp.reset(fp);
-	// auto ufp = std::make_unique<FILE>(fmemopen(buffer.data, buffer.length, &read_mode));
-	return ProcessGribFile(std::move(ufp), theFileName);
+	std::unique_ptr<FILE> fp(fmemopen(buffer.data, buffer.length, "r"));
+	return ProcessGribFile(std::move(fp), theFileName);
 }

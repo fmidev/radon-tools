@@ -5,11 +5,31 @@ import eccodes as ecc
 import os
 import sys
 import statistics
+import boto3
 
 conn = None
 cur = None
+client = None
 
 params = {"P-HPA": 412, "HL-M": 421}
+
+
+def read_from_s3(bucket, key, offset, length):
+    global client
+    if client is None:
+        client = boto3.client("s3")
+        session = boto3.session.Session()
+        client = session.client(
+            service_name="s3",
+            aws_access_key_id=os.environ["S3_ACCESS_KEY_ID"],
+            aws_secret_access_key=os.environ["S3_SECRET_ACCESS_KEY"],
+            endpoint_url=os.environ["S3_HOSTNAME"],
+        )
+
+    resp = client.get_object(
+        Bucket=bucket, Key=key, Range="bytes={}-{}".format(offset, offset + length)
+    )
+    return resp["Body"].read()
 
 
 def get_forecast_type_id(producer_id):
@@ -19,9 +39,13 @@ def get_forecast_type_id(producer_id):
 
 
 def insert_to_radon(producer_id, geometry_name, analysis_time, data):
-
     press = data[412]
     heigh = data[421]
+    if len(press.keys()) != len(heigh.keys()):
+        print("Mismatch between pressure and height data amounts")
+        return
+
+    num = 0
     for i, level in enumerate(press):
         p = press[level]
         h = heigh[level]
@@ -62,7 +86,11 @@ def insert_to_radon(producer_id, geometry_name, analysis_time, data):
             ),
         )
 
+        num += 1
+
     conn.commit()
+
+    return num
 
 
 def read_data(files):
@@ -79,16 +107,28 @@ def read_data(files):
         offset = f[3]
         length = f[4]
         level = f[5]
-        print(level, fname, offset, length)
-        with open(fname, "rb") as fp:
-            fp.seek(offset, 0)
-            buff = fp.read(length)
-            fp.close()
+        proto = f[6]
+
+        if proto == 2:
+            bucket = fname.split("/")[0]
+            key = "/".join(fname.split("/")[1:])
+            buff = read_from_s3(bucket, key, offset, length)
+        else:
+            with open(fname, "rb") as fp:
+                fp.seek(offset, 0)
+                buff = fp.read(length)
+                fp.close()
 
         gh = ecc.codes_new_from_message(buff)
         minv = ecc.codes_get(gh, "minimum")
         maxv = ecc.codes_get(gh, "maximum")
         ave = ecc.codes_get(gh, "average")
+
+        print(
+            "lev={} file={} offset={} length={} min={:.1f} max={:.1f} ave={:.1f}".format(
+                level, fname, offset, length, minv, maxv, ave
+            )
+        )
 
         try:
             ret[param][level]["max"].append(maxv)
@@ -110,13 +150,41 @@ def read_files(producer_id, geometry_name):
     sql = "SELECT schema_name, partition_name, analysis_time FROM as_grid_v WHERE producer_id = %s AND record_count = 1 AND geometry_name = %s ORDER BY analysis_time LIMIT 1"
     cur.execute(sql, (producer_id, geometry_name))
     row = cur.fetchone()
+
+    if row is None:
+        print("No data found from as_grid")
+        sys.exit(1)
+
+    schema = row[0]
+    table = row[1]
     analysis_time = row[2]
 
-    sql = f"SELECT param_id,file_location,message_no,byte_offset,byte_length,level_value FROM {row[0]}.{row[1]} WHERE forecast_type_id = %s AND forecast_period <= '24:00:00' AND param_id IN %s AND level_id = 3 AND geometry_id = (SELECT id FROM geom WHERE name = %s) ORDER by param_id, level_value"
+    level_id = 3
+
+    sql = "SELECT id FROM level WHERE name = (SELECT upper(value) FROM producer_meta WHERE producer_id = %s AND attribute = 'hybrid level type')"
+    cur.execute(sql, (producer_id,))
+    row = cur.fetchone()
+
+    if len(row) > 0:
+        level_id = int(row[0])
+
+    sql = f"SELECT param_id,file_location,message_no,byte_offset,byte_length,level_value::int,file_protocol_id FROM {schema}.{table} WHERE forecast_type_id = %s AND forecast_period <= '24:00:00' AND param_id IN %s AND level_id = %s AND geometry_id = (SELECT id FROM geom WHERE name = %s) ORDER by param_id, level_value"
+
     cur.execute(
-        sql, (get_forecast_type_id(producer_id), tuple(params.values()), geometry_name)
+        sql,
+        (
+            get_forecast_type_id(producer_id),
+            tuple(params.values()),
+            level_id,
+            geometry_name,
+        ),
     )
     rows = cur.fetchall()
+
+    if len(rows) == 0:
+        print(f"No data found from table {schema}.{table}")
+        sys.exit(1)
+
     return (analysis_time, rows)
 
 
@@ -144,5 +212,5 @@ if __name__ == "__main__":
     print(f"producer: {producer_id} geometry: {geom_name}")
     analysis_time, files = read_files(producer_id, geom_name)
     data = read_data(files)
-    insert_to_radon(producer_id, geom_name, analysis_time, data)
-    print("Finished")
+    inserts = insert_to_radon(producer_id, geom_name, analysis_time, data)
+    print("Inserted {} rows to database".format(inserts))
