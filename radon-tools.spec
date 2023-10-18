@@ -2,7 +2,7 @@
 
 %define PACKAGENAME radon-tools
 Name:           %{PACKAGENAME}
-Version:        23.10.4
+Version:        23.10.17
 Release:        1%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
@@ -24,7 +24,7 @@ BuildRequires:	gdal35-devel
 BuildRequires:  boost169-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
-Requires:	libfmidb >= 23.7.27
+Requires:	libfmidb >= 23.10.16
 Requires:	libfminc >= 20.9.24
 Requires:	himan-lib >= 23.10.4
 Requires:	himan-plugins >= 23.9.25
@@ -90,6 +90,8 @@ rm -rf %{buildroot}
 %endif
 
 %changelog
+* Tue Oct 17 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.17-1.fmi
+- New fmidb
 * Wed Oct  4 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.4-1.fmi
 - Support general level with calc_hybrid_level_height.py
 * Mon Sep 25 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.25-1.fmi
