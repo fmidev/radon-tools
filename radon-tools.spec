@@ -1,9 +1,16 @@
+%if !0%{?version:1}
+%define version 23.10.17
+%endif
+
+%if !0%{?release:1}
+%define release 1
+%endif
+
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
-%define PACKAGENAME radon-tools
-Name:           %{PACKAGENAME}
-Version:        23.10.17
-Release:        1%{dist}.fmi
+Name:           radon-tools
+Version:        %{version}
+Release:        %{release}%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
@@ -51,7 +58,6 @@ Requires:	boost169-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
-
 Provides:	grid_to_radon
 Obsoletes:	neons-tools
 
@@ -62,14 +68,10 @@ radon-tools includes programs for loading data to radon DB.
 Table creation tools are also included.
 
 %prep
-%setup -q -n "%{PACKAGENAME}"
+%setup -q -n "radon-tools"
 
 %build
-%if %{defined suse_version}
-CXX=/usr/bin/g++-4.6 INCLUDE=/lustre/apps/partio/auxlibs make %{?_smp_mflags}
-%else
 make %{?_smp_mflags}
-%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -83,13 +85,10 @@ rm -rf %{buildroot}
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_radon
 %{_bindir}/grid_to_neons
-
-%if %{undefined suse_version}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
 %{_bindir}/geom_to_radon.py
 %{_bindir}/calc_hybrid_level_height.py
-%endif
 
 %changelog
 * Tue Oct 17 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.17-1.fmi
