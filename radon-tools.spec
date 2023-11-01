@@ -98,7 +98,7 @@ rm -rf %{buildroot}
 - Updated himan-plugins
 * Mon Sep 18 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.18-1.fmi
 - Add option --wait-timeout to grid_to_radon
-* Wed Sep 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.14-1.fmi
+* Thu Sep 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.14-1.fmi
 - Allow explicit setting of sslmode
 * Wed Sep 13 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.13-1.fmi
 - Detect file type from s3 based files
