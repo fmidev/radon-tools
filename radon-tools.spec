@@ -22,6 +22,8 @@ BuildRequires:  fmt-devel >= 7.1.0
 BuildRequires:  python3-scons
 BuildRequires:	gdal35-devel
 BuildRequires:  boost169-devel
+BuildRequires:  make
+BuildRequires:  gcc-c++
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 23.10.16
