@@ -1,10 +1,12 @@
 #include "netcdfloader.h"
 #include "NFmiNetCDF.h"
 #include "common.h"
+#include "filename.h"
 #include "info.h"
 #include "latitude_longitude_grid.h"
 #include "options.h"
 #include "plugin_factory.h"
+#include "util.h"
 #include <algorithm>
 #include <atomic>
 #include <boost/algorithm/string.hpp>
@@ -14,7 +16,6 @@
 #include <regex>
 #include <sstream>
 #include <stdexcept>
-#include <util.h>
 
 #define HIMAN_AUXILIARY_INCLUDE
 #include "radon.h"
@@ -345,8 +346,7 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 			{
 				// This parameter has no z dimension --> map to level 0
 
-				auto info =
-				    CreateInfo(ftype, ftime, lvl, himan::util::GetParameterInfoFromDatabaseName(prod, par, lvl));
+				auto info = CreateInfo(ftype, ftime, lvl, himan::util::InitializeParameter(prod, par, lvl));
 				const auto ret = Write(info);
 				if (ret.first)
 				{
@@ -370,8 +370,7 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 						lvl.Value(static_cast<float>(reader.LevelIndex()));  // ordering number
 					}
 
-					auto info =
-					    CreateInfo(ftype, ftime, lvl, himan::util::GetParameterInfoFromDatabaseName(prod, par, lvl));
+					auto info = CreateInfo(ftype, ftime, lvl, himan::util::InitializeParameter(prod, par, lvl));
 
 					const auto ret = Write(info);
 					if (ret.first)

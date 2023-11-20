@@ -1,10 +1,11 @@
 #include "common.h"
+#include "filename.h"
 #include "options.h"
+#include "util.h"
 #include <filesystem>
 #include <plugin_factory.h>
 #include <regex>
 #include <sstream>
-#include <util.h>
 
 #define HIMAN_AUXILIARY_INCLUDE
 #include "radon.h"
@@ -81,7 +82,7 @@ std::string grid_to_radon::common::MakeFileName(std::shared_ptr<himan::configura
 	}
 
 	himan::plugin_configuration pconfig(*config);
-	return himan::util::MakeFileName(*info, pconfig);
+	return himan::util::filename::MakeFileName(*info, pconfig);
 }
 
 bool CheckDirectoryStructure(const std::filesystem::path& pathname)
