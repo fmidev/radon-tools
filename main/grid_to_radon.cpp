@@ -79,7 +79,7 @@ bool parse_options(int argc, char* argv[])
 	if (opt.count("help"))
 	{
 		std::cout << desc;
-		return false;
+		exit(0);
 	}
 
 	if (opt.count("infile") == 0)

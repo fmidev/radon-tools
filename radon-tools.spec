@@ -1,9 +1,16 @@
+%if !0%{?version:1}
+%define version 23.10.17
+%endif
+
+%if !0%{?release:1}
+%define release 1
+%endif
+
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
-%define PACKAGENAME radon-tools
-Name:           %{PACKAGENAME}
-Version:        23.9.14
-Release:        1%{dist}.fmi
+Name:           radon-tools
+Version:        %{version}
+Release:        %{release}%{dist}.fmi
 Summary:        Tools for radon environment
 Group:          Applications/System
 License:        FMI
@@ -15,19 +22,21 @@ BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfminc-devel >= 20.9.24
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 23.7.24
-BuildRequires:  himan-lib-devel >= 23.7.24
-BuildRequires:  himan-plugins-devel >= 23.7.24
+BuildRequires:  himan-lib >= 23.11.17
+BuildRequires:  himan-lib-devel >= 23.11.17
+BuildRequires:  himan-plugins-devel >= 23.9.25
 BuildRequires:  fmt-devel >= 7.1.0
 BuildRequires:  python3-scons
 BuildRequires:	gdal35-devel
 BuildRequires:  boost169-devel
+BuildRequires:  make
+BuildRequires:  gcc-c++
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
-Requires:	libfmidb >= 23.7.27
+Requires:	libfmidb >= 23.10.16
 Requires:	libfminc >= 20.9.24
-Requires:	himan-lib >= 23.9.13
-Requires:	himan-plugins >= 23.7.24
+Requires:	himan-lib >= 23.11.17
+Requires:	himan-plugins >= 23.9.25
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
@@ -49,7 +58,6 @@ Requires:	boost169-thread
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
-
 Provides:	grid_to_radon
 Obsoletes:	neons-tools
 
@@ -60,14 +68,10 @@ radon-tools includes programs for loading data to radon DB.
 Table creation tools are also included.
 
 %prep
-%setup -q -n "%{PACKAGENAME}"
+%setup -q -n "radon-tools"
 
 %build
-%if %{defined suse_version}
-CXX=/usr/bin/g++-4.6 INCLUDE=/lustre/apps/partio/auxlibs make %{?_smp_mflags}
-%else
 make %{?_smp_mflags}
-%endif
 
 %install
 rm -rf $RPM_BUILD_ROOT
@@ -81,15 +85,22 @@ rm -rf %{buildroot}
 %defattr(-,root,root,0755)
 %{_bindir}/grid_to_radon
 %{_bindir}/grid_to_neons
-
-%if %{undefined suse_version}
 %{_bindir}/radon_tables.py
 %{_bindir}/previ_to_radon.py
 %{_bindir}/geom_to_radon.py
 %{_bindir}/calc_hybrid_level_height.py
-%endif
 
 %changelog
+* Tue Oct 17 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.17-1.fmi
+- New fmidb
+* Wed Oct  4 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.4-1.fmi
+- Support general level with calc_hybrid_level_height.py
+* Mon Sep 25 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.25-1.fmi
+- Updated himan-plugins
+* Mon Sep 18 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.18-1.fmi
+- Add option --wait-timeout to grid_to_radon
+* Thu Sep 14 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.14-1.fmi
+- Allow explicit setting of sslmode
 * Wed Sep 13 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.9.13-1.fmi
 - Detect file type from s3 based files
 * Tue Aug  1 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.8.1-1.fmi
