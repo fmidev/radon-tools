@@ -19,7 +19,7 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 23.1.27
 BuildRequires:  libfmidb-devel >= 23.7.27
-BuildRequires:  libfminc-devel >= 20.9.24
+BuildRequires:  libfminc-devel >= 23.11.21
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 23.11.17
@@ -34,7 +34,7 @@ BuildRequires:  gcc-c++
 Requires:       hdf5
 Requires:	libfmigrib >= 23.1.27
 Requires:	libfmidb >= 23.10.16
-Requires:	libfminc >= 20.9.24
+Requires:	libfminc >= 23.11.21
 Requires:	himan-lib >= 23.11.17
 Requires:	himan-plugins >= 23.9.25
 Requires:	netcdf-cxx

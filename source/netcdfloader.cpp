@@ -3,6 +3,7 @@
 #include "common.h"
 #include "filename.h"
 #include "info.h"
+#include "lambert_conformal_grid.h"
 #include "latitude_longitude_grid.h"
 #include "options.h"
 #include "plugin_factory.h"
@@ -84,6 +85,16 @@ std::unique_ptr<himan::regular_grid> ReadAreaAndGrid(NFmiNetCDF& reader)
 
 	const double di = reader.XResolution();
 	const double dj = reader.YResolution();
+	double earthRadius = 6371220.;
+
+	try
+	{
+		auto projvar = reader.GetProjectionVariable();
+		earthRadius = std::stod(NFmiNetCDF::Att(projvar, "earth_radius"));
+	}
+	catch (...)
+	{
+	}
 
 	if (reader.Projection() == "latitude_longitude")
 	{
@@ -95,7 +106,16 @@ std::unique_ptr<himan::regular_grid> ReadAreaAndGrid(NFmiNetCDF& reader)
 		// fminc returns di/dj in km, radon holds meters
 		return std::unique_ptr<himan::stereographic_grid>(
 		    new himan::stereographic_grid(himan::kBottomLeft, first, ni, nj, 1000 * di, 1000 * dj, reader.Orientation(),
-		                                  himan::earth_shape<double>(6371220.), false));
+		                                  himan::earth_shape<double>(earthRadius), false));
+	}
+	else if (reader.Projection() == "lambert_conformal_conic")
+	{
+		const double stdParallel = std::stod(NFmiNetCDF::Att(reader.GetProjectionVariable(), "standard_parallel"));
+
+		// fminc returns di/dj in km, radon holds meters
+		return std::unique_ptr<himan::lambert_conformal_grid>(new himan::lambert_conformal_grid(
+		    himan::kBottomLeft, first, ni, nj, 1000 * di, 1000 * dj, reader.Orientation(), stdParallel, stdParallel,
+		    himan::earth_shape<double>(earthRadius), false));
 	}
 	else
 	{
