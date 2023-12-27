@@ -26,8 +26,6 @@ extern grid_to_radon::Options options;
 
 using namespace grid_to_radon;
 
-#define kFloatMissing 32700.f
-
 static std::atomic<int> g_failedParams(0);
 static std::atomic<int> g_succeededParams(0);
 
@@ -169,22 +167,6 @@ himan::param ReadParam(NFmiNetCDF& reader, const himan::producer& prod)
 	}
 
 	return himan::param(parameter["name"]);
-
-	// If parameter list is specified, check that parameter belongs to it
-
-	/*
-	    if (parameters.size() > 0)
-	    {
-	        if (std::find(parameters.begin(), parameters.end(), par.Name()) == parameters.end())
-	        {
-	            itsLogger.Warning("Skipping parameter " + par.Name());
-
-	            g_failedParams++;
-	            pskip[ncname] = 1;
-	            continue;
-	        }
-	    }
-	*/
 }
 
 std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
@@ -196,8 +178,6 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 		itsLogger.Error("Unable to read file '" + theInfile + "'");
 		return make_pair(false, records{});
 	}
-
-	// reader.AnalysisTime(options.analysistime);
 
 	if (options.analysistime.empty())
 	{
