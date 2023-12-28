@@ -22,8 +22,8 @@ BuildRequires:  libfmidb-devel >= 23.7.27
 BuildRequires:  libfminc-devel >= 23.12.27
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 23.11.17
-BuildRequires:  himan-lib-devel >= 23.11.17
+BuildRequires:  himan-lib >= 23.12.28
+BuildRequires:  himan-lib-devel >= 23.12.28
 BuildRequires:  himan-plugins-devel >= 23.9.25
 BuildRequires:  fmt-devel >= 7.1.0
 BuildRequires:  python3-scons
@@ -35,7 +35,7 @@ Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
 Requires:	libfmidb >= 23.10.16
 Requires:	libfminc >= 23.12.27
-Requires:	himan-lib >= 23.11.17
+Requires:	himan-lib >= 23.12.28
 Requires:	himan-plugins >= 23.9.25
 Requires:	netcdf-cxx
 Requires:	eccodes
