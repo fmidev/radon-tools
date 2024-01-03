@@ -8,6 +8,12 @@
 
 %define distnum %(/usr/lib/rpm/redhat/dist.sh --distnum)
 
+%if %{distnum} == 8
+%define boost boost169
+%else
+%define boost boost
+%endif
+
 Name:           radon-tools
 Version:        %{version}
 Release:        %{release}%{dist}.fmi
@@ -28,9 +34,10 @@ BuildRequires:  himan-plugins-devel >= 23.9.25
 BuildRequires:  fmt-devel >= 7.1.0
 BuildRequires:  python3-scons
 BuildRequires:	gdal35-devel
-BuildRequires:  boost169-devel
+BuildRequires:  %{boost}-devel
 BuildRequires:  make
 BuildRequires:  gcc-c++
+BuildRequires:  python3-distro
 Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
 Requires:	libfmidb >= 23.10.16
@@ -49,12 +56,8 @@ Requires:       python3-psycopg2
 Requires:	python3-dotenv
 Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
-Requires:       boost169-system
-Requires:       boost169-filesystem
-Requires:       boost169-program-options
-Requires:       boost169-iostreams
-Requires:       boost169-regex
-Requires:	boost169-thread
+Requires:       %{boost}-program-options
+Requires:       %{boost}-iostreams
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py

@@ -5,7 +5,7 @@ on: # yamllint disable-line rule:truthy
 name: Create RPM Release
 
 jobs:
-  call-rpmbuild-workflow:
+  call-rpmbuild-workflow-for-rhel8:
     uses: fmidev/github-actions-workflows/.github/workflows/rpmbuild-workflow.yaml@main
     with:
       rpm_base_image: rockylinux/rockylinux:8
@@ -22,3 +22,17 @@ jobs:
       RPM_API_PASS: ${{ secrets.RPM_API_PASS }}
       QUAY_USER: ${{ secrets.QUAY_USER }}
       QUAY_TOKEN: ${{ secrets.QUAY_TOKEN }}
+  call-rpmbuild-workflow-for-rhel9:
+    uses: fmidev/github-actions-workflows/.github/workflows/rpmbuild-workflow.yaml@main
+    with:
+      rpm_base_image: rockylinux/rockylinux:9
+      rpm_spec_file: radon-tools.spec
+      rpm_additional_repositories: "epel-release,https://download.fmi.fi/smartmet-open/rhel/9/x86_64/smartmet-open-release-latest-9.noarch.rpm"
+      rpm_enable_repositories: crb
+      rpm_disable_modules: postgresql
+      rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --setopt='epel.exclude=proj' --setopt='smartmet-open-ext.exclude=proj82' --save"
+      build_image: false
+    secrets:
+      RPM_API_HOST_RHEL9: ${{ secrets.RPM_API_HOST }}
+      RPM_API_USER: ${{ secrets.RPM_API_USER }}
+      RPM_API_PASS: ${{ secrets.RPM_API_PASS }}
