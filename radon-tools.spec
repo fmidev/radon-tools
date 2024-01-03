@@ -38,6 +38,7 @@ BuildRequires:  %{boost}-devel
 BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python3-distro
+BuildRequires:  unixODBC-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
 Requires:	libfmidb >= 23.10.16
@@ -58,6 +59,7 @@ Requires:       jasper-libs
 Requires:       netcdf >= 4.1.1
 Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
+Requires:	unixODBC
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
