@@ -33,6 +33,6 @@ jobs:
       rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --setopt='epel.exclude=proj' --setopt='smartmet-open-ext.exclude=proj82' --save"
       build_image: false
     secrets:
-      RPM_API_HOST_RHEL9: ${{ secrets.RPM_API_HOST }}
+      RPM_API_HOST: ${{ secrets.RPM_API_HOST_RHEL9 }}
       RPM_API_USER: ${{ secrets.RPM_API_USER }}
       RPM_API_PASS: ${{ secrets.RPM_API_PASS }}
