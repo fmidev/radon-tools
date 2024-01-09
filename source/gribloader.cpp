@@ -3,8 +3,6 @@
 #include "plugin_factory.h"
 #include "timer.h"
 #include "util.h"
-#include <boost/algorithm/string.hpp>
-#include <boost/algorithm/string/split.hpp>
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>

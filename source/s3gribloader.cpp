@@ -6,7 +6,6 @@
 #include "s3.h"
 #include "timer.h"
 #include "util.h"
-#include <boost/algorithm/string.hpp>
 #include <iostream>
 #include <stdexcept>
 #include <string.h>
