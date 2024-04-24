@@ -1,5 +1,5 @@
 %if !0%{?version:1}
-%define version 23.10.17
+%define version 24.4.24
 %endif
 
 %if !0%{?release:1}
@@ -24,7 +24,7 @@ URL:            http://www.fmi.fi
 Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 23.12.8
-BuildRequires:  libfmidb-devel >= 23.7.27
+BuildRequires:  libfmidb-devel >= 24.4.18
 BuildRequires:  libfminc-devel >= 23.12.27
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
@@ -41,7 +41,7 @@ BuildRequires:  python3-distro
 BuildRequires:  unixODBC-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
-Requires:	libfmidb >= 23.10.16
+Requires:	libfmidb >= 24.4.18
 Requires:	libfminc >= 23.12.27
 Requires:	himan-lib >= 24.2.22
 Requires:	himan-plugins >= 24.2.22
@@ -96,6 +96,8 @@ rm -rf %{buildroot}
 %{_bindir}/calc_hybrid_level_height.py
 
 %changelog
+* Wed Apr 24 2024 Ville Kuvaja <ville.kuvaja@fmi.fi> - 24.4.24-1.fmi
+- new fmidb
 * Tue Oct 17 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.17-1.fmi
 - New fmidb
 * Wed Oct  4 2023 Mikko Partio <mikko.partio@fmi.fi> - 23.10.4-1.fmi
