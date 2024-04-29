@@ -285,7 +285,19 @@ int main(int argc, char** argv)
 			continue;
 		}
 
-		logr.Info("Reading file '" + infile + "'");
+		uintmax_t fileSize = 0;
+
+		if (options.s3)
+		{
+			fileSize = himan::s3::ObjectSize(infile);
+		}
+		else
+		{
+			fileSize = std::filesystem::file_size(infile);
+		}
+
+		logr.Info(
+		    fmt::format("Reading file '{}' (size: {:.1f}MB)", infile, static_cast<double>(fileSize) / 1024.0 / 1024.0));
 
 		himan::HPFileType type = himan::kUnknownFile;
 
