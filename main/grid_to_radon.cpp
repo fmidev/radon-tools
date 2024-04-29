@@ -308,7 +308,7 @@ int main(int argc, char** argv)
 
 		if (type == himan::kNetCDF || options.netcdf)
 		{
-			logr.Debug("File '" + infile + "' is NetCDF");
+			logr.Trace(fmt::format("File '{}' is NetCDF", infile));
 
 			if (options.in_place_insert)
 			{
@@ -330,7 +330,7 @@ int main(int argc, char** argv)
 		}
 		else if (type == himan::kGRIB1 || type == himan::kGRIB2 || type == himan::kGRIB || options.grib)
 		{
-			logr.Debug("File '" + infile + "' is GRIB");
+			logr.Trace(fmt::format("File '{}' is GRIB", infile));
 
 			std::pair<bool, std::vector<grid_to_radon::record>> ret;
 
@@ -350,7 +350,7 @@ int main(int argc, char** argv)
 		}
 		else if (type == himan::kGeoTIFF || options.geotiff)
 		{
-			logr.Debug(fmt::format("File '{}' is GeoTIFF", infile));
+			logr.Trace(fmt::format("File '{}' is GeoTIFF", infile));
 
 			if (options.producer == 0)
 			{
