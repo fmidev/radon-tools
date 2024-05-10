@@ -291,13 +291,22 @@ int main(int argc, char** argv)
 		{
 			fileSize = himan::s3::ObjectSize(infile);
 		}
-		else
+		else if (infile != "-")
 		{
-			fileSize = std::filesystem::file_size(infile);
+			try
+			{
+				fileSize = std::filesystem::file_size(infile);
+			}
+			catch (const std::filesystem::filesystem_error& e)
+			{
+				logr.Error(fmt::format("Error getting file size for '{}': {}", infile, e.what()));
+			}
 		}
 
-		logr.Info(
-		    fmt::format("Reading file '{}' (size: {:.1f}MB)", infile, static_cast<double>(fileSize) / 1024.0 / 1024.0));
+		if (fileSize != 0)
+		{
+			logr.Info(fmt::format("Reading file '{}' (size: {:.1f}MB)", infile, static_cast<double>(fileSize) / 1024.0 / 1024.0));
+		}
 
 		himan::HPFileType type = himan::kUnknownFile;
 
