@@ -235,6 +235,7 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 	config->DatabaseType(himan::kRadon);
 	config->TargetGeomName(geomdef["name"]);
 	config->OutputFileType(himan::kNetCDF);
+	config->ProgramName(himan::kGridToRadon);
 
 	auto CreateInfo = [&geom, &prod](const himan::forecast_type& ftype, const himan::forecast_time& ftime,
 	                                 const himan::level& lvl,
