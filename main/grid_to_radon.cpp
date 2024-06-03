@@ -367,12 +367,6 @@ int main(int argc, char** argv)
 				retval = 1;
 				continue;
 			}
-			if (options.analysistime.empty())
-			{
-				logr.Error("Analysis time must be specified with -a");
-				retval = 1;
-				continue;
-			}
 
 			grid_to_radon::GeoTIFFLoader g;
 

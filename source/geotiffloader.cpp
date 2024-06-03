@@ -40,9 +40,17 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 	config->WriteToDatabase(true);
 	config->WriteMode(himan::kSingleGridToAFile);
 	config->DatabaseType(himan::kRadon);
+	config->ProgramName(himan::kGridToRadon);
+	config->ValidateMetadata(false);
 
-	const himan::raw_time rt(options.analysistime, "%Y%m%d%H%M");
-	himan::plugin::search_options opts(himan::forecast_time(rt, rt), himan::param(), himan::level(himan::kHeight, 0),
+	himan::forecast_time ft;
+
+	if (options.analysistime.empty() == false)
+	{
+		himan::raw_time rt(options.analysistime, "%Y%m%d%H%M");
+		ft = himan::forecast_time(rt, himan::raw_time());
+	}
+	himan::plugin::search_options opts(ft, himan::param(), himan::level(himan::kHeight, 0),
 	                                   himan::producer(options.producer),
 	                                   std::make_shared<himan::plugin_configuration>(*config));
 
