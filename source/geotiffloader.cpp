@@ -48,7 +48,7 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 	if (options.analysistime.empty() == false)
 	{
 		himan::raw_time rt(options.analysistime, "%Y%m%d%H%M");
-		ft = himan::forecast_time(rt, himan::raw_time());
+		ft = himan::forecast_time(rt, rt);
 	}
 	himan::plugin::search_options opts(ft, himan::param(), himan::level(himan::kHeight, 0),
 	                                   himan::producer(options.producer),
