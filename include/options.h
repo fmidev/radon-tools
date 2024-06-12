@@ -25,7 +25,6 @@ struct Options
 	      threadcount(2),
 	      ss_state_update(true),
 	      in_place_insert(false),
-	      directory_structure_check(true),
 	      ss_table_name(""),
 	      allow_multi_table_gribs(false),
 	      metadata_file_name(),
@@ -49,7 +48,6 @@ struct Options
 	short threadcount;               // -j
 	bool ss_state_update;            // -X
 	bool in_place_insert;            // -I
-	bool directory_structure_check;  // --no-directory-structure-check
 	std::string ss_table_name;       // --smartmet-server-table-name
 	bool allow_multi_table_gribs;    // --allow-multi-table-gribs
 	std::string metadata_file_name;  // --metadata-file-name, -m

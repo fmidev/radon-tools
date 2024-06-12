@@ -53,7 +53,7 @@ bool parse_options(int argc, char* argv[])
 		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
 		("no-ss_state-update,X", po::bool_switch(&no_ss_state_switch), "do not update ss_state table information")
 	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)")
-	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "do not check for correct directory structure (in-place insert)")
+	        ("no-directory-structure-check", po::bool_switch(&no_directory_structure_check_switch), "DEPRECATED")
 		("smartmet-server-table-name", po::value(&options.ss_table_name), "override table name for smartmet server")
 		("allow-multi-table-gribs", po::bool_switch(&options.allow_multi_table_gribs), "allow single grib file messages to be loaded to more than one radon table (in-place insert)")
 		("metadata,m", po::value(&options.metadata_file_name), "write metadata of successful fields to this file (json)")
@@ -90,7 +90,6 @@ bool parse_options(int argc, char* argv[])
 	}
 
 	options.ss_state_update = !no_ss_state_switch;
-	options.directory_structure_check = !no_directory_structure_check_switch;
 
 	if (max_failures >= -1)
 	{
@@ -151,6 +150,12 @@ bool parse_options(int argc, char* argv[])
 		logr.Warning("wait_timeout minimum value is 10, changing");
 		options.wait_timeout = 10;
 	}
+
+	if (no_directory_structure_check_switch)
+	{
+		logr.Info("Option --no-directory-structure-check is deprecated");
+	}
+
 	return true;
 }
 

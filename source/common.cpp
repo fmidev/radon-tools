@@ -57,11 +57,6 @@ std::string grid_to_radon::common::CanonicalFileName(const std::string& inputFil
 	fs::path pathname(theFileName);
 	pathname = fs::canonical(fs::absolute(pathname));
 
-	if (options.directory_structure_check && !CheckDirectoryStructure(pathname))
-	{
-		throw std::runtime_error("Directory structure check failed");
-	}
-
 	std::string dirName = pathname.parent_path().string();
 
 	return dirName + "/" + pathname.filename().string();
@@ -83,27 +78,6 @@ std::string grid_to_radon::common::MakeFileName(std::shared_ptr<himan::configura
 
 	himan::plugin_configuration pconfig(*config);
 	return himan::util::filename::MakeFileName(*info, pconfig);
-}
-
-bool CheckDirectoryStructure(const std::filesystem::path& pathname)
-{
-	// Check that directory is in the form: /path/to/some/directory/<yyyymmddhh24mi>/<producer_id>/
-	const auto atimedir = pathname.parent_path().filename();
-	const auto proddir = pathname.parent_path().parent_path().filename();
-
-	const std::regex r1("\\d+");
-	const std::regex r2("\\d{12}");
-
-	if (std::regex_match(proddir.string(), r1) == false || std::regex_match(atimedir.string(), r2) == false)
-	{
-		himan::logger logr("common");
-		logr.Error(
-		    "File path must include analysistime and producer id "
-		    "('/path/to/some/dir/<producer_id>/<analysistime12digits>/file.grib', got file '" +
-		    pathname.string() + "'");
-		return false;
-	}
-	return true;
 }
 
 void grid_to_radon::common::CreateDirectory(const std::string& theFileName)
