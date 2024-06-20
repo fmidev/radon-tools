@@ -49,7 +49,7 @@ bool parse_options(int argc, char* argv[])
 		("use-inverse-level-value", po::bool_switch(&options.use_inverse_level_value), "use inverse level value instead of index")
 		("max-failures", po::value(&max_failures), "maximum number of allowed loading failures (grib) -1 = \"don't care\"")
 		("max-skipped", po::value(&max_skipped), "maximum number of allowed skipped messages (grib) -1 = \"don't care\"")
-		("dry-run", po::bool_switch(&options.dry_run), "dry run (no changes made to database or disk), show all sql statements")
+		("dry-run", po::bool_switch(&options.dry_run), "dry run: no changes made to database or disk, to see sql set env variable FMIDB_DEBUG=1)")
 		("threads,j", po::value(&options.threadcount), "number of threads to use. only applicable to grib")
 		("no-ss_state-update,X", po::bool_switch(&no_ss_state_switch), "do not update ss_state table information")
 	        ("in-place,I", po::bool_switch(&options.in_place_insert), "do in-place insert (file not split and copied)")
@@ -310,7 +310,8 @@ int main(int argc, char** argv)
 
 		if (fileSize != 0)
 		{
-			logr.Info(fmt::format("Reading file '{}' (size: {:.1f}MB)", infile, static_cast<double>(fileSize) / 1024.0 / 1024.0));
+			logr.Info(fmt::format("Reading file '{}' (size: {:.1f}MB)", infile,
+			                      static_cast<double>(fileSize) / 1024.0 / 1024.0));
 		}
 
 		himan::HPFileType type = himan::kUnknownFile;
