@@ -39,6 +39,8 @@ BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python3-distro
 BuildRequires:  unixODBC-devel
+BuildRequires:  geos311-devel
+BuildRequires:  proj90-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
 Requires:	libfmidb >= 24.4.18
@@ -61,6 +63,8 @@ Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
 Requires:	fmt = 8.1.1
+Requires:	geos311
+Requires:	proj90
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
