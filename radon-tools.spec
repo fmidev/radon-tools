@@ -61,7 +61,6 @@ Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
 Requires:	fmt = 8.1.1
-Requires:	fmt-libs = 8.1.1
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
