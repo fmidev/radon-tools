@@ -31,7 +31,7 @@ BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 24.4.29
 BuildRequires:  himan-lib-devel >= 24.4.29
 BuildRequires:  himan-plugins-devel >= 24.2.22
-BuildRequires:  fmt-devel >= 7.1.0
+BuildRequires:  fmt-devel = 8.1.1
 BuildRequires:  python3-scons
 BuildRequires:	gdal35-devel
 BuildRequires:  %{boost}-devel
@@ -60,6 +60,7 @@ Requires:       netcdf >= 4.1.1
 Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
+Requires:	fmt = 8.1.1
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
