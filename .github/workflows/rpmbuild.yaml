@@ -13,7 +13,7 @@ jobs:
       rpm_additional_repositories: "epel-release,https://download.fmi.fi/smartmet-open/rhel/8/x86_64/smartmet-open-release-latest-8.noarch.rpm"
       rpm_enable_repositories: powertools
       rpm_disable_modules: postgresql
-      rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --save"
+      rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --setopt='smartmet-open-ext.exclude=fmt-libs' --save"
       image_name: radon-tools
       image_test_command: grid_to_radon --help
     secrets:
@@ -30,7 +30,7 @@ jobs:
       rpm_additional_repositories: "epel-release,https://download.fmi.fi/smartmet-open/rhel/9/x86_64/smartmet-open-release-latest-9.noarch.rpm"
       rpm_enable_repositories: crb
       rpm_disable_modules: postgresql
-      rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --setopt='epel.exclude=proj' --setopt='smartmet-open-ext.exclude=proj82' --save"
+      rpm_dnf_commands: "dnf config-manager --setopt='epel.exclude=eccodes*' --setopt='epel.exclude=proj' --setopt='smartmet-open-ext.exclude=fmt-libs' --setopt='smartmet-open-ext.exclude=proj82' --save"
       build_image: false
     secrets:
       RPM_API_HOST: ${{ secrets.RPM_API_HOST_RHEL9 }}
