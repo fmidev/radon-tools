@@ -14,11 +14,12 @@ def get_conn():
     if conn is None:
         try:
             password = os.environ["RADON_WETODB_PASSWORD"]
+            hostname = os.environ["RADON_HOSTNAME"]
         except:
-            print("password should be given with env variable RADON_WETODB_PASSWORD")
+            print("password and hostname should be given with env variables RADON_WETODB_PASSWORD, RADON_HOSTNAME")
             sys.exit(1)
 
-        dsn = "user=wetodb password=%s host=vorlon dbname=radon port=5432" % (password)
+        dsn = "user=wetodb password={} host={} dbname=radon port=5432".format(password, hostname)
         conn = psycopg2.connect(dsn)
 
     return conn
