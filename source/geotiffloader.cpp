@@ -94,11 +94,16 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 
 		t.Stop();
 
-		logr.Info("Band #" + std::to_string(bandNo++) + " database time=" + std::to_string(t.GetTime()) + " ms");
+		std::string logmsg = fmt::format(
+		    "Band {} producer {} analysistime {} step {} parameter {} level {} forecasttype {} "
+		    "dbtime={} ms",
+		    bandNo++, info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(), info->Param().Name(),
+		    info->Level(), info->ForecastType(), t.GetTime());
+
+		logr.Info(logmsg);
 	}
 
-	logr.Info("Success with " + std::to_string(success) + " fields, " + "failed with " + std::to_string(failed) +
-	          " fields");
+	logr.Info(fmt::format("Success with {} fields, failed with {} fields", success, failed));
 
 	const bool retval = common::CheckForFailure(failed, 0, success);
 
