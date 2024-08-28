@@ -313,9 +313,6 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 
 		const himan::forecast_time ftime(originTime, validTime);
 
-		itsLogger.Debug("Time " + ftime.ValidDateTime().String() + " (" + ftime.OriginDateTime().String() + " +" +
-		                ftime.Step().String("%03h") + " hours)");
-
 		reader.FirstParam();
 
 		do
@@ -326,8 +323,6 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 			{
 				continue;
 			}
-
-			itsLogger.Info("Parameter " + std::string(reader.Param()->name()) + " (" + par.Name() + ")");
 
 			himan::level lvl;
 
@@ -353,6 +348,13 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 				{
 					recs.push_back(ret.second);
 				}
+
+				std::string logmsg =
+				    fmt::format("Producer {} analysistime {} step {} parameter {} level {} forecasttype {}",
+				                info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
+				                info->Param().Name(), info->Level(), info->ForecastType());
+
+				itsLogger.Info(logmsg);
 			}
 			else
 			{
@@ -378,6 +380,12 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 					{
 						recs.push_back(ret.second);
 					}
+					std::string logmsg =
+					    fmt::format("Producer {} analysistime {} step {} parameter {} level {} forecasttype {}",
+					                info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
+					                info->Param().Name(), info->Level(), info->ForecastType());
+
+					itsLogger.Info(logmsg);
 				}
 			}
 			g_succeededParams++;
