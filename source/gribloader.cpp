@@ -228,9 +228,9 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 				    "time={} "
 				    "dbtime={} other={} "
 				    "total={} ms",
-				    messageNo, info->Producer().Id(), static_cast<string>(info->Time().OriginDateTime()),
-				    static_cast<string>(info->Time().Step()), info->Param().Name(), static_cast<string>(info->Level()),
-				    static_cast<string>(info->ForecastType()), writeTime, databaseTime, otherTime, messageTime);
+				    messageNo, info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
+				    info->Param().Name(), info->Level(), info->ForecastType(), writeTime, databaseTime, otherTime,
+				    messageTime);
 
 				logr.Debug(logmsg);
 
