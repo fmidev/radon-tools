@@ -28,32 +28,32 @@ BuildRequires:  libfmidb-devel >= 24.4.18
 BuildRequires:  libfminc-devel >= 23.12.27
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 24.4.29
-BuildRequires:  himan-lib-devel >= 24.4.29
-BuildRequires:  himan-plugins-devel >= 24.2.22
-BuildRequires:  fmt-devel = 8.1.1
+BuildRequires:  himan-lib >= 24.9.9
+BuildRequires:  himan-lib-devel >= 24.9.9
+BuildRequires:  himan-plugins-devel >= 24.9.9
+BuildRequires:  fmt-devel >= 11
 BuildRequires:  python3-scons
-BuildRequires:	gdal35-devel
+BuildRequires:	gdal38-devel
 BuildRequires:  %{boost}-devel
 BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python3-distro
 BuildRequires:  unixODBC-devel
-BuildRequires:  geos311-devel
-BuildRequires:  proj90-devel
+BuildRequires:  geos312-devel
+BuildRequires:  proj94-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 23.12.8
 Requires:	libfmidb >= 24.4.18
 Requires:	libfminc >= 23.12.27
-Requires:	himan-lib >= 24.4.29
-Requires:	himan-plugins >= 24.2.22
+Requires:	himan-lib >= 24.9.9
+Requires:	himan-plugins >= 24.9.9
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:       python3-boto3
-Requires:	gdal35-libs
+Requires:	gdal38-libs
 Requires:	libpqxx >= 7.7.0
 Requires:       python3-psycopg2
 Requires:	python3-dotenv
@@ -62,9 +62,9 @@ Requires:       netcdf >= 4.1.1
 Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
-Requires:	fmt = 8.1.1
-Requires:	geos311
-Requires:	proj90
+Requires:	fmt-libs >= 11
+Requires:	geos312
+Requires:	proj94
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py

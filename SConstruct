@@ -39,7 +39,7 @@ if os.environ.get('INCLUDE') != None:
 includes.append('include')
 includes.append('/usr/include/himan')
 includes.append('/usr/include/himan/plugins')
-includes.append('/usr/gdal35/include')
+includes.append('/usr/gdal38/include')
 
 env.Append(CPPPATH = includes)
 
@@ -51,7 +51,7 @@ if os.environ.get('LIBRARYPATH') != None:
         librarypaths.append(os.environ.get('LIBRARYPATH').split(":"))
 
 librarypaths.append('/usr/lib64')
-librarypaths.append('/usr/gdal35/lib')
+librarypaths.append('/usr/gdal38/lib')
 
 if OS_VERSION < 9:
     librarypaths.append('/usr/lib64/boost169')
@@ -80,9 +80,6 @@ env.Append(LIBS = libraries)
 boost_libraries = [ 'boost_program_options', 'boost_iostreams' ]
 
 env.Append(LIBS = boost_libraries)
-
-#if env['HAVE_CUDA']:
-#	env.Append(LIBS=env.File('/usr/local/cuda/lib64/libcudart_static.a'))
 
 env.Append(LIBS = ['fmt','dl','rt'])
 

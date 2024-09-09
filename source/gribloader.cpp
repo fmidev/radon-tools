@@ -3,6 +3,7 @@
 #include "plugin_factory.h"
 #include "timer.h"
 #include "util.h"
+#include <fmt/ranges.h>
 #include <iomanip>
 #include <sstream>
 #include <stdlib.h>
@@ -50,8 +51,8 @@ pair<bool, grid_to_radon::records> grid_to_radon::GribLoader::Load(const string&
 	}
 
 	himan::logger logr("gribloader");
-	logr.Info(fmt::format("Success with {} fields, failed with {} fields, skipped {} fields", g_success, g_failed,
-	                      g_skipped));
+	logr.Info(fmt::format("Success with {} fields, failed with {} fields, skipped {} fields",
+	                      static_cast<int>(g_success), static_cast<int>(g_failed), static_cast<int>(g_skipped)));
 
 	if (options.in_place_insert)
 	{
