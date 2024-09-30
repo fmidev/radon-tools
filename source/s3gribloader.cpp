@@ -126,7 +126,9 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::S3GribLoader::Load(const 
 {
 	g_success = 0;
 	g_failed = 0;
-	grid_to_radon::records recs = ReadFileStream(theFileName, 0, 0);
+
+	unsigned long objectSize = himan::s3::ObjectSize(theFileName);
+	grid_to_radon::records recs = ReadFileStream(theFileName, 0, objectSize);
 
 	common::UpdateSSState(recs);
 
