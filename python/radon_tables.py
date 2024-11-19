@@ -1640,7 +1640,7 @@ if __name__ == "__main__":
 
     definitions = GetDefinitions(options)
 
-    if options["recreate_views"]:
+    if options["recreate_views"] or options["recreate_triggers"]:
         # prune duplicate elements (key: schema name, table name)
         seen = set()
         unique_dicts = []
