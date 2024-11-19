@@ -101,6 +101,13 @@ def ReadCommandLine(argv):
     )
 
     parser.add_option(
+        "--recreate-views",
+        action="store_true",
+        default=False,
+        help="Recreate views only",
+    )
+
+    parser.add_option(
         "--drop",
         action="store_true",
         default=False,
@@ -1170,9 +1177,18 @@ WHERE
         cur.execute(query)
 
 
-def CreateViews(options, element, class_id):
+def CreateViews(options, element, class_id, overwrite=False):
 
     radon_version = get_radon_version()
+
+    if overwrite:
+        query = "DROP VIEW IF EXISTS public.%s_v" % (element["table_name"])
+
+        if options["show_sql"]:
+            print(query)
+
+        if not options["dry_run"]:
+            cur.execute(query)
 
     if radon_version >= 20241119:
         CreateView20241119(options, element, class_id)
@@ -1624,12 +1640,29 @@ if __name__ == "__main__":
 
     definitions = GetDefinitions(options)
 
+    if options["recreate_views"]:
+        # prune duplicate elements (key: schema name, table name)
+        seen = set()
+        unique_dicts = []
+
+        for d in definitions:
+            key = (d["schema_name"], d["table_name"])
+            if key not in seen:
+                seen.add(key)
+                unique_dicts.append(d)
+
+        definitions = unique_dicts
+
     for element in definitions:
         if options["recreate_triggers"]:
             logging.info("Recreating triggers for table %s" % (element["table_name"]))
             CreatePartitioningTrigger(
                 options, GetProducer(element["producer_id"]), element
             )
+            conn.commit()
+        elif options["recreate_views"]:
+            logging.info("Recreating views for table %s" % (element["table_name"]))
+            CreateViews(options, element, element["class_id"], overwrite=True)
             conn.commit()
         else:
             CreateTables(options, element, date)
