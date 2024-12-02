@@ -1055,34 +1055,16 @@ SELECT
         a.last_updater,
         a.last_updated
 FROM
-        {}.{} a,
-        fmi_producer f,
-        level l,
-        param p,
-        geom g,
-        forecast_type t,
-        file_format ff,
-        file_protocol fp,
-        aggregation ag,
-        processing_type pt
-WHERE
-        a.producer_id = f.id
-        AND
-        a.level_id = l.id
-        AND
-        a.param_id = p.id
-        AND
-        a.geometry_id = g.id
-        AND
-        ff.id = a.file_format_id
-        AND
-        fp.id = a.file_protocol_id
-        AND
-        a.forecast_type_id = t.id
-        AND
-        ag.id = a.aggregation_id
-        AND
-        pt.id = a.processing_type_id
+        {}.{} a
+JOIN fmi_producer f ON (a.producer_id = f.id)
+JOIN level l ON (a.level_id = l.id)
+JOIN param p ON (a.param_id = p.id)
+JOIN geom g ON (a.geometry_id = g.id)
+JOIN forecast_type t ON (a.forecast_type_id = t.id)
+JOIN file_format ff ON (a.file_format_id = ff.id)
+JOIN file_protocol fp ON (a.file_protocol_id = fp.id)
+LEFT OUTER JOIN aggregation ag ON (a.aggregation_id = ag.id)
+LEFT OUTER JOIN processing_type pt ON (a.processing_type_id = pt.id)
 """.format(
             element["table_name"],
             element["schema_name"],
@@ -1120,28 +1102,14 @@ SELECT
         a.last_updater,
         a.last_updated
 FROM
-        {}.{} a,
-        fmi_producer f,
-        level l,
-        param p,
-        forecast_type t,
-        station s,
-        aggregation ag,
-        processing_type pt
-WHERE
-        a.producer_id = f.id
-        AND
-        a.level_id = l.id
-        AND
-        a.param_id = p.id
-        AND
-        a.forecast_type_id = t.id
-        AND
-        s.id = a.station_id
-        AND
-        ag.id = a.aggregation_id
-        AND
-        pt.id = a.processing_type_id
+        {}.{} a
+JOIN fmi_producer f ON (a.producer_id = f.id)
+JOIN level l ON (a.level_id = l.id)
+JOIN param p ON (a.param_id = p.id)
+JOIN station s ON (a.station_id = s.id)
+JOIN forecast_type t ON (a.forecast_type_id = t.id)
+LEFT OUTER JOIN aggregation ag ON (a.aggregation_id = ag.id)
+LEFT OUTER JOIN processing_type pt ON (a.processing_type_id = pt.id)
         """.format(
             element["table_name"],
             element["schema_name"],
@@ -1170,7 +1138,11 @@ def CreateViews(options, element, class_id, overwrite=False):
         if not options["dry_run"]:
             cur.execute(query)
 
-    if radon_version >= 20241119:
+    # Support for env variable STU25778_PRODUCER_ID can be removed after
+    # 20241119 version is in use
+    if radon_version >= 20241119 or os.getenv("STU25778_PRODUCER_ID", "-1") == str(
+        options["producer_id"]
+    ):
         CreateView20241119(options, element, class_id)
         return
 
