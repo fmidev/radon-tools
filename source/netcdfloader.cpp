@@ -279,18 +279,21 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 				itsLogger.Error("Write to file failed");
 				return std::make_pair(false, record());
 			}
+		}
 
-			const auto ret = grid_to_radon::common::SaveToDatabase(config, info, r, finfo);
+		const auto ret = grid_to_radon::common::SaveToDatabase(config, info, r, finfo);
 
-			if (!ret.first)
-			{
-				itsLogger.Error("Write to radon failed");
-				return std::make_pair(false, record());
-			}
+		if (options.dry_run == false && ret.first == false)
+		{
+			itsLogger.Error("Write to radon failed");
+			return std::make_pair(false, record());
+		}
 
-			itsLogger.Debug("Wrote " + info->Param().Name() + " level " + static_cast<std::string>(info->Level()) +
-			                " to file '" + finfo.file_location + "'");
+		itsLogger.Debug(
+		    fmt::format("Wrote {} level {} to file '{}'", info->Param().Name(), info->Level(), finfo.file_location));
 
+		if (options.dry_run == false)
+		{
 			return std::make_pair(true, ret.second);
 		}
 
@@ -358,11 +361,23 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 			}
 			else
 			{
+				int truncate_digits = 6;
+				auto truncate_digits_env = getenv("GRID_TO_RADON_TRUNCATE_LEVEL_VALUE_DIGITS");
+
+				if (truncate_digits_env)
+				{
+					truncate_digits = std::stoi(truncate_digits_env);
+				}
+
+				auto scaler = std::pow(10, truncate_digits);
+
 				for (reader.ResetLevel(); reader.NextLevel();)
 				{
 					if (options.use_level_value)
 					{
-						lvl.Value(reader.Level());
+						double lvl_value = static_cast<double>(reader.Level());
+						lvl_value = std::round(lvl_value * scaler) / scaler;
+						lvl.Value(lvl_value);
 					}
 					else if (options.use_inverse_level_value)
 					{
@@ -374,8 +389,8 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 					}
 
 					auto info = CreateInfo(ftype, ftime, lvl, himan::util::InitializeParameter(prod, par, lvl));
-
 					const auto ret = Write(info);
+
 					if (ret.first)
 					{
 						recs.push_back(ret.second);
@@ -391,8 +406,8 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 			g_succeededParams++;
 		} while (reader.NextParam());
 	}
-	itsLogger.Info("Success with " + std::to_string(g_succeededParams) + " params, failed with " +
-	               std::to_string(g_failedParams) + " params");
+	itsLogger.Info(
+	    fmt::format("Success with {} params, failed with {} params", int(g_succeededParams), int(g_failedParams)));
 
 	common::UpdateSSState(recs);
 
