@@ -15,6 +15,14 @@ rpmsourcedir = /tmp/$(shell whoami)/rpmbuild
 
 INSTALL_TARGET = /usr/bin
 
+ifeq ($(VERSION),)
+  VERSION=$(shell date -u +%y).$(shell date -u +%m | sed 's/^0*//').$(shell date -u +%d | sed 's/^0*//')
+endif
+
+ifeq ($(RELEASE),)
+  RELEASE=$(shell date -u +%H%M).$(shell git rev-parse --short HEAD)
+endif
+
 # The rules
 
 all release: 
@@ -32,7 +40,7 @@ rpm:    clean
           tar -C ../ --exclude .svn \
                    -cf $(rpmsourcedir)/$(PROG).tar $(PROG) ; \
           gzip -f $(rpmsourcedir)/$(PROG).tar ; \
-          rpmbuild -ta $(rpmsourcedir)/$(PROG).tar.gz ; \
+          rpmbuild --define="version $(VERSION)" --define="release $(RELEASE)" -ta $(rpmsourcedir)/$(PROG).tar.gz ; \
           rm -f $(rpmsourcedir)/$(LIB).tar.gz ; \
         else \
           echo $(rpmerr); \
