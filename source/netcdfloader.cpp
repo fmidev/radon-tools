@@ -128,9 +128,9 @@ himan::raw_time ReadValidTime(NFmiNetCDF& reader)
 	switch (reader.TypeT())
 	{
 		case ncFloat:
-			return StringToTime(std::to_string(reader.Time<float>()), reader.TimeUnit());
+			return StringToTime(fmt::format("{}", reader.Time<float>()), reader.TimeUnit());
 		case ncDouble:
-			return StringToTime(std::to_string(reader.Time<double>()), reader.TimeUnit());
+			return StringToTime(fmt::format("{}", reader.Time<double>()), reader.TimeUnit());
 		case ncShort:
 			return StringToTime(std::to_string(reader.Time<short>()), reader.TimeUnit());
 		case ncInt:
