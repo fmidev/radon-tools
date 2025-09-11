@@ -1,6 +1,7 @@
 on: # yamllint disable-line rule:truthy
   push:
     branches: ["master"]
+  workflow_dispatch:
 
 name: Create RPM Release
 
