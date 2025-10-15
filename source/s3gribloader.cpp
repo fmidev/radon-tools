@@ -73,13 +73,9 @@ grid_to_radon::records ProcessGribFile(std::unique_ptr<FILE> fp, const std::stri
 
 			if (ret.first)
 			{
-				logr.Debug(fmt::format(
-				    "Message {} producer {} analysistime {} step {} parameter {} level {} forecasttype {} db"
-				    "time={} other={} ms",
-				    messageNo, info->Producer().Id(), static_cast<std::string>(info->Time().OriginDateTime()),
-				    static_cast<std::string>(info->Time().Step()), info->Param().Name(),
-				    static_cast<std::string>(info->Level()), static_cast<std::string>(info->ForecastType()),
-				    dbtimer.GetTime(), othertimer.GetTime()));
+				logr.Debug(fmt::format("Message {} {} database time={} other={} ms", messageNo,
+				                       grid_to_radon::common::FormatInfoToString(info), dbtimer.GetTime(),
+				                       othertimer.GetTime()));
 
 				g_success++;
 				recs.push_back(ret.second);

@@ -94,12 +94,8 @@ std::pair<bool, grid_to_radon::records> grid_to_radon::GeoTIFFLoader::Load(const
 
 		t.Stop();
 
-		std::string logmsg = fmt::format(
-		    "Band {} producer {} analysistime {} step {} parameter {} level {} forecasttype {} "
-		    "dbtime={} ms",
-		    bandNo++, info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(), info->Param().Name(),
-		    info->Level(), info->ForecastType(), t.GetTime());
-
+		auto logmsg = fmt::format("Band {} {} dbtime={} ms", bandNo++, grid_to_radon::common::FormatInfoToString(info),
+		                          t.GetTime());
 		logr.Info(logmsg);
 	}
 

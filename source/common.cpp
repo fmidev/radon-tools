@@ -16,6 +16,25 @@ std::mutex dirCreateMutex;
 
 bool CheckDirectoryStructure(const std::filesystem::path& pathname);
 
+std::string grid_to_radon::common::FormatInfoToString(std::shared_ptr<himan::info<double>>& info)
+{
+	auto pname = info->Param().Name();
+	if (info->Param().Aggregation().Type() != himan::kUnknownAggregationType)
+	{
+		pname = fmt::format("{} ({})", pname, info->Param().Aggregation());
+	}
+	if (info->Param().ProcessingType() != himan::kUnknownProcessingType)
+	{
+		pname = fmt::format("{} ({})", pname, info->Param().ProcessingType());
+	}
+
+	auto str =
+	    fmt::format("producer {} analysistime {} step {} parameter {} level {} forecasttype {}", info->Producer().Id(),
+	                info->Time().OriginDateTime(), info->Time().Step(), pname, info->Level(), info->ForecastType());
+
+	return str;
+}
+
 std::string grid_to_radon::common::StripProtocol(const std::string& str)
 {
 	const static std::regex r("^(https)|(http)|(s3)*://");

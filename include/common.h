@@ -27,5 +27,6 @@ std::string MakeFileName(std::shared_ptr<himan::configuration>& config, std::sha
 void CreateDirectory(const std::string& theFileName);
 bool CheckForFailure(int g_failed, int g_skipped, int g_success);
 std::string StripProtocol(const std::string& str);
+std::string FormatInfoToString(std::shared_ptr<himan::info<double>>& info);
 }  // namespace common
 }  // namespace grid_to_radon

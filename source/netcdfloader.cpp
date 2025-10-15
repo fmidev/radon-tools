@@ -7,6 +7,7 @@
 #include "latitude_longitude_grid.h"
 #include "options.h"
 #include "plugin_factory.h"
+#include "timer.h"
 #include "util.h"
 #include <algorithm>
 #include <atomic>
@@ -345,19 +346,16 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 			{
 				// This parameter has no z dimension --> map to level 0
 
+				himan::timer timer(true);
 				auto info = CreateInfo(ftype, ftime, lvl, himan::util::InitializeParameter(prod, par, lvl));
 				const auto ret = Write(info);
 				if (ret.first)
 				{
 					recs.push_back(ret.second);
 				}
-
-				std::string logmsg =
-				    fmt::format("Producer {} analysistime {} step {} parameter {} level {} forecasttype {}",
-				                info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
-				                info->Param().Name(), info->Level(), info->ForecastType());
-
-				itsLogger.Info(logmsg);
+				timer.Stop();
+				itsLogger.Info(
+				    fmt::format("{} total {} ms", grid_to_radon::common::FormatInfoToString(info), timer.GetTime()));
 			}
 			else
 			{
@@ -388,6 +386,7 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 						lvl.Value(static_cast<float>(reader.LevelIndex()));  // ordering number
 					}
 
+					himan::timer timer(true);
 					auto info = CreateInfo(ftype, ftime, lvl, himan::util::InitializeParameter(prod, par, lvl));
 					const auto ret = Write(info);
 
@@ -395,12 +394,9 @@ std::pair<bool, records> NetCDFLoader::Load(const std::string& theInfile) const
 					{
 						recs.push_back(ret.second);
 					}
-					std::string logmsg =
-					    fmt::format("Producer {} analysistime {} step {} parameter {} level {} forecasttype {}",
-					                info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
-					                info->Param().Name(), info->Level(), info->ForecastType());
-
-					itsLogger.Info(logmsg);
+					timer.Stop();
+					itsLogger.Info(fmt::format("{} total {} ms", grid_to_radon::common::FormatInfoToString(info),
+					                           timer.GetTime()));
 				}
 			}
 			g_succeededParams++;

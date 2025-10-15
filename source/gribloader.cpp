@@ -224,14 +224,9 @@ void grid_to_radon::GribLoader::Process(NFmiGribMessage& message, short threadId
 				const size_t messageTime = msgtimer.GetTime();
 				const size_t otherTime = messageTime - writeTime - databaseTime;
 
-				string logmsg = fmt::format(
-				    "Message {} producer {} analysistime {} step {} parameter {} level {} forecasttype {} write"
-				    "time={} "
-				    "dbtime={} other={} "
-				    "total={} ms",
-				    messageNo, info->Producer().Id(), info->Time().OriginDateTime(), info->Time().Step(),
-				    info->Param().Name(), info->Level(), info->ForecastType(), writeTime, databaseTime, otherTime,
-				    messageTime);
+				auto logmsg = fmt::format("Message {} {} write time={} dbtime={} other={} total={} ms", messageNo,
+				                          grid_to_radon::common::FormatInfoToString(info), writeTime, databaseTime,
+				                          otherTime, messageTime);
 
 				logr.Debug(logmsg);
 
