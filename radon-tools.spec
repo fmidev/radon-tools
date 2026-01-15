@@ -31,7 +31,7 @@ BuildRequires:  libs3-devel >= 4.1
 BuildRequires:  himan-lib >= 25.10.15
 BuildRequires:  himan-lib-devel >= 25.10.15
 BuildRequires:  himan-plugins-devel >= 25.7.8
-BuildRequires:  fmt-devel >= 11
+BuildRequires:  fmt-devel >= 11.2
 BuildRequires:  python3-scons
 BuildRequires:	gdal310-devel
 BuildRequires:  %{boost}-devel
@@ -62,7 +62,7 @@ Requires:       netcdf >= 4.1.1
 Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
-Requires:	fmt-libs >= 11
+Requires:	fmt-libs >= 11.2
 Requires:	geos313
 Requires:	proj95
 Provides:	radon_tables.py
