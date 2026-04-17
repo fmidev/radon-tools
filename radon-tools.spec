@@ -25,35 +25,35 @@ Source0: 	%{name}.tar.gz
 BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 BuildRequires:  libfmigrib-devel >= 25.6.17
 BuildRequires:  libfmidb-devel >= 24.4.18
-BuildRequires:  libfminc-devel >= 23.12.27
+BuildRequires:  libfminc-devel >= 24.1.12
 BuildRequires:  eccodes-devel
 BuildRequires:  libs3-devel >= 4.1
-BuildRequires:  himan-lib >= 25.10.15
-BuildRequires:  himan-lib-devel >= 25.10.15
-BuildRequires:  himan-plugins-devel >= 25.7.8
-BuildRequires:  fmt-devel >= 11.2
+BuildRequires:  himan-lib >= 26.4.17
+BuildRequires:  himan-lib-devel >= 26.4.17
+BuildRequires:  himan-plugins-devel >= 26.4.17
+BuildRequires:  fmt-devel >= 12.1
 BuildRequires:  python3-scons
-BuildRequires:	gdal310-devel
+BuildRequires:	gdal312-devel
 BuildRequires:  %{boost}-devel
 BuildRequires:  make
 BuildRequires:  gcc-c++
 BuildRequires:  python3-distro
 BuildRequires:  unixODBC-devel
 BuildRequires:  geos313-devel
-BuildRequires:  proj95-devel
+BuildRequires:  proj97-devel
 Requires:       hdf5
 Requires:	libfmigrib >= 25.6.17
 Requires:	libfmidb >= 24.4.18
-Requires:	libfminc >= 23.12.27
-Requires:	himan-lib >= 25.10.15
-Requires:	himan-plugins >= 25.7.8
+Requires:	libfminc >= 24.1.12
+Requires:	himan-lib >= 26.4.17
+Requires:	himan-plugins >= 26.4.17
 Requires:	netcdf-cxx
 Requires:	eccodes
 Requires:	libs3 >= 4.1
 Requires:       python3-pytz
 Requires:       python3-dateutil
 Requires:       python3-boto3
-Requires:	gdal310-libs
+Requires:	gdal312-libs
 Requires:	libpqxx >= 7.7.0
 Requires:       python3-psycopg2
 Requires:	python3-dotenv
@@ -62,9 +62,9 @@ Requires:       netcdf >= 4.1.1
 Requires:       %{boost}-program-options
 Requires:       %{boost}-iostreams
 Requires:	unixODBC
-Requires:	fmt-libs >= 11.2
+Requires:	fmt-libs >= 12.1
 Requires:	geos313
-Requires:	proj95
+Requires:	proj97
 Provides:	radon_tables.py
 Provides:	previ_to_radon.py
 Provides:	geom_to_radon.py
